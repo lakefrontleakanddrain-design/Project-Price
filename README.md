@@ -1,6 +1,6 @@
 # Project Price
 
-Instant plumbing estimates — connecting homeowners with vetted local pros.
+Instant project estimates — connecting homeowners with vetted local pros.
 
 ## Repository Structure
 
