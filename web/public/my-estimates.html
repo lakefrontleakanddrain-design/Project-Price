@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="shortcut icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="apple-touch-icon" href="/logo.jpg" />
+  <title>ProjectPrice - My Estimates</title>
+  <style>
+    :root { --navy: #0e3a78; --emerald: #16a36a; --bg: #f3f8ff; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Segoe UI, Arial, sans-serif;
+      background: linear-gradient(170deg, #eaf2ff 0%, var(--bg) 45%, #effff7 100%);
+      color: #16385b;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .brand-bar {
+      max-width: 900px;
+      margin: 0 auto 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+    .brand-logo { display: flex; align-items: center; text-decoration: none; }
+    .brand-logo img { height: 44px; width: auto; }
+    .brand-nav { display: flex; gap: 16px; }
+    .brand-nav a {
+      color: #4a6a8a;
+      text-decoration: none;
+      font-size: .85rem;
+      font-weight: 600;
+    }
+    .brand-nav a:hover { color: var(--navy); }
+    .card {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #d5e3f8;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      padding: 24px;
+    }
+    h1 { margin: 0 0 6px; color: var(--navy); }
+    .sub { color: #4a6a8a; margin: 0 0 18px; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+    label { display: block; font-weight: 700; margin: 8px 0 5px; font-size: .9rem; }
+    input {
+      width: 100%;
+      border: 1px solid #bfd2ee;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+    }
+    input:focus { border-color: var(--navy); }
+    button {
+      margin-top: 14px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--emerald);
+      color: #fff;
+      font-weight: 700;
+      padding: 11px 14px;
+      cursor: pointer;
+    }
+    .result {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 10px;
+      display: none;
+      font-size: .9rem;
+    }
+    .result.error { background: #fdecea; color: #7a1a14; border: 1px solid #f5b7b1; }
+    .result.success { background: #e6f7ef; color: #0d5c35; border: 1px solid #a3dfc0; }
+    .list {
+      margin-top: 18px;
+      display: grid;
+      gap: 10px;
+    }
+    .item {
+      border: 1px solid #d5e3f8;
+      border-radius: 10px;
+      background: #f8fbff;
+      padding: 12px;
+    }
+    .item h2 {
+      margin: 0 0 7px;
+      color: var(--navy);
+      font-size: 1rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+    .tag {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .tag.claimed { background: #e6f7ef; color: #0d5c35; border: 1px solid #a3dfc0; }
+    .tag.pending { background: #fff7e8; color: #8a5800; border: 1px solid #ffd591; }
+    .tag.expired { background: #f5f5f5; color: #666; border: 1px solid #d9d9d9; }
+    .tag.no-match { background: #fdecea; color: #7a1a14; border: 1px solid #f5b7b1; }
+    .meta {
+      margin: 4px 0;
+      color: #4a6a8a;
+      font-size: .86rem;
+    }
+    .actions { margin-top: 10px; }
+    .actions a {
+      display: inline-block;
+      text-decoration: none;
+      color: #fff;
+      background: #0e3a78;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: .84rem;
+      font-weight: 700;
+    }
+    #dashboard { display: none; }
+    .personal-info {
+      margin-bottom: 24px;
+      padding: 16px;
+      background: linear-gradient(135deg, #e6f7ef 0%, #f0fdf9 100%);
+      border: 2px solid var(--emerald);
+      border-radius: 12px;
+    }
+    .personal-info h2 {
+      margin: 0 0 12px;
+      color: var(--navy);
+      font-size: 1rem;
+    }
+    .personal-info p {
+      margin: 6px 0;
+      color: #16385b;
+      font-size: .95rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="brand-bar">
+    <a href="/" class="brand-logo"><img src="/logo.jpg" alt="ProjectPrice" /></a>
+    <nav class="brand-nav">
+      <a href="/get-quotes.html">Request Estimate</a>
+      <a href="/my-estimates.html">My Saved Projects</a>
+      <a href="/contractor-signup.html">For Contractors</a>
+      <a href="/contractor-portal.html">Contractor Login</a>
+    </nav>
+  </header>
+
+  <main class="card">
+    <h1>My Estimates</h1>
+    <p class="sub">Enter the same email and phone you used when submitting your project request to view your saved requests and request a pro when ready.</p>
+
+    <form id="lookupForm" novalidate>
+      <div class="grid">
+        <div>
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="you@email.com" required />
+        </div>
+        <div>
+          <label for="phone">Phone</label>
+          <input id="phone" type="tel" placeholder="(440) 555-1234" required />
+        </div>
+      </div>
+      <button type="submit" id="lookupBtn">Load My Estimates</button>
+    </form>
+
+    <div class="result" id="result"></div>
+    
+    <section id="dashboard">
+      <div class="personal-info">
+        <h2>✓ Account Verified</h2>
+        <p><strong>Name:</strong> <span id="displayName"></span></p>
+        <p><strong>Email:</strong> <span id="displayEmail"></span></p>
+        <p><strong>Phone:</strong> <span id="displayPhone"></span></p>
+        <p id="addressLine"><strong>Address:</strong> <span id="displayAddress"></span></p>
+      </div>
+      <h1>My Saved Projects</h1>
+      <p class="sub">Your saved estimates and pending requests.</p>
+    </section>
+    
+    <section class="list" id="estimatesList"></section>
+  </main>
+
+  <script>
+    const resultEl = document.getElementById('result');
+    const listEl = document.getElementById('estimatesList');
+    const dashboardEl = document.getElementById('dashboard');
+
+    const statusTag = (status) => {
+      const value = String(status || 'pending').toLowerCase();
+      if (value === 'claimed') return '<span class="tag claimed">Claimed</span>';
+      if (value === 'expired') return '<span class="tag expired">Expired</span>';
+      if (value === 'no_match') return '<span class="tag no-match">No Match — Team Notified</span>';
+      return '<span class="tag pending">Pending</span>';
+    };
+
+    const fmtDate = (iso) => {
+      if (!iso) return 'N/A';
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? 'N/A' : d.toLocaleString();
+    };
+
+    const fmtPhone = (phone) => {
+      if (!phone) return 'N/A';
+      const digits = String(phone).replace(/\D/g, '');
+      if (digits.length === 10) return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+      if (digits.length === 11) return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+      return phone;
+    };
+
+    const displayPersonalInfo = (homeownerInfo) => {
+      const { fullName, email, phone, streetAddress, zipCode } = homeownerInfo || {};
+      document.getElementById('displayName').textContent = fullName || 'Not provided';
+      document.getElementById('displayEmail').textContent = email || 'Not provided';
+      document.getElementById('displayPhone').textContent = fmtPhone(phone) || 'Not provided';
+      
+      // Format full address
+      let fullAddress = '';
+      if (streetAddress) fullAddress += streetAddress;
+      if (zipCode) fullAddress += (fullAddress ? ', ' : '') + zipCode;
+      
+      if (fullAddress) {
+        document.getElementById('displayAddress').textContent = fullAddress;
+        document.getElementById('addressLine').style.display = 'block';
+      } else {
+        document.getElementById('addressLine').style.display = 'none';
+      }
+    };
+
+    const renderList = (estimates) => {
+      if (!Array.isArray(estimates) || estimates.length === 0) {
+        listEl.innerHTML = '';
+        resultEl.className = 'result success';
+        resultEl.textContent = 'No saved estimates found yet for that email and phone combination.';
+        resultEl.style.display = 'block';
+        dashboardEl.style.display = 'none';
+        return;
+      }
+
+      resultEl.style.display = 'none';
+      dashboardEl.style.display = 'block';
+      listEl.innerHTML = estimates.map((item) => {
+        const projectType = item?.project?.projectType || item?.specialty || 'project';
+        const zipCode = item?.project?.zipCode || item?.zipCode || 'N/A';
+        const description = item?.project?.description || 'No description provided.';
+        const href = `/get-quotes.html?projectType=${encodeURIComponent(projectType)}&zipCode=${encodeURIComponent(zipCode)}&description=${encodeURIComponent(description)}`;
+
+        return `
+          <article class="item">
+            <h2>
+              Ref: ${item.ref || String(item.leadRequestId || '').slice(0, 8)}
+              ${statusTag(item.status)}
+            </h2>
+            <p class="meta"><strong>Project:</strong> ${projectType}</p>
+            <p class="meta"><strong>Zip:</strong> ${zipCode}</p>
+            <p class="meta"><strong>Submitted:</strong> ${fmtDate(item.createdAt)}</p>
+            <p class="meta"><strong>Notes:</strong> ${description}</p>
+            <div class="actions">
+              <a href="${href}">Request A Pro Estimate From This</a>
+              ${item.status === 'no_match' ? `<a href="${href}" style="margin-left:8px;background:#c0392b;">Re-Submit Request</a>` : ''}
+            </div>
+          </article>
+        `;
+      }).join('');
+    };
+
+    document.getElementById('lookupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value.trim().toLowerCase();
+      const phone = document.getElementById('phone').value.trim();
+      const phoneDigits = phone.replace(/\D/g, '');
+
+      if (!email || !phone) {
+        resultEl.className = 'result error';
+        resultEl.textContent = 'Please enter both email and phone.';
+        resultEl.style.display = 'block';
+        dashboardEl.style.display = 'none';
+        return;
+      }
+
+      if (!(phoneDigits.length === 10 || (phoneDigits.length === 11 && phoneDigits.startsWith('1')))) {
+        resultEl.className = 'result error';
+        resultEl.textContent = 'Please enter a valid US phone number.';
+        resultEl.style.display = 'block';
+        dashboardEl.style.display = 'none';
+        return;
+      }
+
+      const btn = document.getElementById('lookupBtn');
+      btn.disabled = true;
+      btn.textContent = 'Loading...';
+
+      try {
+        const query = new URLSearchParams({ email, phone });
+        const res = await fetch(`/.netlify/functions/project-price-homeowner-estimates?${query.toString()}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          resultEl.className = 'result error';
+          resultEl.textContent = data.error || 'Unable to load estimates right now.';
+          resultEl.style.display = 'block';
+          dashboardEl.style.display = 'none';
+          listEl.innerHTML = '';
+          return;
+        }
+
+        // Display personal info
+        if (data.homeownerInfo) {
+          displayPersonalInfo(data.homeownerInfo);
+        }
+
+        renderList(data.estimates || []);
+      } catch {
+        resultEl.className = 'result error';
+        resultEl.textContent = 'Network error. Please try again.';
+        resultEl.style.display = 'block';
+        dashboardEl.style.display = 'none';
+        listEl.innerHTML = '';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Load My Estimates';
+      }
+    });
+  </script>
+
+  <footer style="margin-top:40px;padding:20px 4px;border-top:1px solid #d3e2f5;text-align:center;font-size:.8rem;color:#7a99b8;">
+    <p style="margin:0 0 6px;">
+      <a href="/privacy-policy.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Privacy Policy</a>
+      <a href="/data-deletion.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Data Deletion</a>
+      <a href="/admin.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Admin</a>
+      <a href="/" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Home</a>
+    </p>
+    <p style="margin:0;">&copy; 2026 ProjectPrice. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>

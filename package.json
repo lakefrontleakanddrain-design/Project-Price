@@ -1,0 +1,13 @@
+{
+  "name": "project-price",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Project Price — instant plumbing estimates connecting homeowners with vetted pros",
+  "workspaces": [
+    "apps/api",
+    "packages/*"
+  ],
+  "scripts": {
+    "smoke:waterfall": "node infra/scripts/waterfall-smoke-test.mjs"
+  }
+}

@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="shortcut icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="apple-touch-icon" href="/logo.jpg" />
+  <title>ProjectPrice | Instant AI Home Project Estimator</title>
+  <meta name="description" content="Take a photo of any room, tell ProjectPrice what you want to do, and instantly see what your project should cost — Basic, Standard, or Premium. When you request an exact quote, the lead is routed exclusively by the existing matching algorithm." />
+  <meta name="robots" content="index,follow" />
+  <meta name="theme-color" content="#0e3a78" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="ProjectPrice | Instant AI Home Project Estimator" />
+  <meta property="og:description" content="Snap a photo, get 3 AI cost estimates, then optionally request one exact quote routed as an exclusive lead by our existing algorithm." />
+  <meta property="og:image" content="/logo.jpg" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ProjectPrice | Instant AI Home Project Estimator" />
+  <meta name="twitter:description" content="Snap a photo, get 3 AI cost estimates, then request one exact quote routed as an exclusive lead by algorithm." />
+  <meta name="twitter:image" content="/logo.jpg" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "MobileApplication",
+    "name": "ProjectPrice",
+    "description": "AI-powered home project estimator for homeowners. Snap a photo, describe the job, get instant cost ranges.",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "iOS, Android"
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --navy:    #0e3a78;
+      --emerald: #16a36a;
+      --sky:     #e9f3ff;
+      --mint:    #edfff6;
+      --ink:     #11365d;
+      --text:    #325170;
+      --paper:   #ffffff;
+      --line:    #d3e2f5;
+      --gold:    #ffd06d;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Manrope, sans-serif;
+      background:
+        radial-gradient(circle at 10% 6%, rgba(255,208,109,.22), transparent 34%),
+        radial-gradient(circle at 88% 0%, rgba(22,163,106,.18), transparent 40%),
+        linear-gradient(165deg, var(--sky) 0%, #f6fbff 50%, var(--mint) 100%);
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .shell { max-width: 1080px; margin: 0 auto; }
+
+    .brand-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+      margin-bottom: 22px;
+      gap: 12px;
+    }
+    .brand-logo { display: flex; align-items: center; text-decoration: none; }
+    .brand-nav { display: flex; gap: 16px; }
+    .brand-nav a {
+      color: #446684;
+      text-decoration: none;
+      font-size: .85rem;
+      font-weight: 700;
+      transition: color .2s;
+    }
+    .brand-nav a:hover { color: var(--navy); }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: 0 14px 34px rgba(6,28,51,.12);
+      padding: 36px;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      right: -60px; top: -60px;
+      width: 220px; height: 220px;
+      border-radius: 50%;
+      background: radial-gradient(circle at center, rgba(14,58,120,.1), transparent 66%);
+      pointer-events: none;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #f4f9ff;
+      border: 1px solid #d4e4f8;
+      color: #365a7f;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .eyebrow-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--emerald); }
+    .hero h1 {
+      margin: 14px 0 12px;
+      font-family: Outfit, sans-serif;
+      font-size: clamp(1.9rem, 4vw, 2.9rem);
+      line-height: 1.05;
+      color: var(--navy);
+      letter-spacing: -.02em;
+    }
+    .hero h1 em { font-style: normal; color: var(--emerald); }
+    .hero p {
+      margin: 0;
+      max-width: 680px;
+      color: var(--text);
+      font-size: 1.05rem;
+      line-height: 1.65;
+    }
+    .free-badge {
+      display: inline-block;
+      margin-top: 14px;
+      background: var(--gold);
+      color: #4a3200;
+      font-size: .8rem;
+      font-weight: 800;
+      padding: 5px 12px;
+      border-radius: 999px;
+      letter-spacing: .03em;
+    }
+    .hero-actions { margin-top: 22px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: .95rem;
+      padding: 13px 18px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      transition: transform .2s, box-shadow .2s;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 10px 18px rgba(9,28,51,.12); }
+    .btn-primary   { background: var(--emerald); color: #fff; }
+    .btn-secondary { background: #f4f9ff; color: var(--navy); border-color: #cde0f7; }
+
+    .section {
+      margin-top: 18px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 10px 24px rgba(6,28,51,.08);
+      padding: 24px;
+    }
+    .section-title { margin: 0 0 6px; font-family: Outfit, sans-serif; font-size: 1.3rem; color: var(--navy); }
+    .section-sub   { margin: 0 0 18px; color: #557698; font-size: .95rem; }
+
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .step {
+      border: 1px solid #d8e6f8;
+      border-radius: 14px;
+      padding: 16px;
+      background: #fbfdff;
+    }
+    .step-num {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: .82rem;
+      background: var(--gold);
+      color: #4f3a00;
+      margin-bottom: 10px;
+    }
+    .step h4 { margin: 0; font-size: 1rem; color: var(--navy); }
+    .step p  { margin: 7px 0 0; color: #587a9d; line-height: 1.55; font-size: .9rem; }
+
+    .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .tier {
+      border-radius: 14px;
+      padding: 18px;
+      border: 2px solid transparent;
+      opacity: 0;
+      animation: rise .5s ease forwards;
+    }
+    .tier:nth-child(2) { animation-delay: .09s; }
+    .tier:nth-child(3) { animation-delay: .18s; }
+    .tier-basic    { background: #f7fbff; border-color: #cde0f7; }
+    .tier-standard { background: #f0fff8; border-color: #9de5c4; }
+    .tier-premium  { background: #fffbf0; border-color: #f8d96a; }
+    .tier-label {
+      font-size: .75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: 8px;
+    }
+    .tier-basic    .tier-label { color: #3a6ea8; }
+    .tier-standard .tier-label { color: var(--emerald); }
+    .tier-premium  .tier-label { color: #a07000; }
+    .tier h3 { margin: 0 0 6px; font-family: Outfit, sans-serif; font-size: 1.35rem; color: var(--navy); }
+    .tier p  { margin: 0; color: #557698; font-size: .88rem; line-height: 1.55; }
+
+    .breakdown {
+      background: #f7fbff;
+      border: 1px solid #d5e6f8;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .breakdown h4 { margin: 0 0 10px; color: var(--navy); font-size: .95rem; }
+    .line-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid #e2eef8;
+      font-size: .88rem;
+      color: var(--text);
+    }
+    .line-item:last-child { border-bottom: none; }
+    .line-item span { font-weight: 700; color: var(--navy); }
+
+    .contractor-strip {
+      margin-top: 18px;
+      background: linear-gradient(135deg, var(--navy) 0%, #1a5296 100%);
+      border-radius: 16px;
+      padding: 28px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .contractor-strip h2 { margin: 0 0 8px; font-family: Outfit, sans-serif; font-size: 1.4rem; }
+    .contractor-strip p  { margin: 0; opacity: .85; font-size: .95rem; line-height: 1.6; max-width: 580px; }
+    .btn-white { background: #fff; color: var(--navy); border-color: transparent; white-space: nowrap; flex-shrink: 0; }
+
+    .cta-row { margin-top: 18px; text-align: center; color: #4f6f8e; font-size: .88rem; }
+    .cta-row a { color: var(--navy); font-weight: 800; text-decoration: none; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 960px) { .steps, .tiers { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) {
+      .steps, .tiers { grid-template-columns: 1fr; }
+      .hero, .section { padding: 18px; }
+      .brand-bar { flex-direction: column; align-items: flex-start; }
+      .contractor-strip { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+
+    <header class="brand-bar">
+      <a href="/" class="brand-logo">
+        <img src="/logo.jpg" alt="ProjectPrice" style="height:46px;width:auto;" />
+      </a>
+      <nav class="brand-nav">
+        <a href="/get-quotes.html">Request Estimate</a>
+        <a href="/my-estimates.html">My Saved Projects</a>
+        <a href="/contractor-signup.html">For Contractors</a>
+        <a href="/contractor-portal.html">Contractor Login</a>
+      </nav>
+    </header>
+
+    <main>
+
+      <section class="hero">
+        <span class="eyebrow"><span class="eyebrow-dot"></span>Free for Homeowners</span>
+        <h1>Know what your home project <em>should</em> cost<br>before you call anyone.</h1>
+        <p>
+          <strong>Download the ProjectPrice app for a personalized experience in your own home.</strong> Snap a photo of your space, tell ProjectPrice what you want to do, and get three instant AI-generated
+          cost estimates &mdash; Basic, Standard, and Premium &mdash; broken down by materials, labor, and everything
+          in between. No contractor needed until <em>you</em> decide you&rsquo;re ready.
+        </p>
+        <p style="margin: 12px 0 0; color: var(--text); font-size: 1rem; line-height: 1.65;">
+          When you&rsquo;re ready for an exact quote, your request is routed to one of our approved contractors in your area.
+        </p>
+        <span class="free-badge">100% Free for Homeowners</span>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#">📱 Download the App &rarr;</a>
+          <a class="btn btn-secondary" href="/get-quotes.html">Request Exact Quote</a>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-sub">Get AI estimates in the app &mdash; then request an exact contractor quote when ready.</p>
+        <div class="steps">
+          <article class="step">
+            <div class="step-num">1</div>
+            <h4>📱 Download App</h4>
+            <p>Get the ProjectPrice app on your phone for the full personalized experience in your home.</p>
+          </article>
+          <article class="step">
+            <div class="step-num">2</div>
+            <h4>Snap &amp; Describe</h4>
+            <p>Take a photo of your space and tell the AI what you want to do in plain English.</p>
+          </article>
+          <article class="step">
+            <div class="step-num">3</div>
+            <h4>Get 3 Estimates</h4>
+            <p>Instantly see Basic, Standard, and Premium cost breakdowns with line-item detail for your area.</p>
+          </article>
+          <article class="step">
+            <div class="step-num">4</div>
+            <h4>✓ Request Quote</h4>
+            <p>When ready, request an exact quote routed as an exclusive lead to one of our approved contractors.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">Three Estimates, One Photo</h2>
+        <p class="section-sub">Every scan returns three visual overlays so you know your full range before spending a dime.</p>
+        <div class="tiers">
+          <div class="tier tier-basic">
+            <div class="tier-label">Basic</div>
+            <h3>$2,800 &ndash; $3,500</h3>
+            <p>Builder-grade materials, standard labor. Gets the job done cleanly and on budget.</p>
+          </div>
+          <div class="tier tier-standard">
+            <div class="tier-label">Standard</div>
+            <h3>$4,000 &ndash; $5,500</h3>
+            <p>Mid-range materials with upgraded finish options. The most common choice for homeowners.</p>
+          </div>
+          <div class="tier tier-premium">
+            <div class="tier-label">Premium</div>
+            <h3>$6,500 &ndash; $9,000</h3>
+            <p>High-end materials, specialty labor, and full-service finish. Built to impress and last.</p>
+          </div>
+        </div>
+
+        <div class="breakdown">
+          <h4>Example &mdash; &ldquo;Replace carpet in 300 sq ft living room&rdquo; (Standard tier)</h4>
+          <div class="line-item">Demo &amp; furniture moving <span>$180 &ndash; $260</span></div>
+          <div class="line-item">New padding (300 sq ft) <span>$240 &ndash; $360</span></div>
+          <div class="line-item">Mid-grade carpet (300 sq ft) <span>$1,800 &ndash; $2,400</span></div>
+          <div class="line-item">Installation labor <span>$600 &ndash; $900</span></div>
+          <div class="line-item">Disposal &amp; cleanup <span>$120 &ndash; $180</span></div>
+          <div class="line-item" style="font-weight:800;color:var(--navy);">Estimated Total <span>$2,940 &ndash; $4,100</span></div>
+        </div>
+      </section>
+
+      <div class="contractor-strip">
+        <div>
+          <h2>Are you a contractor?</h2>
+          <p>
+            Join ProjectPrice to receive qualified homeowner estimate leads in your trade and service area.
+            This is an exclusive lead source: each exact estimate request is routed by the existing algorithm,
+            and the accepted contractor gets full homeowner contact details. Every lead includes AI takeoff data,
+            photos, and project scope so you show up prepared.
+          </p>
+        </div>
+        <a class="btn btn-white" href="/contractor-signup.html">Join For Exclusive Leads &rarr;</a>
+      </div>
+
+      <p class="cta-row">
+        Already a contractor? <a href="/contractor-portal.html">Log in to your dashboard</a>
+      </p>
+
+    </main>
+  </div>
+
+  <footer style="margin-top:40px;padding:20px 4px;border-top:1px solid #d3e2f5;text-align:center;font-size:.8rem;color:#7a99b8;">
+    <p style="margin:0 0 6px;">
+      <a href="/privacy-policy.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Privacy Policy</a>
+      <a href="/contact/" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Contact</a>
+      <a href="/data-deletion.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Data Deletion</a>
+      <a href="/admin.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Admin</a>
+      <a href="/contractor-signup.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Contractors</a>
+    </p>
+    <p style="margin:0;">&copy; 2026 ProjectPrice. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,100 @@
+workflows:
+  projectprice-flutter-web:
+    name: ProjectPrice Flutter Web
+    instance_type: linux_x2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      vars:
+        FLUTTER_APP_DIR: project-price-app/apps/flutter_app
+    scripts:
+      - name: Install dependencies
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          flutter pub get
+      - name: Analyze
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          flutter analyze
+      - name: Build web
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          flutter build web --release
+    artifacts:
+      - project-price-app/apps/flutter_app/build/web/**
+
+  projectprice-flutter-android:
+    name: ProjectPrice Flutter Android
+    instance_type: linux_x2
+    max_build_duration: 60
+    environment:
+      groups:
+        - projectprice_android_signing
+      flutter: stable
+      vars:
+        FLUTTER_APP_DIR: project-price-app/apps/flutter_app
+    scripts:
+      - name: Install dependencies
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          flutter pub get
+      - name: Validate mobile auth defines
+        script: |
+          if [ -z "$PROJECTPRICE_SUPABASE_URL" ]; then
+            echo "Missing PROJECTPRICE_SUPABASE_URL"
+            exit 1
+          fi
+          if [ -z "$PROJECTPRICE_SUPABASE_ANON_KEY" ]; then
+            echo "Missing PROJECTPRICE_SUPABASE_ANON_KEY"
+            exit 1
+          fi
+      - name: Build Android App Bundle
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          flutter build appbundle --release \
+            --dart-define=PROJECTPRICE_SUPABASE_URL=$PROJECTPRICE_SUPABASE_URL \
+            --dart-define=PROJECTPRICE_SUPABASE_ANON_KEY=$PROJECTPRICE_SUPABASE_ANON_KEY
+      - name: Build Android APK
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          flutter build apk --release \
+            --dart-define=PROJECTPRICE_SUPABASE_URL=$PROJECTPRICE_SUPABASE_URL \
+            --dart-define=PROJECTPRICE_SUPABASE_ANON_KEY=$PROJECTPRICE_SUPABASE_ANON_KEY
+    artifacts:
+      - project-price-app/apps/flutter_app/build/app/outputs/bundle/release/*.aab
+      - project-price-app/apps/flutter_app/build/app/outputs/flutter-apk/*.apk
+
+  projectprice-flutter-ios:
+    name: ProjectPrice Flutter iOS
+    integrations:
+      app_store_connect: "ProjectPrice Codemagic"
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.projectprice.app
+      vars:
+        FLUTTER_APP_DIR: project-price-app/apps/flutter_app
+    scripts:
+      - name: Install dependencies
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          flutter pub get
+      - name: Set up signing profiles
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          xcode-project use-profiles
+      - name: Build signed IPA
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - project-price-app/apps/flutter_app/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

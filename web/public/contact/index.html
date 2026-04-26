@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="shortcut icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="apple-touch-icon" href="/logo.jpg" />
+  <title>Contact Support | ProjectPrice</title>
+  <meta name="description" content="Contact ProjectPrice support using the secure support form." />
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://project-price-app.netlify.app/contact/" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy:    #0e3a78;
+      --emerald: #16a36a;
+      --sky:     #e9f3ff;
+      --mint:    #edfff6;
+      --ink:     #11365d;
+      --text:    #325170;
+      --paper:   #ffffff;
+      --line:    #d3e2f5;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Manrope, sans-serif;
+      background: linear-gradient(165deg, var(--sky) 0%, #f6fbff 50%, var(--mint) 100%);
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .shell { max-width: 800px; margin: 0 auto; }
+    .brand-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+      margin-bottom: 22px;
+    }
+    .brand-logo { display: flex; align-items: center; text-decoration: none; gap: 10px; }
+    .brand-logo img { width: 36px; height: 36px; border-radius: 8px; }
+    .brand-logo span { font-weight: 800; font-size: 1.1rem; color: var(--navy); }
+    .brand-nav { display: flex; gap: 16px; }
+    .brand-nav a {
+      color: #446684;
+      text-decoration: none;
+      font-size: .85rem;
+      font-weight: 700;
+    }
+    .brand-nav a:hover { color: var(--navy); }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: 0 14px 34px rgba(6,28,51,.08);
+      padding: 40px 36px 48px;
+    }
+    h1 { color: var(--navy); font-size: 1.9rem; margin: 0 0 4px; }
+    .subtitle { color: #7a99b8; font-size: .9rem; margin: 0 0 28px; line-height: 1.5; }
+    h2 { color: var(--navy); font-size: 1.1rem; margin: 28px 0 8px; }
+    p, li { color: var(--text); line-height: 1.7; font-size: .93rem; }
+    ul { padding-left: 20px; }
+    a { color: var(--emerald); }
+    .info-box {
+      background: #f4f9ff;
+      border: 1px solid #d4e4f8;
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin: 20px 0;
+    }
+    .info-box p { margin: 0; font-size: .9rem; }
+    label { display: block; font-weight: 700; font-size: .88rem; color: var(--ink); margin-bottom: 6px; }
+    input, select, textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font-family: Manrope, sans-serif;
+      font-size: .9rem;
+      color: var(--ink);
+      background: #fafcff;
+      margin-bottom: 18px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--navy); }
+    textarea { resize: vertical; min-height: 120px; }
+    .btn {
+      display: inline-block;
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 13px 28px;
+      font-family: Manrope, sans-serif;
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn:hover { background: #0b2f63; }
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      text-align: center;
+      font-size: .8rem;
+      color: #7a99b8;
+    }
+    .footer a { color: #446684; text-decoration: none; margin: 0 8px; font-weight: 700; }
+    .footer a:hover { color: var(--navy); }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="brand-bar">
+    <a class="brand-logo" href="/">
+      <img src="/logo.jpg" alt="ProjectPrice logo" />
+      <span>ProjectPrice</span>
+    </a>
+    <nav class="brand-nav">
+      <a href="/">Home</a>
+      <a href="/get-quotes.html">Get Estimate</a>
+      <a href="/contractor-signup.html">Contractors</a>
+      <a href="/privacy-policy.html">Privacy</a>
+    </nav>
+  </div>
+
+  <div class="card">
+    <h1>Contact ProjectPrice Support</h1>
+    <p class="subtitle">Use this form for support questions, account help, App Store review inquiries, or general feedback. Your message is delivered privately to the ProjectPrice support inbox.</p>
+
+    <div class="info-box">
+      <p><strong>Support topics:</strong> app access, estimate issues, project photo problems, contractor request questions, privacy requests, and general product feedback.</p>
+    </div>
+
+    <form name="projectprice-contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/contact/?submitted=true">
+      <input type="hidden" name="form-name" value="projectprice-contact" />
+      <p class="hidden">
+        <label>Do not fill this out if you're human: <input name="bot-field" /></label>
+      </p>
+
+      <label for="name">Full name</label>
+      <input type="text" id="name" name="name" autocomplete="name" required />
+
+      <label for="email">Email address</label>
+      <input type="email" id="email" name="email" autocomplete="email" required />
+
+      <label for="topic">Topic</label>
+      <select id="topic" name="topic" required>
+        <option value="" disabled selected>Select one…</option>
+        <option value="support">App support</option>
+        <option value="account">Account help</option>
+        <option value="privacy">Privacy or data request</option>
+        <option value="review">App review follow-up</option>
+        <option value="feedback">General feedback</option>
+      </select>
+
+      <label for="message">Message</label>
+      <textarea id="message" name="message" placeholder="Tell us what you need help with." required></textarea>
+
+      <button type="submit" class="btn">Send Message &rarr;</button>
+    </form>
+
+    <h2>Need a privacy or deletion request?</h2>
+    <p>You can also review our <a href="/privacy-policy.html">Privacy Policy</a> or submit a removal request through our <a href="/data-deletion.html">Data Deletion page</a>.</p>
+  </div>
+
+  <footer class="footer">
+    <p>
+      <a href="/">Home</a>
+      <a href="/contact/">Contact</a>
+      <a href="/privacy-policy.html">Privacy Policy</a>
+      <a href="/data-deletion.html">Data Deletion</a>
+      <a href="/contractor-signup.html">Contractors</a>
+    </p>
+    <p>&copy; 2026 ProjectPrice. All rights reserved.</p>
+  </footer>
+
+</div>
+
+<script>
+  if (new URLSearchParams(window.location.search).get('submitted') === 'true') {
+    const card = document.querySelector('.card');
+    if (card) {
+      card.insertAdjacentHTML(
+        'afterbegin',
+        '<div class="info-box"><p><strong>Message sent.</strong> ProjectPrice support received your form submission and will follow up by email.</p></div>'
+      );
+    }
+  }
+</script>
+</body>
+</html>

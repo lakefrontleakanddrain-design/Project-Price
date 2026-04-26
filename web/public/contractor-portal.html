@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="shortcut icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="apple-touch-icon" href="/logo.jpg" />
+  <title>ProjectPrice - Contractor Portal</title>
+  <style>
+    :root { --navy: #0e3a78; --emerald: #16a36a; --bg: #f3f8ff; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Segoe UI, Arial, sans-serif;
+      background: linear-gradient(170deg, #eaf2ff 0%, var(--bg) 45%, #effff7 100%);
+      color: #16385b;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .brand-bar {
+      max-width: 900px;
+      margin: 0 auto 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+    .brand-logo { display: flex; align-items: center; text-decoration: none; }
+    .brand-logo img { height: 44px; width: auto; }
+    .brand-nav { display: flex; gap: 16px; }
+    .brand-nav a {
+      color: #4a6a8a;
+      text-decoration: none;
+      font-size: .85rem;
+      font-weight: 600;
+    }
+    .brand-nav a:hover { color: var(--navy); }
+    .card {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #d5e3f8;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      padding: 24px;
+    }
+    h1 { margin: 0 0 6px; color: var(--navy); }
+    .sub { color: #4a6a8a; margin: 0 0 20px; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+    label { display: block; font-weight: 700; margin: 12px 0 5px; font-size: .9rem; }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid #bfd2ee;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--navy); }
+    textarea { resize: vertical; min-height: 80px; }
+    button {
+      margin-top: 16px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--emerald);
+      color: #fff;
+      font-weight: 700;
+      padding: 11px 14px;
+      cursor: pointer;
+    }
+    .top-actions { margin-top: 10px; display: flex; justify-content: flex-end; }
+    .top-actions button { margin-top: 0; background: #0e3a78; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .result {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 10px;
+      display: none;
+      font-size: .9rem;
+    }
+    .result.error { background: #fdecea; color: #7a1a14; border: 1px solid #f5b7b1; }
+    .result.success { background: #e6f7ef; color: #0d5c35; border: 1px solid #a3dfc0; }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin: 16px 0 20px;
+    }
+    .pill {
+      background: #f0f7ff;
+      border: 1px solid #d5e3f8;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: .85rem;
+    }
+    .pill strong { display: block; color: var(--navy); font-size: 1rem; }
+    .leads { display: grid; gap: 10px; }
+    .lead {
+      border: 1px solid #d5e3f8;
+      border-radius: 10px;
+      background: #f8fbff;
+      padding: 12px;
+    }
+    .lead h3 { margin: 0 0 6px; color: var(--navy); font-size: 1rem; }
+    .meta { font-size: .85rem; color: #4a6a8a; margin: 0 0 6px; }
+    .desc { margin: 0; font-size: .9rem; }
+    .panel {
+      border: 1px solid #d5e3f8;
+      border-radius: 10px;
+      background: #f8fbff;
+      padding: 12px;
+      margin: 12px 0;
+    }
+    .panel h2 { margin: 0 0 8px; color: var(--navy); font-size: 1rem; }
+    .docs-list { display: grid; gap: 8px; margin-top: 10px; }
+    .doc-item {
+      border: 1px solid #d5e3f8;
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    #dashboard { display: none; }
+  </style>
+</head>
+<body>
+  <header class="brand-bar">
+    <a href="/" class="brand-logo"><img src="/logo.jpg" alt="ProjectPrice" /></a>
+    <nav class="brand-nav">
+      <a href="/get-quotes.html">Request Estimate</a>
+      <a href="/my-estimates.html">My Saved Projects</a>
+      <a href="/contractor-signup.html">For Contractors</a>
+      <a href="/contractor-portal.html">Contractor Login</a>
+    </nav>
+  </header>
+
+  <main class="card">
+    <section id="loginPanel">
+      <h1>Contractor Portal</h1>
+      <p class="sub">Sign in with the same email and password you created at signup (after approval) to view all accepted leads.</p>
+      <form id="loginForm" novalidate>
+        <div class="grid">
+          <div>
+            <label for="email">Email</label>
+            <input id="email" type="email" placeholder="you@company.com" required />
+          </div>
+          <div>
+            <label for="password">Password</label>
+            <input id="password" type="password" placeholder="Your password" required />
+          </div>
+        </div>
+        <button type="submit" id="loginBtn">Sign In</button>
+      </form>
+      <div class="result" id="result"></div>
+    </section>
+
+    <section id="dashboard">
+      <h1 id="companyName">Contractor Dashboard</h1>
+      <p class="sub">Accepted leads assigned to your account.</p>
+      <div class="top-actions"><button id="signOutBtn" type="button">Sign Out</button></div>
+
+      <section class="panel">
+        <h2>Account Settings</h2>
+        <div class="grid">
+          <div>
+            <label for="acctEmail">Email</label>
+            <input id="acctEmail" type="email" />
+          </div>
+          <div>
+            <label for="acctPhone">Phone</label>
+            <input id="acctPhone" type="tel" />
+          </div>
+          <div>
+            <label for="acctServices">Services (comma-separated)</label>
+            <input id="acctServices" type="text" placeholder="plumbing,electrical" />
+          </div>
+          <div>
+            <label for="acctServiceZip">Service Center Zip Code</label>
+            <input id="acctServiceZip" type="text" placeholder="44113" />
+          </div>
+          <div>
+            <label for="acctRadius">Service Radius (miles)</label>
+            <input id="acctRadius" type="number" min="1" step="1" placeholder="30" />
+          </div>
+        </div>
+        <div class="actions" style="margin-top:10px;">
+          <button id="saveAcctBtn" type="button">Save Account</button>
+          <button id="pauseBtn" type="button" style="background:#0e3a78;">Toggle Pause Service</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Security</h2>
+        <div class="grid">
+          <div>
+            <label for="newEmail">Change Email</label>
+            <input id="newEmail" type="email" placeholder="new@email.com" />
+            <button id="changeEmailBtn" type="button">Update Email</button>
+          </div>
+          <div>
+            <label for="newPassword">Change Password</label>
+            <input id="newPassword" type="password" placeholder="Minimum 8 characters" />
+            <button id="changePasswordBtn" type="button">Update Password</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Compliance Documents (Ohio)</h2>
+        <p class="meta">License-required services: plumbing, electrical, hvac. Upload insurance for all services and license docs for licensed services.</p>
+        <div class="grid">
+          <div>
+            <label for="docService">Service</label>
+            <input id="docService" type="text" placeholder="plumbing" />
+          </div>
+          <div>
+            <label for="insuranceExpires">Insurance Expiration</label>
+            <input id="insuranceExpires" type="date" />
+          </div>
+          <div>
+            <label for="insuranceFile">Insurance Document</label>
+            <input id="insuranceFile" type="file" accept=".pdf,.png,.jpg,.jpeg" />
+          </div>
+          <div>
+            <label for="licenseExpires">License Expiration (if required)</label>
+            <input id="licenseExpires" type="date" />
+          </div>
+          <div>
+            <label for="licenseFile">License Document (if required)</label>
+            <input id="licenseFile" type="file" accept=".pdf,.png,.jpg,.jpeg" />
+          </div>
+        </div>
+        <div class="actions" style="margin-top:10px;">
+          <button id="saveDocsBtn" type="button">Save Compliance Doc</button>
+          <button id="deleteDocsBtn" type="button" style="background:#0e3a78;">Delete Service Doc</button>
+        </div>
+        <div id="docsList" class="docs-list"></div>
+      </section>
+
+      <div class="summary" id="summary"></div>
+      <div class="leads" id="leadsList"></div>
+    </section>
+  </main>
+
+  <script>
+    const loginForm = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('loginBtn');
+    const result = document.getElementById('result');
+    const loginPanel = document.getElementById('loginPanel');
+    const dashboard = document.getElementById('dashboard');
+    const summary = document.getElementById('summary');
+    const leadsList = document.getElementById('leadsList');
+    const signOutBtn = document.getElementById('signOutBtn');
+    const acctEmail = document.getElementById('acctEmail');
+    const acctPhone = document.getElementById('acctPhone');
+    const acctServices = document.getElementById('acctServices');
+    const acctServiceZip = document.getElementById('acctServiceZip');
+    const acctRadius = document.getElementById('acctRadius');
+    const saveAcctBtn = document.getElementById('saveAcctBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const newEmail = document.getElementById('newEmail');
+    const newPassword = document.getElementById('newPassword');
+    const changeEmailBtn = document.getElementById('changeEmailBtn');
+    const changePasswordBtn = document.getElementById('changePasswordBtn');
+    const docService = document.getElementById('docService');
+    const insuranceExpires = document.getElementById('insuranceExpires');
+    const insuranceFile = document.getElementById('insuranceFile');
+    const licenseExpires = document.getElementById('licenseExpires');
+    const licenseFile = document.getElementById('licenseFile');
+    const saveDocsBtn = document.getElementById('saveDocsBtn');
+    const deleteDocsBtn = document.getElementById('deleteDocsBtn');
+    const docsList = document.getElementById('docsList');
+    const CONTRACTOR_SESSION_KEY = 'projectprice_contractor_session';
+
+    const showMessage = (text, type) => {
+      result.className = `result ${type}`;
+      result.textContent = text;
+      result.style.display = 'block';
+    };
+
+    const fmtDate = (iso) => {
+      if (!iso) return 'N/A';
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? 'N/A' : d.toLocaleString();
+    };
+
+    const kmToMiles = (km) => {
+      const value = Number(km);
+      if (!Number.isFinite(value) || value <= 0) return null;
+      return Math.round(value / 1.60934);
+    };
+
+    const renderDashboard = (data) => {
+      document.getElementById('companyName').textContent = `${data.contractor.companyName} Dashboard`;
+
+      const total = data.leads.length;
+      const recent = data.leads.filter((l) => {
+        const t = new Date(l.claimedAt || l.createdAt).getTime();
+        return Number.isFinite(t) && t >= Date.now() - 7 * 24 * 60 * 60 * 1000;
+      }).length;
+
+      summary.innerHTML = `
+        <div class="pill"><strong>${total}</strong>Total Accepted Leads</div>
+        <div class="pill"><strong>${recent}</strong>Accepted in Last 7 Days</div>
+        <div class="pill"><strong>${(data.contractor.specialties || []).join(', ') || 'N/A'}</strong>Specialties</div>
+        <div class="pill"><strong>${data.contractor.serviceZipCode || (data.contractor.serviceZipCodes || [])[0] || 'N/A'}</strong>Center ZIP</div>
+        <div class="pill"><strong>${data.contractor.serviceRadiusMiles || kmToMiles(data.contractor.serviceRadiusKm) || 'N/A'}</strong>Radius (miles)</div>
+      `;
+
+      if (total === 0) {
+        leadsList.innerHTML = '<div class="lead"><h3>No accepted leads yet</h3><p class="desc">When you reply YES to a lead text, it will appear here.</p></div>';
+      } else {
+        leadsList.innerHTML = data.leads.map((lead) => `
+          <article class="lead">
+            <h3>${lead.project?.type || lead.specialty || 'Project'} in ${lead.project?.zipCode || lead.zipCode || 'N/A'}</h3>
+            <p class="meta">Lead ID: ${lead.id} | Claimed: ${fmtDate(lead.claimedAt)} | Status: ${lead.status}</p>
+            <p class="meta">Workflow: ${lead.workflowStatus || 'claimed'} | Updated: ${fmtDate(lead.workflowUpdatedAt)}</p>
+            <p class="desc"><strong>Homeowner:</strong> ${lead.homeowner?.fullName || 'N/A'} (${lead.homeowner?.phone || 'N/A'})</p>
+            <p class="desc"><strong>Homeowner Email:</strong> ${lead.homeowner?.email || 'N/A'}</p>
+            <p class="desc"><strong>Description:</strong> ${lead.project?.description || 'No description provided.'}</p>
+            <div class="grid" style="margin-top:10px;">
+              <div>
+                <label for="workflow-${lead.id}">Update Workflow Status</label>
+                <select id="workflow-${lead.id}">
+                  <option value="claimed" ${lead.workflowStatus === 'claimed' ? 'selected' : ''}>Claimed</option>
+                  <option value="contacted" ${lead.workflowStatus === 'contacted' ? 'selected' : ''}>Contacted</option>
+                  <option value="quoted" ${lead.workflowStatus === 'quoted' ? 'selected' : ''}>Quoted</option>
+                  <option value="won" ${lead.workflowStatus === 'won' ? 'selected' : ''}>Won</option>
+                  <option value="lost" ${lead.workflowStatus === 'lost' ? 'selected' : ''}>Lost</option>
+                </select>
+              </div>
+              <div>
+                <label for="notes-${lead.id}">Notes (optional)</label>
+                <input id="notes-${lead.id}" type="text" placeholder="Add note" value="${(lead.workflowNotes || '').replace(/"/g, '&quot;')}" />
+              </div>
+            </div>
+            <button style="margin-top:10px;" onclick="updateLeadStatus('${lead.id}')">Save Lead Status</button>
+          </article>
+        `).join('');
+      }
+
+      loginPanel.style.display = 'none';
+      dashboard.style.display = 'block';
+
+      acctEmail.value = data.contractor.email || '';
+      acctPhone.value = data.contractor.contactPhone || '';
+      acctServices.value = (data.contractor.specialties || []).join(', ');
+      acctServiceZip.value = data.contractor.serviceZipCode || (data.contractor.serviceZipCodes || [])[0] || '';
+      acctRadius.value = data.contractor.serviceRadiusMiles || kmToMiles(data.contractor.serviceRadiusKm) || '';
+      pauseBtn.textContent = data.contractor.isPausedByContractor ? 'Resume Service' : 'Pause Service';
+
+      const docs = data.contractor.complianceDocs || [];
+      if (docs.length === 0) {
+        docsList.innerHTML = '<div class="doc-item"><p class="meta">No compliance docs uploaded yet.</p></div>';
+      } else {
+        docsList.innerHTML = docs.map((d) => `
+          <article class="doc-item">
+            <p class="meta"><strong>Service:</strong> ${d.service_name}</p>
+            <p class="meta"><strong>Insurance Expires:</strong> ${d.insurance_expires_on || 'N/A'}</p>
+            <p class="meta"><strong>License Expires:</strong> ${d.license_expires_on || 'N/A'}</p>
+            <p class="meta"><strong>Last Reminder:</strong> ${d.last_notified_on || 'N/A'}</p>
+          </article>
+        `).join('');
+      }
+    };
+
+    const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+      if (!file) return resolve(null);
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Failed to read file.'));
+      reader.readAsDataURL(file);
+    });
+
+    const callAccountApi = async (action, extraPayload = {}) => {
+      const session = restoreSession();
+      if (!session?.email || !session?.password) throw new Error('Session expired. Please sign in again.');
+
+      const res = await fetch('/.netlify/functions/project-price-contractor-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: session.email,
+          password: session.password,
+          action,
+          ...extraPayload,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed.');
+      return data;
+    };
+
+    const refreshDashboardData = async () => {
+      const session = restoreSession();
+      if (!session?.email || !session?.password) return;
+
+      const signInRes = await fetch('/.netlify/functions/project-price-contractor-signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: session.email, password: session.password }),
+      });
+      const signInData = await signInRes.json();
+      if (!signInRes.ok) throw new Error(signInData.error || 'Failed to refresh dashboard.');
+
+      const profileData = await callAccountApi('get_profile');
+      signInData.contractor = {
+        ...signInData.contractor,
+        ...{
+          email: profileData.profile?.email,
+          contactPhone: profileData.profile?.phone,
+          specialties: profileData.profile?.services || signInData.contractor.specialties,
+          serviceZipCodes: profileData.profile?.zipCodes || signInData.contractor.serviceZipCodes,
+          serviceZipCode: profileData.profile?.serviceZipCode || signInData.contractor.serviceZipCode,
+          serviceRadiusKm: profileData.profile?.serviceRadiusKm || signInData.contractor.serviceRadiusKm,
+          serviceRadiusMiles: profileData.profile?.serviceRadiusMiles || signInData.contractor.serviceRadiusMiles,
+          isPausedByContractor: profileData.profile?.isPausedByContractor,
+          isDenied: profileData.profile?.isDenied,
+          deniedReason: profileData.profile?.deniedReason,
+          complianceDocs: profileData.complianceDocs || [],
+        },
+      };
+
+      persistSession({ ...session, dashboardData: signInData });
+      renderDashboard(signInData);
+    };
+
+    const persistSession = (session) => {
+      sessionStorage.setItem(CONTRACTOR_SESSION_KEY, JSON.stringify(session));
+    };
+
+    const restoreSession = () => {
+      try {
+        const raw = sessionStorage.getItem(CONTRACTOR_SESSION_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    };
+
+    const clearSession = () => {
+      sessionStorage.removeItem(CONTRACTOR_SESSION_KEY);
+    };
+
+    window.updateLeadStatus = async (leadRequestId) => {
+      const session = restoreSession();
+      if (!session?.email || !session?.password) {
+        showMessage('Session expired. Please sign in again.', 'error');
+        return;
+      }
+
+      const status = document.getElementById(`workflow-${leadRequestId}`)?.value;
+      const notes = document.getElementById(`notes-${leadRequestId}`)?.value || '';
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-contractor-lead-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: session.email,
+            password: session.password,
+            leadRequestId,
+            status,
+            notes,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to update lead status.');
+        showMessage(data.message || 'Lead status updated.', 'success');
+        await refreshDashboardData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to update lead status.', 'error');
+      }
+    };
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      result.style.display = 'none';
+
+      const payload = {
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+      };
+
+      if (!payload.email || !payload.password) {
+        showMessage('Email and password are required.', 'error');
+        return;
+      }
+
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Signing In...';
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-contractor-signin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showMessage(data.error || 'Unable to sign in.', 'error');
+        } else {
+          showMessage('Sign-in successful.', 'success');
+          persistSession({
+            email: payload.email,
+            password: payload.password,
+            dashboardData: data,
+          });
+          renderDashboard(data);
+        }
+      } catch (err) {
+        showMessage('Network error. Please try again.', 'error');
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign In';
+      }
+    });
+
+    saveAcctBtn.addEventListener('click', async () => {
+      try {
+        const data = await callAccountApi('update_profile', {
+          phone: acctPhone.value.trim(),
+          services: acctServices.value.trim(),
+          serviceZipCode: acctServiceZip.value.trim(),
+          serviceRadiusMiles: acctRadius.value.trim(),
+        });
+        showMessage(data.message || 'Account updated.', 'success');
+        await refreshDashboardData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to update account.', 'error');
+      }
+    });
+
+    pauseBtn.addEventListener('click', async () => {
+      try {
+        const session = restoreSession();
+        const paused = !!session?.dashboardData?.contractor?.isPausedByContractor;
+        const data = await callAccountApi('update_profile', { pauseService: !paused });
+        showMessage(data.message || 'Service status updated.', 'success');
+        await refreshDashboardData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to update service status.', 'error');
+      }
+    });
+
+    changeEmailBtn.addEventListener('click', async () => {
+      const emailValue = newEmail.value.trim();
+      if (!emailValue) {
+        showMessage('Enter a new email address.', 'error');
+        return;
+      }
+      try {
+        const data = await callAccountApi('change_email', { newEmail: emailValue });
+        const session = restoreSession();
+        persistSession({ ...session, email: emailValue });
+        showMessage(data.message || 'Email updated.', 'success');
+        await refreshDashboardData();
+        newEmail.value = '';
+      } catch (err) {
+        showMessage(err.message || 'Unable to update email.', 'error');
+      }
+    });
+
+    changePasswordBtn.addEventListener('click', async () => {
+      const passwordValue = newPassword.value;
+      if (!passwordValue || passwordValue.length < 8) {
+        showMessage('New password must be at least 8 characters.', 'error');
+        return;
+      }
+      try {
+        const data = await callAccountApi('change_password', { newPassword: passwordValue });
+        const session = restoreSession();
+        persistSession({ ...session, password: passwordValue });
+        showMessage(data.message || 'Password updated.', 'success');
+        newPassword.value = '';
+      } catch (err) {
+        showMessage(err.message || 'Unable to update password.', 'error');
+      }
+    });
+
+    saveDocsBtn.addEventListener('click', async () => {
+      const serviceName = docService.value.trim().toLowerCase();
+      if (!serviceName) {
+        showMessage('Service name is required.', 'error');
+        return;
+      }
+
+      try {
+        const insuranceDataUrl = await fileToDataUrl(insuranceFile.files?.[0] || null);
+        const licenseDataUrl = await fileToDataUrl(licenseFile.files?.[0] || null);
+        const data = await callAccountApi('upsert_compliance_doc', {
+          serviceName,
+          insuranceExpiresOn: insuranceExpires.value || null,
+          licenseExpiresOn: licenseExpires.value || null,
+          insuranceDocDataUrl: insuranceDataUrl,
+          insuranceDocFileName: insuranceFile.files?.[0]?.name || null,
+          licenseDocDataUrl: licenseDataUrl,
+          licenseDocFileName: licenseFile.files?.[0]?.name || null,
+        });
+        showMessage(data.message || 'Compliance docs updated.', 'success');
+        await refreshDashboardData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to save compliance docs.', 'error');
+      }
+    });
+
+    deleteDocsBtn.addEventListener('click', async () => {
+      const serviceName = docService.value.trim().toLowerCase();
+      if (!serviceName) {
+        showMessage('Enter a service name to delete docs.', 'error');
+        return;
+      }
+      try {
+        const data = await callAccountApi('delete_compliance_doc', { serviceName });
+        showMessage(data.message || 'Compliance docs removed.', 'success');
+        await refreshDashboardData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to remove compliance docs.', 'error');
+      }
+    });
+
+    const session = restoreSession();
+    if (session?.dashboardData) {
+      renderDashboard(session.dashboardData);
+      refreshDashboardData().catch(() => {});
+    }
+
+    signOutBtn.addEventListener('click', () => {
+      clearSession();
+      dashboard.style.display = 'none';
+      loginPanel.style.display = 'block';
+      showMessage('Signed out.', 'success');
+    });
+  </script>
+
+  <footer style="margin-top:40px;padding:20px 4px;border-top:1px solid #d3e2f5;text-align:center;font-size:.8rem;color:#7a99b8;">
+    <p style="margin:0 0 6px;">
+      <a href="/privacy-policy.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Privacy Policy</a>
+      <a href="/data-deletion.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Data Deletion</a>
+      <a href="/admin.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Admin</a>
+      <a href="/" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Home</a>
+    </p>
+    <p style="margin:0;">&copy; 2026 ProjectPrice. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>

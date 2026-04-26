@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="shortcut icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="apple-touch-icon" href="/logo.jpg" />
+  <title>ProjectPrice – Contractor Sign Up</title>
+  <style>
+    :root { --navy: #0e3a78; --emerald: #16a36a; --bg: #f3f8ff; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Segoe UI, Arial, sans-serif;
+      background: linear-gradient(170deg, #eaf2ff 0%, var(--bg) 45%, #effff7 100%);
+      color: #16385b;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .card {
+      max-width: 560px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #d5e3f8;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      padding: 28px;
+    }
+    h1 { margin: 0 0 4px; color: var(--navy); font-size: 1.6rem; }
+    .sub { color: #4a6a8a; margin: 0 0 22px; font-size: .95rem; }
+    label { display: block; font-weight: 700; margin: 14px 0 5px; font-size: .9rem; }
+    input, select {
+      width: 100%;
+      border: 1px solid #bfd2ee;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input:focus, select:focus { border-color: var(--navy); }
+    .hint { font-size: .8rem; color: #6a8aaa; margin: 3px 0 0; }
+    .specialties-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .spec-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid #bfd2ee;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .88rem;
+      transition: background .15s, border-color .15s;
+    }
+    .spec-item input[type=checkbox] { width: auto; margin: 0; }
+    .spec-item:has(input:checked) { background: #eaf4f0; border-color: var(--emerald); font-weight: 700; }
+    button[type=submit] {
+      width: 100%;
+      margin-top: 22px;
+      padding: 13px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--emerald);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+    button[type=submit]:disabled { opacity: .6; cursor: not-allowed; }
+    .result {
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: .9rem;
+      display: none;
+    }
+    .result.success { background: #e6f7ef; color: #0d5c35; border: 1px solid #a3dfc0; }
+    .result.error { background: #fdecea; color: #7a1a14; border: 1px solid #f5b7b1; }
+    .divider { border: none; border-top: 1px solid #e0eaf8; margin: 20px 0; }
+    .brand-bar {
+      max-width: 560px;
+      margin: 0 auto 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .logo-text {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -.4px;
+    }
+    .logo-accent { color: var(--emerald); }
+    .brand-nav { display: flex; gap: 16px; }
+    .brand-nav a {
+      color: #4a6a8a;
+      text-decoration: none;
+      font-size: .85rem;
+      font-weight: 600;
+    }
+    .brand-nav a:hover { color: var(--navy); }
+  </style>
+</head>
+<body>
+  <header class="brand-bar">
+    <a href="/" class="brand-logo">
+      <img src="/logo.jpg" alt="ProjectPrice" style="height:44px;width:auto;" />
+    </a>
+    <nav class="brand-nav">
+      <a href="/get-quotes.html">Request Estimate</a>
+      <a href="/my-estimates.html">My Saved Projects</a>
+      <a href="/contractor-signup.html">For Contractors</a>
+      <a href="/contractor-portal.html">Contractor Login</a>
+    </nav>
+  </header>
+  <div class="card">
+    <h1>Contractor Sign Up</h1>
+    <p class="sub">Get exclusive construction leads delivered by text. Reply YES to claim within 5 minutes.</p>
+
+    <form id="form" novalidate>
+      <label for="fullName">Your Full Name</label>
+      <input id="fullName" type="text" placeholder="Jane Smith" required />
+
+      <label for="companyName">Company Name</label>
+      <input id="companyName" type="text" placeholder="Smith Roofing LLC" required />
+
+      <label for="phone">Mobile Phone (for SMS leads)</label>
+      <input id="phone" type="tel" placeholder="(440) 555-1234" required />
+      <p class="hint">You'll receive lead notifications at this number. Standard SMS rates apply.</p>
+
+      <hr class="divider" />
+
+      <label>Specialties</label>
+      <div class="specialties-grid">
+        <label class="spec-item"><input type="checkbox" value="roofing" /> Roofing</label>
+        <label class="spec-item"><input type="checkbox" value="plumbing" /> Plumbing</label>
+        <label class="spec-item"><input type="checkbox" value="hvac" /> HVAC</label>
+        <label class="spec-item"><input type="checkbox" value="electrical" /> Electrical</label>
+        <label class="spec-item"><input type="checkbox" value="general contractor" /> General Contractor</label>
+        <label class="spec-item"><input type="checkbox" value="painting" /> Painting</label>
+        <label class="spec-item"><input type="checkbox" value="flooring" /> Flooring</label>
+        <label class="spec-item"><input type="checkbox" value="windows and doors" /> Windows & Doors</label>
+        <label class="spec-item"><input type="checkbox" value="siding" /> Siding</label>
+        <label class="spec-item"><input type="checkbox" value="landscaping" /> Landscaping</label>
+      </div>
+
+      <label for="serviceZip" style="margin-top:16px">Service Center Zip Code</label>
+      <input id="serviceZip" type="text" placeholder="44113" required />
+      <p class="hint">Use one 5-digit ZIP as your service center. We match jobs by distance from this ZIP.</p>
+
+      <label for="radius">Service Radius (miles)</label>
+      <select id="radius">
+        <option value="10">10 miles</option>
+        <option value="20">20 miles</option>
+        <option value="30" selected>30 miles</option>
+        <option value="50">50 miles</option>
+        <option value="100">100 miles</option>
+      </select>
+
+      <hr class="divider" />
+
+      <label for="email">Email Address</label>
+      <input id="email" type="email" placeholder="jane@smithroofing.com" required />
+
+      <label for="password">Create Password</label>
+      <input id="password" type="password" placeholder="Minimum 8 characters" required minlength="8" />
+      <p class="hint">Use this same password to log in to your Contractor Portal after approval.</p>
+
+      <button type="submit" id="btn">Create Account</button>
+    </form>
+
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btn');
+      const result = document.getElementById('result');
+      result.style.display = 'none';
+
+      const specialties = Array.from(
+        document.querySelectorAll('.specialties-grid input[type=checkbox]:checked')
+      ).map((cb) => cb.value);
+
+      if (specialties.length === 0) {
+        result.className = 'result error';
+        result.textContent = 'Please select at least one specialty.';
+        result.style.display = 'block';
+        return;
+      }
+
+      const payload = {
+        fullName: document.getElementById('fullName').value.trim(),
+        companyName: document.getElementById('companyName').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+        specialties,
+        serviceZipCode: document.getElementById('serviceZip').value.trim(),
+        serviceRadiusMiles: document.getElementById('radius').value,
+      };
+
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          result.className = 'result success';
+          result.textContent = data.message;
+          document.getElementById('form').reset();
+        } else {
+          result.className = 'result error';
+          result.textContent = data.error || 'Something went wrong. Please try again.';
+        }
+      } catch (err) {
+        result.className = 'result error';
+        result.textContent = 'Network error. Please try again.';
+      } finally {
+        result.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    });
+  </script>
+
+  <footer style="margin-top:40px;padding:20px 4px;border-top:1px solid #d3e2f5;text-align:center;font-size:.8rem;color:#7a99b8;">
+    <p style="margin:0 0 6px;">
+      <a href="/privacy-policy.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Privacy Policy</a>
+      <a href="/data-deletion.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Data Deletion</a>
+      <a href="/admin.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Admin</a>
+      <a href="/" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Home</a>
+    </p>
+    <p style="margin:0;">&copy; 2026 ProjectPrice. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>

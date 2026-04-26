@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="shortcut icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="apple-touch-icon" href="/logo.jpg" />
+  <title>ProjectPrice - Contractor Dashboard</title>
+  <style>
+    :root { --navy: #0e3a78; --emerald: #16a36a; --bg: #f3f8ff; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Segoe UI, Arial, sans-serif;
+      background: linear-gradient(170deg, #eaf2ff 0%, var(--bg) 45%, #effff7 100%);
+      color: #16385b;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .brand-bar {
+      max-width: 760px;
+      margin: 0 auto 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+    }
+    .brand-logo img { height: 44px; width: auto; }
+    .brand-nav { display: flex; gap: 16px; }
+    .brand-nav a {
+      color: #4a6a8a;
+      text-decoration: none;
+      font-size: .85rem;
+      font-weight: 600;
+    }
+    .brand-nav a:hover { color: var(--navy); }
+    .card {
+      max-width: 760px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #d5e3f8;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      padding: 24px;
+    }
+    h1 { margin: 0 0 8px; color: var(--navy); }
+    .sub { color: #4a6a8a; margin: 0 0 20px; }
+    .status {
+      border: 1px solid #a3dfc0;
+      background: #e6f7ef;
+      color: #0d5c35;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 18px;
+      font-weight: 600;
+    }
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .action {
+      border: 1px solid #d5e3f8;
+      border-radius: 10px;
+      background: #f8fbff;
+      padding: 14px;
+    }
+    .action h2 { margin: 0 0 6px; color: var(--navy); font-size: 1rem; }
+    .action p { margin: 0; font-size: .9rem; color: #4a6a8a; }
+    .lead-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .lead-box {
+      border: 1px solid #d5e3f8;
+      border-radius: 10px;
+      background: #f8fbff;
+      padding: 14px;
+    }
+    .lead-box h2 { margin: 0 0 10px; color: var(--navy); font-size: 1rem; }
+    .lead-box dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      row-gap: 6px;
+      column-gap: 8px;
+      font-size: .9rem;
+    }
+    .lead-box dt { color: #4a6a8a; }
+    .lead-box dd { margin: 0; color: #16385b; font-weight: 600; }
+    @media (max-width: 720px) {
+      .lead-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="brand-bar">
+    <a href="/" class="brand-logo">
+      <img src="/logo.jpg" alt="ProjectPrice" />
+    </a>
+    <nav class="brand-nav">
+      <a href="/get-quotes.html">Request Estimate</a>
+      <a href="/my-estimates.html">My Saved Projects</a>
+      <a href="/contractor-signup.html">For Contractors</a>
+      <a href="/contractor-portal.html">Contractor Login</a>
+    </nav>
+  </header>
+
+  <main class="card">
+    <h1>Contractor Dashboard</h1>
+    <p class="sub">Welcome to your ProjectPrice lead center.</p>
+    <div class="status" id="status">Loading your claimed lead...</div>
+
+    <section class="lead-grid" id="leadGrid" style="display:none;">
+      <div class="lead-box">
+        <h2>Lead Details</h2>
+        <dl>
+          <dt>Lead ID</dt><dd id="leadId">-</dd>
+          <dt>Status</dt><dd id="leadStatus">-</dd>
+          <dt>Specialty</dt><dd id="leadSpecialty">-</dd>
+          <dt>Zip Code</dt><dd id="leadZip">-</dd>
+          <dt>Claimed At</dt><dd id="leadClaimedAt">-</dd>
+        </dl>
+      </div>
+      <div class="lead-box">
+        <h2>Homeowner & Project</h2>
+        <dl>
+          <dt>Name</dt><dd id="homeownerName">-</dd>
+          <dt>Email</dt><dd id="homeownerEmail">-</dd>
+          <dt>Phone</dt><dd id="homeownerPhone">-</dd>
+          <dt>Project Type</dt><dd id="projectType">-</dd>
+          <dt>Description</dt><dd id="projectDescription">-</dd>
+          <dt>Project Zip</dt><dd id="projectZip">-</dd>
+        </dl>
+      </div>
+    </section>
+
+    <section id="projectPhotoSection" style="display:none; max-width:760px; margin: 0 auto 18px;">
+      <div class="lead-box">
+        <h2>Project Photo</h2>
+        <img id="projectPhoto" src="" alt="Homeowner project photo" style="width:100%; max-height:420px; object-fit:cover; border-radius:8px; display:block;" />
+      </div>
+    </section>
+
+    <section class="actions">
+      <div class="action">
+        <h2>Next Step</h2>
+        <p>Reach out to the homeowner as soon as possible to discuss scope, timeline, and pricing.</p>
+      </div>
+      <div class="action">
+        <h2>Tip</h2>
+        <p>Fast first response increases your close rate and helps you win more local leads.</p>
+      </div>
+      <div class="action">
+        <h2>Need Another Lead?</h2>
+        <p>Keep your specialties and service zip codes current to receive the best matching requests.</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const leadGridEl = document.getElementById('leadGrid');
+
+    const setValue = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value || '-';
+    };
+
+    const formatDate = (iso) => {
+      if (!iso) return '-';
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? '-' : d.toLocaleString();
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const leadRequestId = params.get('leadRequestId');
+    const professionalId = params.get('professionalId');
+
+    if (!leadRequestId || !professionalId) {
+      statusEl.textContent = 'No lead was selected from SMS. Open the dashboard link directly from your claim text.';
+    } else {
+      fetch(`/.netlify/functions/project-price-contractor-dashboard?leadRequestId=${encodeURIComponent(leadRequestId)}&professionalId=${encodeURIComponent(professionalId)}`)
+        .then(async (res) => {
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Failed to load lead details.');
+          return data;
+        })
+        .then((data) => {
+          statusEl.textContent = 'Lead claimed successfully. Homeowner details are shown below.';
+          leadGridEl.style.display = 'grid';
+
+          setValue('leadId', data.lead?.id);
+          setValue('leadStatus', data.lead?.status);
+          setValue('leadSpecialty', data.lead?.specialty);
+          setValue('leadZip', data.lead?.zipCode);
+          setValue('leadClaimedAt', formatDate(data.lead?.claimedAt));
+
+          setValue('homeownerName', data.homeowner?.fullName);
+          setValue('homeownerEmail', data.homeowner?.email);
+          setValue('homeownerPhone', data.homeowner?.phone);
+          setValue('projectType', data.project?.projectType);
+          setValue('projectDescription', data.project?.description);
+          setValue('projectZip', data.project?.zipCode);
+
+          const photoUrl = data.project?.photoUrl;
+          if (photoUrl) {
+            document.getElementById('projectPhoto').src = photoUrl;
+            document.getElementById('projectPhotoSection').style.display = 'block';
+          }
+        })
+        .catch((err) => {
+          statusEl.textContent = err.message || 'Could not load lead details.';
+        });
+    }
+  </script>
+
+  <footer style="margin-top:40px;padding:20px 4px;border-top:1px solid #d3e2f5;text-align:center;font-size:.8rem;color:#7a99b8;">
+    <p style="margin:0 0 6px;">
+      <a href="/privacy-policy.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Privacy Policy</a>
+      <a href="/data-deletion.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Data Deletion</a>
+      <a href="/admin.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Admin</a>
+      <a href="/" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Home</a>
+    </p>
+    <p style="margin:0;">&copy; 2026 ProjectPrice. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>

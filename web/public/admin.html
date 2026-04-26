@@ -1,0 +1,1227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="shortcut icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="apple-touch-icon" href="/logo.jpg" />
+  <title>ProjectPrice - Admin Console</title>
+  <style>
+    :root { --navy: #0e3a78; --emerald: #16a36a; --bg: #f3f8ff; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Segoe UI, Arial, sans-serif;
+      background: linear-gradient(170deg, #eaf2ff 0%, var(--bg) 45%, #effff7 100%);
+      color: #16385b;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .brand-bar {
+      max-width: 1100px;
+      margin: 0 auto 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+    .brand-logo { display: flex; align-items: center; text-decoration: none; }
+    .brand-logo img { height: 44px; width: auto; }
+    .brand-nav { display: flex; gap: 16px; }
+    .brand-nav a {
+      color: #4a6a8a;
+      text-decoration: none;
+      font-size: .85rem;
+      font-weight: 600;
+    }
+    .brand-nav a:hover { color: var(--navy); }
+    .card {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #d5e3f8;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      padding: 20px;
+    }
+    h1 { margin: 0 0 8px; color: var(--navy); }
+    .sub { color: #4a6a8a; margin: 0 0 16px; }
+    .top {
+      display: grid;
+      grid-template-columns: 1fr 220px 180px 1fr auto auto;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+    label { display: block; font-weight: 700; font-size: .86rem; margin-bottom: 5px; }
+    input, select {
+      width: 100%;
+      border: 1px solid #bfd2ee;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: var(--navy); }
+    button {
+      border: 0;
+      border-radius: 10px;
+      background: var(--emerald);
+      color: #fff;
+      font-weight: 700;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #0e3a78;
+    }
+    button.small {
+      padding: 7px 10px;
+      font-size: .8rem;
+    }
+    .result {
+      margin: 10px 0 14px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      display: none;
+      font-size: .9rem;
+    }
+    .result.error { background: #fdecea; color: #7a1a14; border: 1px solid #f5b7b1; }
+    .result.success { background: #e6f7ef; color: #0d5c35; border: 1px solid #a3dfc0; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .stat {
+      border: 1px solid #d5e3f8;
+      background: #f8fbff;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: .82rem;
+      color: #4a6a8a;
+    }
+    .stat strong { display: block; font-size: 1.1rem; color: var(--navy); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    @media (max-width: 1280px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+      .top { grid-template-columns: 1fr; }
+    }
+    .panel {
+      border: 1px solid #d5e3f8;
+      border-radius: 12px;
+      background: #fbfdff;
+      padding: 12px;
+      min-height: 340px;
+    }
+    .panel h2 { margin: 0 0 10px; color: var(--navy); font-size: 1.05rem; }
+    .list { display: grid; gap: 8px; max-height: 520px; overflow: auto; }
+    .item {
+      border: 1px solid #d5e3f8;
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px;
+    }
+    .item h3 {
+      margin: 0 0 6px;
+      color: #16385b;
+      font-size: .95rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+    .tag {
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: .73rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .2px;
+    }
+    .tag.approved, .tag.claimed { background: #e6f7ef; color: #0d5c35; border: 1px solid #a3dfc0; }
+    .tag.pending { background: #fff7e8; color: #8a5800; border: 1px solid #ffd591; }
+    .tag.expired { background: #f5f5f5; color: #666; border: 1px solid #d9d9d9; }
+    .tag.denied { background: #fdecea; color: #7a1a14; border: 1px solid #f5b7b1; }
+    .meta { margin: 0; color: #4a6a8a; font-size: .82rem; }
+    .actions {
+      margin-top: 8px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .actions select { min-width: 190px; }
+    .actions input[type=text] { min-width: 220px; }
+    .actions input[readonly] {
+      background: #f5f9ff;
+      color: #4a6a8a;
+    }
+    .activity-item {
+      border: 1px solid #d5e3f8;
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px;
+    }
+    .activity-item .meta-small {
+      margin-top: 6px;
+      font-size: .78rem;
+      color: #6a86a3;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <header class="brand-bar">
+    <a href="/" class="brand-logo"><img src="/logo.jpg" alt="ProjectPrice" /></a>
+    <nav class="brand-nav">
+      <a href="/get-quotes.html">Request Estimate</a>
+      <a href="/my-estimates.html">My Saved Projects</a>
+      <a href="/contractor-signup.html">For Contractors</a>
+      <a href="/contractor-portal.html">Contractor Login</a>
+    </nav>
+  </header>
+
+  <main class="card">
+    <h1>Admin Console</h1>
+    <p class="sub">Review contractors, edit account contact info, reset passwords, inspect lead ownership, and manually assign leads.</p>
+
+    <div class="top">
+      <div>
+        <label for="adminKey">Admin Key (if configured)</label>
+        <input id="adminKey" type="password" placeholder="Enter ADMIN_DASHBOARD_KEY" />
+      </div>
+      <div>
+        <label for="adminActor">Admin Actor</label>
+        <input id="adminActor" type="text" placeholder="Your name or initials" />
+      </div>
+      <div>
+        <label for="contractorFilter">Contractor Filter</label>
+        <select id="contractorFilter">
+          <option value="all">All</option>
+          <option value="active">Active</option>
+          <option value="paused">Paused</option>
+          <option value="denied">Denied</option>
+        </select>
+      </div>
+      <div>
+        <label for="accountSearch">Account Search</label>
+        <input id="accountSearch" type="text" placeholder="Search name, email, phone, zip" />
+      </div>
+      <button id="refreshBtn" class="secondary">Refresh Data</button>
+      <button id="clearBtn">Clear Key</button>
+    </div>
+
+    <div class="result" id="result"></div>
+
+    <section class="panel" style="min-height:0;margin-bottom:14px;">
+      <h2>Create Contractor</h2>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+        <div>
+          <label for="createFullName">Full Name</label>
+          <input id="createFullName" type="text" placeholder="Jane Smith" />
+        </div>
+        <div>
+          <label for="createCompanyName">Company Name</label>
+          <input id="createCompanyName" type="text" placeholder="Smith Roofing LLC" />
+        </div>
+        <div>
+          <label for="createEmail">Email</label>
+          <input id="createEmail" type="email" placeholder="jane@company.com" />
+        </div>
+        <div>
+          <label for="createPhone">Phone</label>
+          <input id="createPhone" type="text" placeholder="(440) 555-1234" />
+        </div>
+        <div>
+          <label for="createSpecialties">Specialties</label>
+          <input id="createSpecialties" type="text" placeholder="plumbing, electrical" />
+        </div>
+        <div>
+          <label for="createServiceZip">Service Center ZIP</label>
+          <input id="createServiceZip" type="text" placeholder="44113" />
+        </div>
+        <div>
+          <label for="createServiceRadius">Radius (miles)</label>
+          <input id="createServiceRadius" type="number" min="1" step="1" placeholder="30" value="30" />
+        </div>
+        <div>
+          <label for="createPassword">Initial Password (optional)</label>
+          <input id="createPassword" type="text" placeholder="Leave blank to auto-generate" />
+        </div>
+        <div>
+          <label for="createApproved">Initial State</label>
+          <select id="createApproved">
+            <option value="true" selected>Approved</option>
+            <option value="false">Pending</option>
+          </select>
+        </div>
+        <div>
+          <label for="createWelcomeTemplate">Welcome SMS Template</label>
+          <select id="createWelcomeTemplate">
+            <option value="founding" selected>Founding Pro</option>
+            <option value="standard">Standard Invite</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="createContractorBtn" type="button">Create Contractor</button>
+      </div>
+    </section>
+
+    <section class="stats" id="stats"></section>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Contractors</h2>
+        <div class="list" id="contractorsList"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Homeowners</h2>
+        <div class="list" id="homeownersList"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Leads</h2>
+        <div class="list" id="leadsList"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Activity Log</h2>
+        <div class="list" id="activityLogsList"></div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const adminKeyInput = document.getElementById('adminKey');
+    const adminActorInput = document.getElementById('adminActor');
+    const contractorFilterInput = document.getElementById('contractorFilter');
+    const accountSearchInput = document.getElementById('accountSearch');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const resultEl = document.getElementById('result');
+    const createFullNameInput = document.getElementById('createFullName');
+    const createCompanyNameInput = document.getElementById('createCompanyName');
+    const createEmailInput = document.getElementById('createEmail');
+    const createPhoneInput = document.getElementById('createPhone');
+    const createSpecialtiesInput = document.getElementById('createSpecialties');
+    const createServiceZipInput = document.getElementById('createServiceZip');
+    const createServiceRadiusInput = document.getElementById('createServiceRadius');
+    const createPasswordInput = document.getElementById('createPassword');
+    const createApprovedInput = document.getElementById('createApproved');
+    const createWelcomeTemplateInput = document.getElementById('createWelcomeTemplate');
+    const createContractorBtn = document.getElementById('createContractorBtn');
+    const statsEl = document.getElementById('stats');
+    const contractorsListEl = document.getElementById('contractorsList');
+    const homeownersListEl = document.getElementById('homeownersList');
+    const leadsListEl = document.getElementById('leadsList');
+    const activityLogsListEl = document.getElementById('activityLogsList');
+
+    let state = { contractors: [], homeowners: [], leads: [], activityLogs: [], counts: {} };
+    const ADMIN_SESSION_KEY = 'projectprice_admin_session';
+
+    const showMessage = (text, type = 'success') => {
+      resultEl.className = `result ${type}`;
+      resultEl.textContent = text;
+      resultEl.style.display = 'block';
+    };
+
+    const hideMessage = () => {
+      resultEl.style.display = 'none';
+      resultEl.textContent = '';
+    };
+
+    const getHeaders = () => {
+      const headers = { 'Content-Type': 'application/json' };
+      const key = adminKeyInput.value.trim();
+      const actor = adminActorInput.value.trim();
+      if (key) headers['x-admin-key'] = key;
+      if (actor) headers['x-admin-actor'] = actor;
+      return headers;
+    };
+
+    const fmtDate = (iso) => {
+      if (!iso) return 'N/A';
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? 'N/A' : d.toLocaleString();
+    };
+
+    const kmToMiles = (km) => {
+      const value = Number(km);
+      if (!Number.isFinite(value) || value <= 0) return null;
+      return Math.round(value / 1.60934);
+    };
+
+    const escapeHtml = (value) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+    const displayValue = (value, fallback = 'N/A') => {
+      const text = value === null || value === undefined || value === '' ? fallback : String(value);
+      return escapeHtml(text);
+    };
+
+    const normalizedSearch = () => accountSearchInput.value.trim().toLowerCase();
+
+    const includesSearch = (parts) => {
+      const search = normalizedSearch();
+      if (!search) return true;
+      return parts.some((part) => String(part || '').toLowerCase().includes(search));
+    };
+
+    const renderStats = () => {
+      const c = state.counts || {};
+      const cards = [
+        ['Total Contractors', c.totalContractors || 0],
+        ['Active Contractors', c.activeContractors || 0],
+        ['Paused Contractors', c.pausedContractors || 0],
+        ['Denied Contractors', c.deniedContractors || 0],
+        ['Total Homeowners', c.totalHomeowners || 0],
+        ['Homeowners With Projects', c.homeownersWithProjects || 0],
+        ['Total Leads', c.totalLeads || 0],
+        ['Claimed Leads', c.claimedLeads || 0],
+        ['Pending Leads', c.pendingLeads || 0],
+        ['Expired Leads', c.expiredLeads || 0],
+      ];
+      statsEl.innerHTML = cards.map(([label, value]) => `<div class="stat"><strong>${value}</strong>${label}</div>`).join('');
+    };
+
+    const contractorState = (contractor) => {
+      const rawStatus = String(contractor?.status || contractor?.review_status || '').toLowerCase();
+      if (contractor?.is_denied === true || rawStatus === 'denied') return 'denied';
+      if (contractor?.is_verified) return 'active';
+      return 'paused';
+    };
+
+    const contractorStatusTag = (contractor) => {
+      const state = contractorState(contractor);
+      if (state === 'active') return '<span class="tag approved">Active</span>';
+      if (state === 'denied') return '<span class="tag denied">Denied</span>';
+      return '<span class="tag pending">Paused</span>';
+    };
+
+    const leadStatusTag = (status) => {
+      const s = String(status || 'pending').toLowerCase();
+      const cls = s === 'claimed' ? 'claimed' : (s === 'expired' ? 'expired' : 'pending');
+      return `<span class="tag ${cls}">${s}</span>`;
+    };
+
+    const denyReasonOptions = [
+      'License not verified',
+      'Insurance expired',
+      'Failed identity verification',
+      'Out of service area',
+      'Specialty mismatch',
+      'Low response rate',
+      'Customer complaints',
+      'Terms violation',
+      'Duplicate account',
+      'Payment issue',
+      'Other',
+    ];
+
+    const renderDenyReasonOptions = () => denyReasonOptions
+      .map((reason) => `<option value="${reason}">${reason}</option>`)
+      .join('');
+
+    const renderContractors = () => {
+      const selectedFilter = contractorFilterInput.value || 'all';
+      const filteredContractors = (selectedFilter === 'all'
+        ? state.contractors
+        : state.contractors.filter((c) => contractorState(c) === selectedFilter))
+        .filter((c) => includesSearch([
+          c.company_name,
+          c.email,
+          c.contact_phone,
+          c.account_phone,
+          (c.specialties || []).join(' '),
+          (c.service_zip_codes || []).join(' '),
+        ]));
+
+      if (!filteredContractors.length) {
+        contractorsListEl.innerHTML = '<p class="meta">No contractors found.</p>';
+        return;
+      }
+
+      contractorsListEl.innerHTML = filteredContractors.map((c) => `
+        <article class="item">
+          <h3>
+            <span>${displayValue(c.company_name, 'Unnamed Contractor')}</span>
+            ${contractorStatusTag(c)}
+          </h3>
+          <p class="meta">ID: ${displayValue(c.id)}</p>
+          <p class="meta">Email: ${displayValue(c.email)}</p>
+          <p class="meta">Phone: ${displayValue(c.contact_phone || c.account_phone)}</p>
+          <p class="meta">Denied Reason: ${displayValue(c.denied_reason)}</p>
+          <p class="meta">Specialties: ${displayValue((c.specialties || []).join(', '))}</p>
+          <p class="meta">Service Center ZIP: ${displayValue((c.service_zip_codes || [])[0])}</p>
+          <p class="meta">Service Radius (miles): ${displayValue(kmToMiles(c.service_radius_km))}</p>
+          <div class="actions">
+            <input id="contractor-company-${c.id}" type="text" placeholder="Company name" value="${escapeHtml(c.company_name || '')}" />
+            <input id="contractor-email-${c.id}" type="text" placeholder="Login email" value="${escapeHtml(c.email || '')}" />
+            <input id="contractor-phone-${c.id}" type="text" placeholder="Contact phone" value="${escapeHtml(c.contact_phone || c.account_phone || '')}" />
+            <input id="contractor-specialties-${c.id}" type="text" placeholder="Specialties (comma separated)" value="${escapeHtml((c.specialties || []).join(', '))}" />
+            <input id="contractor-service-zip-${c.id}" type="text" placeholder="Center ZIP" value="${escapeHtml((c.service_zip_codes || [])[0] || '')}" />
+            <input id="contractor-service-radius-${c.id}" type="number" min="1" step="1" placeholder="Radius miles" value="${escapeHtml(kmToMiles(c.service_radius_km) || '')}" />
+            <button class="small secondary" onclick="updateContractorProfile('${c.id}')">Save Account</button>
+            <button class="small" onclick="resetContractorPassword('${c.id}')">Temp Password</button>
+            <button class="small secondary" onclick="generateContractorRecovery('${c.id}')">Recovery Link</button>
+            <button class="small" onclick="emailContractorRecovery('${c.id}')">Prepare Email</button>
+          </div>
+          <div class="actions">
+            <input id="contractor-recovery-link-${c.id}" type="text" placeholder="Recovery link will appear here" readonly />
+          </div>
+          <div class="actions">
+            <button class="small" onclick="approveContractor('${c.id}', true)">Approve</button>
+            <button class="small secondary" onclick="pauseContractor('${c.id}')">Pause</button>
+            <select id="deny-reason-${c.id}" onchange="toggleDenyOther('${c.id}')">
+              ${renderDenyReasonOptions()}
+            </select>
+            <input id="deny-reason-other-${c.id}" type="text" placeholder="Enter custom deny reason" style="display:none;" />
+            <button class="small" onclick="denyContractor('${c.id}')">Deny</button>
+            <button class="small" style="background: #c41e3a;" onclick="deleteContractor('${c.id}')">Delete Contractor</button>
+          </div>
+        </article>
+      `).join('');
+    };
+
+    const renderHomeowners = () => {
+      const filteredHomeowners = state.homeowners.filter((homeowner) => includesSearch([
+        homeowner.full_name,
+        homeowner.email,
+        homeowner.phone,
+        homeowner.zip_code,
+        homeowner.latestProjectName,
+        homeowner.latestProjectType,
+      ]));
+
+      if (!filteredHomeowners.length) {
+        homeownersListEl.innerHTML = '<p class="meta">No homeowners found.</p>';
+        return;
+      }
+
+      homeownersListEl.innerHTML = filteredHomeowners.map((homeowner) => `
+        <article class="item">
+          <h3>
+            <span>${displayValue(homeowner.full_name, 'Unnamed Homeowner')}</span>
+            <span class="tag pending">${homeowner.projectCount || 0} Projects</span>
+          </h3>
+          <p class="meta">ID: ${displayValue(homeowner.id)}</p>
+          <p class="meta">Email: ${displayValue(homeowner.email)}</p>
+          <p class="meta">Phone: ${displayValue(homeowner.phone)}</p>
+          <p class="meta">Zip: ${displayValue(homeowner.zip_code)}</p>
+          <p class="meta">Lead Count: ${displayValue(homeowner.leadCount, '0')}</p>
+          <p class="meta">Latest Project: ${displayValue(homeowner.latestProjectName)}${homeowner.latestProjectType ? ` (${displayValue(homeowner.latestProjectType)})` : ''}</p>
+          <p class="meta">Latest Activity: ${fmtDate(homeowner.latestProjectAt || homeowner.latestLeadAt || homeowner.created_at)}</p>
+          <div class="actions">
+            <input id="directory-homeowner-name-${homeowner.id}" type="text" placeholder="Homeowner name" value="${escapeHtml(homeowner.full_name || '')}" />
+            <input id="directory-homeowner-email-${homeowner.id}" type="text" placeholder="Homeowner email" value="${escapeHtml(homeowner.email || '')}" />
+            <input id="directory-homeowner-phone-${homeowner.id}" type="text" placeholder="Homeowner phone" value="${escapeHtml(homeowner.phone || '')}" />
+            <input id="directory-homeowner-zip-${homeowner.id}" type="text" placeholder="Zip code" value="${escapeHtml(homeowner.zip_code || '')}" />
+            <button class="small secondary" onclick="updateHomeownerDirectoryProfile('${homeowner.id}')">Save Homeowner</button>
+            <button class="small" onclick="resetHomeownerPassword('${homeowner.id}')">Temp Password</button>
+            <button class="small secondary" onclick="generateHomeownerRecovery('${homeowner.id}')">Recovery Link</button>
+            <button class="small" onclick="emailHomeownerRecovery('${homeowner.id}')">Prepare Email</button>
+            <button class="small" style="background: #c41e3a;" onclick="deleteHomeowner('${homeowner.id}')">Delete Homeowner</button>
+          </div>
+          <div class="actions">
+            <input id="homeowner-recovery-link-${homeowner.id}" type="text" placeholder="Recovery link will appear here" readonly />
+          </div>
+        </article>
+      `).join('');
+    };
+
+    const contractorOptions = () => {
+      const approved = state.contractors.filter((c) => c.is_verified);
+      return approved.map((c) => `<option value="${c.id}">${c.company_name || c.id}</option>`).join('');
+    };
+
+    const renderLeads = () => {
+      const filteredLeads = state.leads.filter((lead) => includesSearch([
+        lead.specialty,
+        lead.zipCode,
+        lead.homeowner?.full_name,
+        lead.homeowner?.email,
+        lead.homeowner?.phone,
+        lead.project?.project_type,
+        lead.project?.description,
+        lead.claimedProfessional?.company_name,
+      ]));
+
+      if (!filteredLeads.length) {
+        leadsListEl.innerHTML = '<p class="meta">No leads found.</p>';
+        return;
+      }
+
+      const options = contractorOptions();
+
+      leadsListEl.innerHTML = filteredLeads.map((lead) => `
+        <article class="item">
+          <h3>
+            <span>${displayValue(lead.specialty, 'Unknown')} in ${displayValue(lead.zipCode)}</span>
+            ${leadStatusTag(lead.status)}
+          </h3>
+          <p class="meta">Lead ID: ${displayValue(lead.id)}</p>
+          <p class="meta">Created: ${fmtDate(lead.createdAt)}</p>
+          <p class="meta">Homeowner: ${displayValue(lead.homeowner?.full_name)}</p>
+          <p class="meta">Contact: ${displayValue(lead.homeowner?.email)} | ${displayValue(lead.homeowner?.phone)}</p>
+          <p class="meta">Project: ${displayValue(lead.project?.project_type)} - ${displayValue(lead.project?.description, 'No description')}</p>
+          <p class="meta">Assigned Contractor: ${displayValue(lead.claimedProfessional?.company_name, 'Unassigned')}</p>
+          <p class="meta">Workflow: ${displayValue(lead.workflow?.status || (lead.status === 'claimed' ? 'claimed' : 'N/A'))}</p>
+          <p class="meta">Manual Audit: ${lead.manualAssignment ? `Assigned by ${displayValue(lead.manualAssignment.by)} at ${fmtDate(lead.manualAssignment.at)}` : 'None'}</p>
+          <div class="actions">
+            <select id="assign-${lead.id}">
+              <option value="">Select approved contractor...</option>
+              ${options}
+            </select>
+            <button class="small" onclick="assignLead('${lead.id}')">Assign Lead</button>
+            <button class="small secondary" onclick="removeLead('${lead.id}')">Remove Lead</button>
+          </div>
+          ${lead.homeowner?.id ? `
+          <div class="actions">
+            <input id="homeowner-name-${lead.id}" type="text" placeholder="Homeowner name" value="${escapeHtml(lead.homeowner?.full_name || '')}" />
+            <input id="homeowner-email-${lead.id}" type="text" placeholder="Homeowner email" value="${escapeHtml(lead.homeowner?.email || '')}" />
+            <input id="homeowner-phone-${lead.id}" type="text" placeholder="Homeowner phone" value="${escapeHtml(lead.homeowner?.phone || '')}" />
+            <input id="homeowner-zip-${lead.id}" type="text" placeholder="Zip code" value="${escapeHtml(lead.homeowner?.zip_code || lead.zipCode || '')}" />
+            <button class="small secondary" onclick="updateHomeownerProfile('${lead.id}', '${lead.homeowner.id}')">Save Homeowner</button>
+            <button class="small" onclick="resetHomeownerPassword('${lead.homeowner.id}')">Temp Password</button>
+            <button class="small secondary" onclick="generateHomeownerRecovery('${lead.homeowner.id}')">Recovery Link</button>
+          </div>` : '<p class="meta">No linked homeowner account found for this lead.</p>'}
+        </article>
+      `).join('');
+    };
+
+    const renderActivityLogs = () => {
+      const logs = Array.isArray(state.activityLogs) ? state.activityLogs : [];
+      if (!logs.length) {
+        activityLogsListEl.innerHTML = '<p class="meta">No activity logged yet.</p>';
+        return;
+      }
+
+      activityLogsListEl.innerHTML = logs.map((log) => {
+        const action = displayValue(log.action, 'unknown').replace(/_/g, ' ');
+        const actor = displayValue(log.actor, 'admin');
+        const targetType = displayValue(log.target_type, 'n/a');
+        const targetId = displayValue(log.target_id, 'n/a');
+        const message = displayValue(log.message, 'No message');
+        const when = fmtDate(log.created_at);
+        return `
+          <article class="activity-item">
+            <h3>
+              <span>${action}</span>
+              <span class="tag pending">${when}</span>
+            </h3>
+            <p class="meta"><strong>Actor:</strong> ${actor}</p>
+            <p class="meta"><strong>Target:</strong> ${targetType} ${targetId}</p>
+            <p class="meta">${message}</p>
+            <p class="meta-small">${displayValue(log.metadata ? JSON.stringify(log.metadata) : '')}</p>
+          </article>
+        `;
+      }).join('');
+    };
+
+    const renderAll = () => {
+      renderStats();
+      renderContractors();
+      renderHomeowners();
+      renderLeads();
+      renderActivityLogs();
+    };
+
+    const loadData = async () => {
+      hideMessage();
+      refreshBtn.disabled = true;
+      refreshBtn.textContent = 'Loading...';
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'GET',
+          headers: getHeaders(),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to load admin data.');
+        state = data;
+        renderAll();
+      } catch (err) {
+        showMessage(err.message || 'Failed to load admin data.', 'error');
+      } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = 'Refresh Data';
+      }
+    };
+
+    const requestNewPassword = (label) => {
+      const nextPassword = window.prompt(`Enter a temporary password for ${label}. Minimum 8 characters.`);
+      if (nextPassword === null) return null;
+      const trimmed = nextPassword.trim();
+      if (trimmed.length < 8) {
+        showMessage('Temporary password must be at least 8 characters.', 'error');
+        return false;
+      }
+      return trimmed;
+    };
+
+    const recoveryRedirect = () => `${window.location.origin}/update-password.html`;
+
+    const setRecoveryField = (fieldId, value) => {
+      const input = document.getElementById(fieldId);
+      if (input) input.value = value || '';
+    };
+
+    const copyText = async (value) => {
+      if (!value || !navigator.clipboard?.writeText) return false;
+      try {
+        await navigator.clipboard.writeText(value);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    const openRecoveryEmailDraft = (email, actionLink) => {
+      const subject = encodeURIComponent('ProjectPrice password recovery');
+      const body = encodeURIComponent(`Use this secure ProjectPrice password recovery link:\n\n${actionLink}\n\nThis link expires automatically.`);
+      window.location.href = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
+    };
+
+    const requestRecoveryLink = async ({ action, payload, outputFieldId, label, prepareEmail = false }) => {
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ action, redirectTo: recoveryRedirect(), ...payload }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        setRecoveryField(outputFieldId, data.actionLink || '');
+        const copied = await copyText(data.actionLink || '');
+        if (prepareEmail && data.email && data.actionLink) openRecoveryEmailDraft(data.email, data.actionLink);
+        showMessage(
+          data.actionLink
+            ? `${label} recovery link generated${copied ? ' and copied to clipboard' : ''}.`
+            : `${label} recovery details generated.`,
+          'success'
+        );
+      } catch (err) {
+        showMessage(err.message || `Unable to generate ${label.toLowerCase()} recovery link.`, 'error');
+      }
+    };
+
+    window.approveContractor = async (professionalId, approved) => {
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ action: 'approve_contractor', professionalId, approved }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        showMessage(data.message || 'Contractor updated.', 'success');
+        await loadData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to update contractor.', 'error');
+      }
+    };
+
+    window.pauseContractor = async (professionalId) => {
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ action: 'pause_contractor', professionalId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        showMessage(data.message || 'Contractor paused.', 'success');
+        await loadData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to pause contractor.', 'error');
+      }
+    };
+
+    window.denyContractor = async (professionalId) => {
+      const reasonSelect = document.getElementById(`deny-reason-${professionalId}`);
+      const reasonOther = document.getElementById(`deny-reason-other-${professionalId}`);
+      const selected = reasonSelect?.value || '';
+      const reason = selected === 'Other' ? (reasonOther?.value || '').trim() : selected;
+
+      if (!reason) {
+        showMessage('Please select or enter a deny reason.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ action: 'deny_contractor', professionalId, reason }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        showMessage(data.message || 'Contractor denied.', 'success');
+        await loadData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to deny contractor.', 'error');
+      }
+    };
+
+    window.toggleDenyOther = (professionalId) => {
+      const reasonSelect = document.getElementById(`deny-reason-${professionalId}`);
+      const reasonOther = document.getElementById(`deny-reason-other-${professionalId}`);
+      if (!reasonSelect || !reasonOther) return;
+      reasonOther.style.display = reasonSelect.value === 'Other' ? 'inline-block' : 'none';
+      if (reasonSelect.value !== 'Other') reasonOther.value = '';
+    };
+
+    window.assignLead = async (leadRequestId) => {
+      const select = document.getElementById(`assign-${leadRequestId}`);
+      const professionalId = select?.value || '';
+      if (!professionalId) {
+        showMessage('Select an approved contractor first.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            action: 'assign_lead',
+            leadRequestId,
+            professionalId,
+            adminActor: adminActorInput.value.trim() || 'admin',
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        showMessage(data.message || 'Lead assigned.', 'success');
+        await loadData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to assign lead.', 'error');
+      }
+    };
+
+    window.removeLead = async (leadRequestId) => {
+      const ok = window.confirm(`Remove lead ${leadRequestId.slice(0, 8)} permanently? This cannot be undone.`);
+      if (!ok) return;
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ action: 'remove_lead', leadRequestId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        showMessage(data.message || 'Lead removed.', 'success');
+        await loadData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to remove lead.', 'error');
+      }
+    };
+
+    window.setLeadHomeownerEmail = async (leadRequestId) => {
+      const input = document.getElementById(`email-fix-${leadRequestId}`);
+      const homeownerEmail = (input?.value || '').trim();
+      if (!homeownerEmail) {
+        showMessage('Enter a homeowner email first.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ action: 'set_lead_homeowner_email', leadRequestId, homeownerEmail }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        showMessage(data.message || 'Lead homeowner email updated.', 'success');
+        await loadData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to update homeowner email.', 'error');
+      }
+    };
+
+    window.setLeadHomeownerPhone = async (leadRequestId) => {
+      const input = document.getElementById(`phone-fix-${leadRequestId}`);
+      const homeownerPhone = (input?.value || '').trim();
+      if (!homeownerPhone) {
+        showMessage('Enter a homeowner phone first.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ action: 'set_lead_homeowner_phone', leadRequestId, homeownerPhone }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        showMessage(data.message || 'Lead homeowner phone updated.', 'success');
+        await loadData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to update homeowner phone.', 'error');
+      }
+    };
+
+    window.updateContractorProfile = async (professionalId) => {
+      const companyName = (document.getElementById(`contractor-company-${professionalId}`)?.value || '').trim();
+      const email = (document.getElementById(`contractor-email-${professionalId}`)?.value || '').trim();
+      const contactPhone = (document.getElementById(`contractor-phone-${professionalId}`)?.value || '').trim();
+      const specialties = (document.getElementById(`contractor-specialties-${professionalId}`)?.value || '').trim();
+      const serviceZipCode = (document.getElementById(`contractor-service-zip-${professionalId}`)?.value || '').trim();
+      const serviceRadiusKm = (document.getElementById(`contractor-service-radius-${professionalId}`)?.value || '').trim();
+
+      const payload = {
+        action: 'update_contractor_profile',
+        professionalId,
+      };
+
+      if (companyName) payload.companyName = companyName;
+      if (email) payload.email = email;
+      if (contactPhone) payload.contactPhone = contactPhone;
+      if (specialties) payload.specialties = specialties;
+      if (serviceZipCode) payload.serviceZipCode = serviceZipCode;
+      if (serviceRadiusKm) payload.serviceRadiusMiles = serviceRadiusKm;
+
+      if (!companyName && !email && !contactPhone && !specialties && !serviceZipCode && !serviceRadiusKm) {
+        showMessage('Enter at least one field to update.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        showMessage(data.message || 'Contractor profile updated.', 'success');
+        await loadData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to update contractor profile.', 'error');
+      }
+    };
+
+    window.generateContractorRecovery = async (professionalId) => {
+      await requestRecoveryLink({
+        action: 'generate_contractor_recovery',
+        payload: { professionalId },
+        outputFieldId: `contractor-recovery-link-${professionalId}`,
+        label: 'Contractor',
+      });
+    };
+
+    window.emailContractorRecovery = async (professionalId) => {
+      await requestRecoveryLink({
+        action: 'generate_contractor_recovery',
+        payload: { professionalId },
+        outputFieldId: `contractor-recovery-link-${professionalId}`,
+        label: 'Contractor',
+        prepareEmail: true,
+      });
+    };
+
+    window.resetContractorPassword = async (professionalId) => {
+      const nextPassword = requestNewPassword(`contractor ${professionalId.slice(0, 8)}`);
+      if (nextPassword === null || nextPassword === false) return;
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ action: 'reset_contractor_password', professionalId, newPassword: nextPassword }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        showMessage(data.message || 'Contractor password reset.', 'success');
+      } catch (err) {
+        showMessage(err.message || 'Unable to reset contractor password.', 'error');
+      }
+    };
+
+    window.updateHomeownerProfile = async (leadRequestId, homeownerId) => {
+      const fullName = (document.getElementById(`homeowner-name-${leadRequestId}`)?.value || '').trim();
+      const email = (document.getElementById(`homeowner-email-${leadRequestId}`)?.value || '').trim();
+      const phone = (document.getElementById(`homeowner-phone-${leadRequestId}`)?.value || '').trim();
+      const zipCode = (document.getElementById(`homeowner-zip-${leadRequestId}`)?.value || '').trim();
+
+      const payload = {
+        action: 'update_homeowner_profile',
+        homeownerId,
+        leadRequestId,
+      };
+
+      if (fullName) payload.fullName = fullName;
+      if (email) payload.email = email;
+      if (phone) payload.phone = phone;
+      if (zipCode) payload.zipCode = zipCode;
+
+      if (!fullName && !email && !phone && !zipCode) {
+        showMessage('Enter at least one field to update.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        showMessage(data.message || 'Homeowner profile updated.', 'success');
+        await loadData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to update homeowner profile.', 'error');
+      }
+    };
+
+    window.updateHomeownerDirectoryProfile = async (homeownerId) => {
+      console.log('updateHomeownerDirectoryProfile called with ID:', homeownerId);
+      const fullName = (document.getElementById(`directory-homeowner-name-${homeownerId}`)?.value || '').trim();
+      const email = (document.getElementById(`directory-homeowner-email-${homeownerId}`)?.value || '').trim();
+      const phone = (document.getElementById(`directory-homeowner-phone-${homeownerId}`)?.value || '').trim();
+      const zipCode = (document.getElementById(`directory-homeowner-zip-${homeownerId}`)?.value || '').trim();
+
+      console.log('Form values:', { fullName, email, phone, zipCode });
+
+      const payload = {
+        action: 'update_homeowner_profile',
+        homeownerId,
+      };
+
+      if (fullName) payload.fullName = fullName;
+      if (email) payload.email = email;
+      if (phone) payload.phone = phone;
+      if (zipCode) payload.zipCode = zipCode;
+
+      console.log('Payload to send:', payload);
+
+      if (!fullName && !email && !phone && !zipCode) {
+        showMessage('Enter at least one field to update.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(payload),
+        });
+        console.log('Response status:', res.status);
+        const data = await res.json();
+        console.log('Response data:', data);
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        showMessage(data.message || 'Homeowner profile updated.', 'success');
+        await loadData();
+      } catch (err) {
+        console.error('Error:', err);
+        showMessage(err.message || 'Unable to update homeowner profile.', 'error');
+      }
+    };
+
+    window.generateHomeownerRecovery = async (homeownerId) => {
+      await requestRecoveryLink({
+        action: 'generate_homeowner_recovery',
+        payload: { homeownerId },
+        outputFieldId: `homeowner-recovery-link-${homeownerId}`,
+        label: 'Homeowner',
+      });
+    };
+
+    window.emailHomeownerRecovery = async (homeownerId) => {
+      await requestRecoveryLink({
+        action: 'generate_homeowner_recovery',
+        payload: { homeownerId },
+        outputFieldId: `homeowner-recovery-link-${homeownerId}`,
+        label: 'Homeowner',
+        prepareEmail: true,
+      });
+    };
+
+    window.resetHomeownerPassword = async (homeownerId) => {
+      const nextPassword = requestNewPassword(`homeowner ${homeownerId.slice(0, 8)}`);
+      if (nextPassword === null || nextPassword === false) return;
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ action: 'reset_homeowner_password', homeownerId, newPassword: nextPassword }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        showMessage(data.message || 'Homeowner password reset.', 'success');
+      } catch (err) {
+        showMessage(err.message || 'Unable to reset homeowner password.', 'error');
+      }
+    };
+
+    window.deleteHomeowner = async (homeownerId) => {
+      const confirm = window.confirm(`Are you sure you want to delete homeowner ${homeownerId.slice(0, 8)}? This cannot be undone. All their projects and leads will still exist but will be orphaned.`);
+      if (!confirm) return;
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ action: 'delete_homeowner', homeownerId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        showMessage(data.message || 'Homeowner deleted.', 'success');
+        await loadData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to delete homeowner.', 'error');
+      }
+    };
+
+    window.deleteContractor = async (professionalId) => {
+      const confirm = window.confirm(`Are you sure you want to delete contractor ${professionalId.slice(0, 8)}? This cannot be undone. Existing leads will be unassigned.`);
+      if (!confirm) return;
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ action: 'delete_professional', professionalId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        showMessage(data.message || 'Contractor deleted.', 'success');
+        await loadData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to delete contractor.', 'error');
+      }
+    };
+
+    const clearCreateContractorForm = () => {
+      createFullNameInput.value = '';
+      createCompanyNameInput.value = '';
+      createEmailInput.value = '';
+      createPhoneInput.value = '';
+      createSpecialtiesInput.value = '';
+      createServiceZipInput.value = '';
+      createServiceRadiusInput.value = '30';
+      createPasswordInput.value = '';
+      createApprovedInput.value = 'true';
+      createWelcomeTemplateInput.value = 'founding';
+    };
+
+    const createContractor = async () => {
+      const payload = {
+        action: 'create_contractor',
+        fullName: createFullNameInput.value.trim(),
+        companyName: createCompanyNameInput.value.trim(),
+        email: createEmailInput.value.trim(),
+        phone: createPhoneInput.value.trim(),
+        specialties: createSpecialtiesInput.value.trim(),
+        serviceZipCode: createServiceZipInput.value.trim(),
+        serviceRadiusMiles: createServiceRadiusInput.value.trim(),
+        approved: createApprovedInput.value === 'true',
+        welcomeTemplate: createWelcomeTemplateInput.value,
+      };
+
+      const password = createPasswordInput.value.trim();
+      if (password) payload.password = password;
+
+      if (!payload.fullName || !payload.companyName || !payload.email || !payload.phone || !payload.specialties || !payload.serviceZipCode) {
+        showMessage('Full name, company, email, phone, specialties, and service center ZIP are required.', 'error');
+        return;
+      }
+
+      createContractorBtn.disabled = true;
+      createContractorBtn.textContent = 'Creating...';
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        showMessage(data.message || 'Contractor created.', 'success');
+        clearCreateContractorForm();
+        await loadData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to create contractor.', 'error');
+      } finally {
+        createContractorBtn.disabled = false;
+        createContractorBtn.textContent = 'Create Contractor';
+      }
+    };
+
+    clearBtn.addEventListener('click', () => {
+      adminKeyInput.value = '';
+      adminActorInput.value = '';
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      showMessage('Admin key cleared.', 'success');
+    });
+
+    const persistSession = () => {
+      const data = {
+        adminKey: adminKeyInput.value,
+        adminActor: adminActorInput.value,
+        contractorFilter: contractorFilterInput.value,
+        accountSearch: accountSearchInput.value,
+      };
+      sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(data));
+    };
+
+    const restoreSession = () => {
+      try {
+        const raw = sessionStorage.getItem(ADMIN_SESSION_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        adminKeyInput.value = data.adminKey || '';
+        adminActorInput.value = data.adminActor || '';
+        contractorFilterInput.value = data.contractorFilter || 'all';
+        accountSearchInput.value = data.accountSearch || '';
+      } catch {}
+    };
+
+    contractorFilterInput.addEventListener('change', renderContractors);
+    adminKeyInput.addEventListener('input', persistSession);
+    adminActorInput.addEventListener('input', persistSession);
+    contractorFilterInput.addEventListener('change', persistSession);
+    accountSearchInput.addEventListener('input', renderAll);
+    accountSearchInput.addEventListener('input', persistSession);
+    refreshBtn.addEventListener('click', loadData);
+    createContractorBtn.addEventListener('click', createContractor);
+
+    restoreSession();
+    loadData();
+  </script>
+
+  <footer style="margin-top:40px;padding:20px 4px;border-top:1px solid #d3e2f5;text-align:center;font-size:.8rem;color:#7a99b8;">
+    <!-- Deploy marker: 2026-04-25 admin activity log rollout -->
+    <p style="margin:0 0 6px;">
+      <a href="/privacy-policy.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Privacy Policy</a>
+      <a href="/data-deletion.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Data Deletion</a>
+      <a href="/admin.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Admin</a>
+      <a href="/" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Home</a>
+    </p>
+    <p style="margin:0;">&copy; 2026 ProjectPrice. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="shortcut icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="apple-touch-icon" href="/logo.jpg" />
+  <title>Data Deletion Request | ProjectPrice</title>
+  <meta name="description" content="Request deletion of your ProjectPrice account data." />
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://project-price-app.netlify.app/data-deletion.html" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy:    #0e3a78;
+      --emerald: #16a36a;
+      --sky:     #e9f3ff;
+      --mint:    #edfff6;
+      --ink:     #11365d;
+      --text:    #325170;
+      --paper:   #ffffff;
+      --line:    #d3e2f5;
+      --red:     #c0392b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Manrope, sans-serif;
+      background: linear-gradient(165deg, var(--sky) 0%, #f6fbff 50%, var(--mint) 100%);
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .shell { max-width: 800px; margin: 0 auto; }
+    .brand-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+      margin-bottom: 22px;
+    }
+    .brand-logo { display: flex; align-items: center; text-decoration: none; gap: 10px; }
+    .brand-logo img { width: 36px; height: 36px; border-radius: 8px; }
+    .brand-logo span { font-weight: 800; font-size: 1.1rem; color: var(--navy); }
+    .brand-nav { display: flex; gap: 16px; }
+    .brand-nav a {
+      color: #446684;
+      text-decoration: none;
+      font-size: .85rem;
+      font-weight: 700;
+    }
+    .brand-nav a:hover { color: var(--navy); }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: 0 14px 34px rgba(6,28,51,.08);
+      padding: 40px 36px 48px;
+    }
+    h1 { color: var(--navy); font-size: 1.9rem; margin: 0 0 4px; }
+    .subtitle { color: #7a99b8; font-size: .9rem; margin: 0 0 28px; line-height: 1.5; }
+    h2 { color: var(--navy); font-size: 1.1rem; margin: 28px 0 8px; }
+    p, li { color: var(--text); line-height: 1.7; font-size: .93rem; }
+    ul { padding-left: 20px; }
+    a { color: var(--emerald); }
+    .info-box {
+      background: #f4f9ff;
+      border: 1px solid #d4e4f8;
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin: 20px 0;
+    }
+    .info-box p { margin: 0; font-size: .9rem; }
+    label { display: block; font-weight: 700; font-size: .88rem; color: var(--ink); margin-bottom: 6px; }
+    input, select, textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font-family: Manrope, sans-serif;
+      font-size: .9rem;
+      color: var(--ink);
+      background: #fafcff;
+      margin-bottom: 18px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--navy); }
+    textarea { resize: vertical; min-height: 90px; }
+    .btn {
+      display: inline-block;
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 13px 28px;
+      font-family: Manrope, sans-serif;
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn:hover { background: #0b2f63; }
+    .result { display: none; margin-top: 16px; padding: 14px 16px; border-radius: 10px; font-size: .9rem; font-weight: 600; }
+    .result.success { background: #edfff6; border: 1px solid #a3e9c8; color: #0d7a4e; }
+    .result.error   { background: #fff0f0; border: 1px solid #f5c6c6; color: var(--red); }
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      text-align: center;
+      font-size: .8rem;
+      color: #7a99b8;
+    }
+    .footer a { color: #446684; text-decoration: none; margin: 0 8px; font-weight: 700; }
+    .footer a:hover { color: var(--navy); }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="brand-bar">
+    <a class="brand-logo" href="/">
+      <img src="/logo.jpg" alt="ProjectPrice logo" />
+      <span>ProjectPrice</span>
+    </a>
+    <nav class="brand-nav">
+      <a href="/">Home</a>
+      <a href="/get-quotes.html">Get Estimate</a>
+      <a href="/contact/">Contact</a>
+      <a href="/contractor-signup.html">Contractors</a>
+    </nav>
+  </div>
+
+  <div class="card">
+    <h1>Data Deletion Request</h1>
+    <p class="subtitle">You have the right to request deletion of your personal data from ProjectPrice at any time. Complete the form below or email us directly and we will process your request within 30 days.</p>
+
+    <h2>What Gets Deleted</h2>
+    <p>When you submit a deletion request, we will remove:</p>
+    <ul>
+      <li>Your phone number and authentication record</li>
+      <li>Your estimate request history and project photos</li>
+      <li>Any session tokens associated with your account</li>
+      <li>Any contractor account data if you are registered as a contractor</li>
+    </ul>
+
+    <div class="info-box">
+      <p><strong>Note:</strong> Deletion is permanent and cannot be undone. If you have active estimate requests in progress, those will also be cancelled. You can always create a new account in the future.</p>
+    </div>
+
+    <h2>Submit Your Request</h2>
+
+    <form id="deletion-form">
+      <label for="phone">Phone Number (used to sign in to the app)</label>
+      <input type="tel" id="phone" name="phone" placeholder="+1 (555) 000-0000" autocomplete="tel" required />
+
+      <label for="email">Email Address (for confirmation)</label>
+      <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email" required />
+
+      <label for="type">Account Type</label>
+      <select id="type" name="type" required>
+        <option value="" disabled selected>Select one…</option>
+        <option value="homeowner">Homeowner (app user)</option>
+        <option value="contractor">Contractor</option>
+        <option value="both">Both</option>
+      </select>
+
+      <label for="reason">Reason for deletion (optional)</label>
+      <textarea id="reason" name="reason" placeholder="Optional — help us improve"></textarea>
+
+      <button type="submit" class="btn">Submit Deletion Request &rarr;</button>
+      <div class="result" id="result"></div>
+    </form>
+
+    <h2>Or Contact Us Directly</h2>
+    <p>You can also submit a privacy-related message through our secure <a href="/contact/">contact form</a>. Include the subject line <strong>"Data Deletion Request"</strong> in your message.</p>
+    <ul>
+      <li><strong>Support form:</strong> <a href="/contact/">ProjectPrice Contact Page</a></li>
+    </ul>
+
+    <p>We will confirm receipt of your request within 5 business days and complete deletion within 30 days.</p>
+  </div>
+
+  <footer class="footer">
+    <p>
+      <a href="/">Home</a>
+      <a href="/contact/">Contact</a>
+      <a href="/privacy-policy.html">Privacy Policy</a>
+      <a href="/data-deletion.html">Data Deletion</a>
+      <a href="/contractor-signup.html">Contractors</a>
+    </p>
+    <p>&copy; 2026 ProjectPrice. All rights reserved.</p>
+  </footer>
+
+</div>
+
+<script>
+  document.getElementById('deletion-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const result = document.getElementById('result');
+    const phone = document.getElementById('phone').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const type  = document.getElementById('type').value;
+    const reason = document.getElementById('reason').value.trim();
+
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+    result.style.display = 'none';
+
+    try {
+      const res = await fetch('/.netlify/functions/data-deletion-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, email, type, reason })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        result.className = 'result success';
+        result.textContent = 'Request received. We will process your deletion within 30 days and send a confirmation to your email.';
+        e.target.reset();
+      } else {
+        result.className = 'result error';
+        result.textContent = data.error || 'Something went wrong. Please email us directly.';
+      }
+    } catch (err) {
+      result.className = 'result error';
+      result.textContent = 'Network error. Please email Projectpriceapp@gmail.com directly.';
+    } finally {
+      result.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Submit Deletion Request →';
+    }
+  });
+</script>
+</body>
+</html>

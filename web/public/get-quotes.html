@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="shortcut icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="apple-touch-icon" href="/logo.jpg" />
+  <title>ProjectPrice – Request One Exact Contractor Estimate</title>
+  <style>
+    :root { --navy: #0e3a78; --emerald: #16a36a; --bg: #f3f8ff; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Segoe UI, Arial, sans-serif;
+      background: linear-gradient(170deg, #eaf2ff 0%, var(--bg) 45%, #effff7 100%);
+      color: #16385b;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .card {
+      max-width: 560px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #d5e3f8;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      padding: 28px;
+    }
+    h1 { margin: 0 0 4px; color: var(--navy); font-size: 1.6rem; }
+    .sub { color: #4a6a8a; margin: 0 0 22px; font-size: .95rem; }
+    label { display: block; font-weight: 700; margin: 14px 0 5px; font-size: .9rem; }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid #bfd2ee;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--navy); }
+    textarea { resize: vertical; min-height: 90px; }
+    .hint { font-size: .8rem; color: #6a8aaa; margin: 3px 0 0; }
+    .consent-wrap {
+      margin-top: 16px;
+      padding: 12px;
+      border: 1px solid #d5e3f8;
+      border-radius: 10px;
+      background: #f8fbff;
+    }
+    .consent {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      font-size: .86rem;
+      color: #3d5f80;
+      line-height: 1.45;
+    }
+    .consent input[type=checkbox] {
+      width: auto;
+      margin-top: 2px;
+      accent-color: var(--emerald);
+    }
+    .project-types {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .type-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border: 1px solid #bfd2ee;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .88rem;
+      transition: background .15s, border-color .15s;
+    }
+    .type-item input[type=radio] { width: auto; margin: 0; accent-color: var(--emerald); }
+    .type-item:has(input:checked) { background: #eaf4f0; border-color: var(--emerald); font-weight: 700; }
+    .divider { border: none; border-top: 1px solid #e0eaf8; margin: 20px 0; }
+    .value-props {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .vp {
+      flex: 1;
+      min-width: 140px;
+      background: #f0f7ff;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+      font-size: .82rem;
+      color: #2a4a6a;
+    }
+    .vp strong { display: block; font-size: 1.1rem; color: var(--navy); margin-bottom: 3px; }
+    button[type=submit] {
+      width: 100%;
+      margin-top: 22px;
+      padding: 14px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--emerald);
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+    button[type=submit]:disabled { opacity: .6; cursor: not-allowed; }
+    .result {
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: .95rem;
+      display: none;
+    }
+    .result.success { background: #e6f7ef; color: #0d5c35; border: 1px solid #a3dfc0; }
+    .result.error { background: #fdecea; color: #7a1a14; border: 1px solid #f5b7b1; }
+    .brand-bar {
+      max-width: 560px;
+      margin: 0 auto 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .logo-text {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -.4px;
+    }
+    .logo-accent { color: var(--emerald); }
+    .brand-nav { display: flex; gap: 16px; }
+    .brand-nav a {
+      color: #4a6a8a;
+      text-decoration: none;
+      font-size: .85rem;
+      font-weight: 600;
+    }
+    .brand-nav a:hover { color: var(--navy); }
+  </style>
+</head>
+<body>
+  <header class="brand-bar">
+    <a href="/" class="brand-logo">
+      <img src="/logo.jpg" alt="ProjectPrice" style="height:44px;width:auto;" />
+    </a>
+    <nav class="brand-nav">
+      <a href="/get-quotes.html">Request Estimate</a>
+      <a href="/my-estimates.html">My Saved Projects</a>
+      <a href="/contractor-signup.html">For Contractors</a>
+      <a href="/contractor-portal.html">Contractor Login</a>
+    </nav>
+  </header>
+  <div class="card">
+    <h1>Request One Exact Contractor Estimate</h1>
+    <p class="sub">When you request one exact quote, your lead is routed to one of our approved contractors available in your area.</p>
+
+    <div style="background: #f0fff8; border: 2px solid #16a36a; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+      <p style="margin: 0; color: #0d5c35; font-size: 0.95rem; line-height: 1.6;">
+        <strong>💡 For a personalized experience:</strong> <a href="/" style="color: #0d5c35; font-weight: 700; text-decoration: underline;">Download the ProjectPrice app</a> to snap a photo, get 3 AI cost estimates instantly, and explore your options before requesting a contractor quote.
+      </p>
+    </div>
+
+    <div class="value-props">
+      <div class="vp"><strong>Free</strong>No cost to homeowners</div>
+      <div class="vp"><strong>Exclusive</strong>One approved contractor gets your request</div>
+      <div class="vp"><strong>Verified</strong>Pre-screened pros only</div>
+    </div>
+
+    <form id="form" novalidate>
+
+      <label>Project Type</label>
+      <div class="project-types">
+        <label class="type-item"><input type="radio" name="projectType" value="Roofing" required /> Roofing</label>
+        <label class="type-item"><input type="radio" name="projectType" value="Plumbing" /> Plumbing</label>
+        <label class="type-item"><input type="radio" name="projectType" value="HVAC" /> HVAC</label>
+        <label class="type-item"><input type="radio" name="projectType" value="Electrical" /> Electrical</label>
+        <label class="type-item"><input type="radio" name="projectType" value="General Contractor" /> General Contractor</label>
+        <label class="type-item"><input type="radio" name="projectType" value="Painting" /> Painting</label>
+        <label class="type-item"><input type="radio" name="projectType" value="Flooring" /> Flooring</label>
+        <label class="type-item"><input type="radio" name="projectType" value="Windows and Doors" /> Windows & Doors</label>
+        <label class="type-item"><input type="radio" name="projectType" value="Siding" /> Siding</label>
+        <label class="type-item"><input type="radio" name="projectType" value="Landscaping" /> Landscaping</label>
+      </div>
+
+      <label for="description">Describe Your Project</label>
+      <textarea id="description" placeholder="e.g. Roof is about 15 years old, some shingles missing after recent storm. Looking for inspection and estimate on full replacement."></textarea>
+
+      <label for="zipCode">Your Zip Code</label>
+      <input id="zipCode" type="text" inputmode="numeric" maxlength="5" placeholder="44101" required />
+
+      <label for="streetAddress">Street Address</label>
+      <input id="streetAddress" type="text" placeholder="123 Main Street" required />
+
+      <hr class="divider" />
+
+      <label for="fullName">Your Name</label>
+      <input id="fullName" type="text" placeholder="John Smith" required />
+
+      <label for="email">Email Address</label>
+      <input id="email" type="email" placeholder="john@email.com" required />
+      <p class="hint">We'll send your estimate status here. No spam.</p>
+
+      <label for="phone">Phone Number</label>
+      <input id="phone" type="tel" placeholder="(440) 555-1234" required />
+      <p class="hint">Required so we can text your request recap and My Estimates link.</p>
+
+      <div class="consent-wrap">
+        <label class="consent" for="consentShare">
+          <input id="consentShare" type="checkbox" required />
+          <span>
+            I agree to share my contact information and project details with one approved contractor in my area so they can contact me with an exact estimate.
+          </span>
+        </label>
+      </div>
+
+      <button type="submit" id="btn">Request My Exact Estimate →</button>
+    </form>
+
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    (() => {
+      const params = new URLSearchParams(window.location.search);
+      const prefillProjectType = params.get('projectType');
+      const prefillZip = params.get('zipCode');
+      const prefillDescription = params.get('description');
+
+      if (prefillProjectType) {
+        const normalized = prefillProjectType.toLowerCase();
+        const projectRadio = Array.from(document.querySelectorAll('input[name=projectType]')).find((r) => String(r.value).toLowerCase() === normalized);
+        if (projectRadio) projectRadio.checked = true;
+      }
+      if (prefillZip) document.getElementById('zipCode').value = prefillZip;
+      if (prefillDescription) document.getElementById('description').value = prefillDescription;
+    })();
+
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btn');
+      const result = document.getElementById('result');
+      result.style.display = 'none';
+
+      const projectType = document.querySelector('input[name=projectType]:checked')?.value;
+      if (!projectType) {
+        result.className = 'result error';
+        result.textContent = 'Please select a project type.';
+        result.style.display = 'block';
+        return;
+      }
+
+      const zipCode = document.getElementById('zipCode').value.trim();
+      if (!/^\d{5}$/.test(zipCode)) {
+        result.className = 'result error';
+        result.textContent = 'Please enter a valid 5-digit zip code.';
+        result.style.display = 'block';
+        return;
+      }
+
+      const payload = {
+        fullName: document.getElementById('fullName').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        zipCode,
+        streetAddress: document.getElementById('streetAddress').value.trim(),
+        projectType,
+        description: document.getElementById('description').value.trim(),
+      };
+
+      if (!payload.fullName || !payload.email || !payload.streetAddress) {
+        result.className = 'result error';
+        result.textContent = 'Please enter your name, email, and street address.';
+        result.style.display = 'block';
+        return;
+      }
+
+      const phoneDigits = payload.phone.replace(/\D/g, '');
+      if (!(phoneDigits.length === 10 || (phoneDigits.length === 11 && phoneDigits.startsWith('1')))) {
+        result.className = 'result error';
+        result.textContent = 'Please enter a valid US phone number.';
+        result.style.display = 'block';
+        return;
+      }
+
+      const consentChecked = document.getElementById('consentShare').checked;
+      if (!consentChecked) {
+        result.className = 'result error';
+        result.textContent = 'Please confirm consent to share your details with one approved contractor.';
+        result.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-submit-lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          result.className = 'result success';
+          const dashboardUrl = data.homeownerDashboardUrl || '/my-estimates.html';
+          result.innerHTML = `${data.message}<br /><br /><a href="${dashboardUrl}">Open My Estimates</a>`;
+          document.getElementById('form').reset();
+        } else {
+          result.className = 'result error';
+          result.textContent = data.error || 'Something went wrong. Please try again.';
+        }
+      } catch (err) {
+        result.className = 'result error';
+        result.textContent = 'Network error. Please try again.';
+      } finally {
+        result.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Request My Exact Estimate →';
+      }
+    });
+  </script>
+
+  <footer style="margin-top:40px;padding:20px 4px;border-top:1px solid #d3e2f5;text-align:center;font-size:.8rem;color:#7a99b8;">
+    <p style="margin:0 0 6px;">
+      <a href="/privacy-policy.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Privacy Policy</a>
+      <a href="/data-deletion.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Data Deletion</a>
+      <a href="/admin.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Admin</a>
+      <a href="/contractor-signup.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Contractors</a>
+    </p>
+    <p style="margin:0;">&copy; 2026 ProjectPrice. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>

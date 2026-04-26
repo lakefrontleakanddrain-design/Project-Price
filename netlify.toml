@@ -1,0 +1,8 @@
+[build]
+  publish = "web/public"
+
+[functions]
+  directory = "backend/functions"
+
+[functions."project-price-generate-estimates"]
+  timeout = 30
