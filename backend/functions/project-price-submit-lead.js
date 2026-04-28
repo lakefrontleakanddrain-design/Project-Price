@@ -4,6 +4,13 @@ const jsonResponse = (statusCode, body) => ({
   body: JSON.stringify(body),
 });
 
+const escapeHtml = (value) => String(value || '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
 const supabaseRequest = async (path, { method = 'GET', body, headers = {} } = {}) => {
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -45,6 +52,12 @@ const findAuthUserByEmail = async (email) => {
   const list = await supabaseRequest('/auth/v1/admin/users?page=1&per_page=1000');
   const users = Array.isArray(list?.users) ? list.users : [];
   return users.find((u) => String(u?.email || '').trim().toLowerCase() === target) || null;
+};
+
+const getAuthUserById = async (userId) => {
+  if (!userId) return null;
+  const record = await supabaseRequest(`/auth/v1/admin/users/${encodeURIComponent(userId)}`);
+  return record?.user || record || null;
 };
 
 const normalizePhone = (phone) => {
@@ -365,10 +378,18 @@ const dispatchFirstOffer = async (leadRequestId, lead) => {
 
   // Get first offer's professional contact
   const first = inserts[0];
-  const q = new URLSearchParams({ id: `eq.${first.professional_id}`, select: 'id,company_name,contact_phone', limit: '1' });
+  const q = new URLSearchParams({ id: `eq.${first.professional_id}`, select: 'id,user_id,company_name,contact_phone', limit: '1' });
   const pros = await supabaseRequest(`/rest/v1/professionals?${q.toString()}`);
   const pro = pros?.[0];
   if (!pro) return { dispatched: false, reason: 'Professional contact not found.' };
+
+  let proEmail = null;
+  try {
+    const authPro = await getAuthUserById(pro.user_id);
+    proEmail = authPro?.email || null;
+  } catch {
+    proEmail = null;
+  }
 
   // Get offer row id
   const oq = new URLSearchParams({
@@ -385,6 +406,13 @@ const dispatchFirstOffer = async (leadRequestId, lead) => {
   const smsBody = `ProjectPrice Lead: ${specialty} in ${lead.zip_code}${desc}. Reply YES within ${CLAIM_WINDOW_MINUTES} min to claim. Ref: ${leadRequestId.slice(0, 8)}`;
 
   const sms = await sendTwilioMessage(pro.contact_phone, smsBody);
+  const email = proEmail
+    ? await sendEmail({
+      to: proEmail,
+      subject: `ProjectPrice lead available ${leadRequestId.slice(0, 8)}`,
+      html: `<p>${escapeHtml(smsBody)}</p>`,
+    })
+    : { skipped: true, reason: 'Professional email not available.' };
 
   if (offerId) {
     const uq = new URLSearchParams({ id: `eq.${offerId}` });
@@ -395,7 +423,7 @@ const dispatchFirstOffer = async (leadRequestId, lead) => {
     });
   }
 
-  return { dispatched: true, prosNotified: matches.length, twilio: sms };
+  return { dispatched: true, prosNotified: matches.length, twilio: sms, email };
 };
 
 exports.handler = async (event) => {
@@ -619,6 +647,17 @@ exports.handler = async (event) => {
       homeownerSms = { sid: null, skipped: true };
     }
 
+    let homeownerEmail = { skipped: true, reason: 'Homeowner email not available.' };
+    try {
+      homeownerEmail = await sendEmail({
+        to: normalizedEmail,
+        subject: dispatchResult.noMatch ? 'Project Price update on your request' : 'Project Price request received',
+        html: `<p>${escapeHtml(homeownerSmsBody)}</p><p><a href="${escapeHtml(homeownerDashboardUrl)}">View your estimates dashboard</a></p>`,
+      });
+    } catch {
+      homeownerEmail = { skipped: true, reason: 'Email send failed.' };
+    }
+
     return jsonResponse(201, {
       message: responseMessage,
       leadRequestId: lead.id,
@@ -626,6 +665,7 @@ exports.handler = async (event) => {
       noMatch: dispatchResult.noMatch === true,
       homeownerDashboardUrl,
       smsReceiptSent: homeownerSms.skipped !== true,
+      emailReceiptSent: homeownerEmail.skipped !== true,
     });
   } catch (err) {
     return jsonResponse(500, { error: err instanceof Error ? err.message : 'Unexpected error.' });

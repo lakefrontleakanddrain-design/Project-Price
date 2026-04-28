@@ -4,6 +4,13 @@ const jsonResponse = (statusCode, body) => ({
   body: JSON.stringify(body),
 });
 
+const escapeHtml = (value) => String(value || '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
 const { appendActivityLog, loadRecentActivityLogs } = require('./_activity-log');
 
 const env = () => ({
@@ -831,14 +838,32 @@ const createContractor = async (payload) => {
     ? ` Welcome SMS failed: ${smsWarning}`
     : (smsResult?.skipped ? ` Welcome SMS not sent: ${smsResult.reason}` : ' Welcome SMS sent.');
 
+  let emailResult = { skipped: true, reason: 'Email not attempted.' };
+  let emailWarning = null;
+  try {
+    emailResult = await sendEmail({
+      to: email,
+      subject: 'Project Price contractor invite',
+      html: `<p>${escapeHtml(welcomeMessage)}</p>`,
+    });
+  } catch (err) {
+    emailResult = { skipped: true, reason: 'Email send failed.' };
+    emailWarning = err instanceof Error ? err.message : 'Email send failed.';
+  }
+
+  const emailSuffix = emailWarning
+    ? ` Welcome email failed: ${emailWarning}`
+    : (emailResult?.skipped ? ` Welcome email not sent: ${emailResult.reason}` : ' Welcome email sent.');
+
   return {
-    message: `Contractor ${companyName} created${approved ? ' and approved' : ' in pending state'}.${smsSuffix}`,
+    message: `Contractor ${companyName} created${approved ? ' and approved' : ' in pending state'}.${smsSuffix}${emailSuffix}`,
     professionalId,
     userId,
     temporaryPasswordGenerated: !requestedPassword,
     serviceRadiusMiles: kmToMiles(radius),
     welcomeLink: onboardingLink,
     welcomeSms: smsResult,
+    welcomeEmail: emailResult,
   };
 };
 
@@ -884,15 +909,26 @@ const reinviteContractor = async (professionalId, payload = {}) => {
     : `Project Price invite reminder: your contractor account is ready. Complete setup and start receiving leads here: ${onboardingLink}`;
 
   const smsResult = await sendTwilioMessage(contractor.contact_phone, welcomeMessage);
+  const emailResult = auth?.email
+    ? await sendEmail({
+      to: auth.email,
+      subject: 'Project Price contractor invite reminder',
+      html: `<p>${escapeHtml(welcomeMessage)}</p>`,
+    })
+    : { skipped: true, reason: 'Contractor email not available.' };
   const smsSuffix = smsResult?.skipped
     ? ` Invite SMS not sent: ${smsResult.reason}`
     : ' Invite SMS sent.';
+  const emailSuffix = emailResult?.skipped
+    ? ` Invite email not sent: ${emailResult.reason}`
+    : ' Invite email sent.';
 
   return {
-    message: `Invite resent to ${contractor.company_name || professionalId}.${smsSuffix}`,
+    message: `Invite resent to ${contractor.company_name || professionalId}.${smsSuffix}${emailSuffix}`,
     professionalId,
     welcomeLink: onboardingLink,
     welcomeSms: smsResult,
+    welcomeEmail: emailResult,
   };
 };
 
@@ -1089,6 +1125,8 @@ const assignLeadManually = async (leadRequestId, professionalId, adminActor = 'a
     authHomeowner = await getAuthUserContact(lead.homeowner_id);
   }
 
+  const authPro = pro.user_id ? await getAuthUserContact(pro.user_id) : null;
+
   const oq = new URLSearchParams({
     lead_request_id: `eq.${leadRequestId}`,
     professional_id: `eq.${professionalId}`,
@@ -1129,6 +1167,21 @@ const assignLeadManually = async (leadRequestId, professionalId, adminActor = 'a
   } catch (error) {
     twilioResult = { sid: null, skipped: true, reason: 'Twilio send failed.' };
     twilioWarning = error instanceof Error ? error.message : 'Twilio send failed.';
+  }
+
+  let emailResult = { skipped: true, reason: 'Contractor email not available.' };
+  let emailWarning = null;
+  if (authPro?.email) {
+    try {
+      emailResult = await sendEmail({
+        to: authPro.email,
+        subject: `Project Price lead assignment ${leadRequestId.slice(0, 8)}`,
+        html: `<p>${escapeHtml(smsBody).replace(/\n/g, '<br>')}</p>`,
+      });
+    } catch (error) {
+      emailResult = { skipped: true, reason: 'Email send failed.' };
+      emailWarning = error instanceof Error ? error.message : 'Email send failed.';
+    }
   }
 
   const twilioMarker = twilioResult?.sid
@@ -1191,10 +1244,14 @@ const assignLeadManually = async (leadRequestId, professionalId, adminActor = 'a
   const warningSuffix = twilioWarning
     ? ` Contractor SMS failed: ${twilioWarning}`
     : (twilioResult?.skipped ? ` Contractor SMS not sent: ${twilioResult.reason}` : ' Contractor SMS sent.');
+  const emailSuffix = emailWarning
+    ? ` Contractor email failed: ${emailWarning}`
+    : (emailResult?.skipped ? ` Contractor email not sent: ${emailResult.reason}` : ' Contractor email sent.');
 
   return {
-    message: `Lead ${leadRequestId.slice(0, 8)} manually assigned to ${pro.company_name || professionalId} by ${actor}.${warningSuffix}`,
+    message: `Lead ${leadRequestId.slice(0, 8)} manually assigned to ${pro.company_name || professionalId} by ${actor}.${warningSuffix}${emailSuffix}`,
     twilio: twilioResult,
+    email: emailResult,
   };
 };
 
@@ -1373,14 +1430,27 @@ exports.handler = async (event) => {
 
         const smsBody = `Project Price account update: your temporary password is ${String(payload.newPassword || '')}. Sign in here: ${resolvePublicBaseUrl()}/contractor-portal.html . If needed, set a new password here: ${onboardingLink}`;
         smsResult = await sendTwilioMessage(contractor.contact_phone, smsBody);
+        if (auth?.email) {
+          result.welcomeEmail = await sendEmail({
+            to: auth.email,
+            subject: 'Project Price temporary password',
+            html: `<p>${escapeHtml(smsBody)}</p>`,
+          });
+        } else {
+          result.welcomeEmail = { skipped: true, reason: 'Contractor email not available.' };
+        }
       } catch (err) {
         smsResult = { sid: null, skipped: true, reason: 'Temp password SMS failed.' };
         smsWarning = err instanceof Error ? err.message : 'Temp password SMS failed.';
+        if (!result.welcomeEmail) result.welcomeEmail = { skipped: true, reason: 'Temp password email failed.' };
       }
       const smsSuffix = smsWarning
         ? ` Contractor notification SMS failed: ${smsWarning}`
         : (smsResult?.skipped ? ` Contractor notification SMS not sent: ${smsResult.reason}` : ' Contractor notification SMS sent.');
-      result.message = `${result.message}${smsSuffix}`;
+      const emailSuffix = result.welcomeEmail?.skipped
+        ? ` Contractor notification email not sent: ${result.welcomeEmail.reason || 'Unknown reason.'}`
+        : ' Contractor notification email sent.';
+      result.message = `${result.message}${smsSuffix}${emailSuffix}`;
       result.welcomeLink = onboardingLink;
       result.welcomeSms = smsResult;
       await appendActivityLog(supabaseRequest, buildActivityEntry(event, payload, action, result));

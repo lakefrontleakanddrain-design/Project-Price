@@ -90,6 +90,20 @@ const sendTwilioMessage = async (to, message) => {
   return { sid: data.sid, skipped: false };
 };
 
+const getAuthUserContact = async (userId) => {
+  if (!userId) return null;
+  try {
+    const payload = await supabaseRequest(`/auth/v1/admin/users/${encodeURIComponent(userId)}`);
+    const user = payload?.user || payload || null;
+    return {
+      email: user?.email || null,
+      phone: user?.phone || null,
+    };
+  } catch {
+    return null;
+  }
+};
+
 const sendEmail = async ({ to, subject, html }) => {
   const { resendApiKey, notificationsFromEmail, notificationsReplyToEmail } = env();
   if (!resendApiKey || !to) return { skipped: true, reason: 'Missing Resend API key or recipient email.' };
@@ -272,12 +286,29 @@ const notifyNoMatch = async (lead, leadRequestId, prosTried = 0) => {
     });
     const leadRows = await supabaseRequest(`/rest/v1/lead_requests?${homeownerQ.toString()}`);
     const homeownerPhone = leadRows?.[0]?.homeowner_phone;
+    const homeownerEmail = leadRows?.[0]?.homeowner_email;
 
     if (homeownerPhone) {
       const homeownerMsg =
         `ProjectPrice: We weren't able to match your ${specialty} request (Ref: ${ref}) in ${zip} with an available contractor right now. ` +
         `Our team has been notified and will follow up shortly. You can also re-submit anytime at: ${dashboardUrl}`;
       await sendTwilioMessage(homeownerPhone, homeownerMsg);
+      if (homeownerEmail) {
+        await sendEmail({
+          to: homeownerEmail,
+          subject: `ProjectPrice update for request ${ref}`,
+          html: `<p>${escapeXml(homeownerMsg)}</p><p><a href="${escapeXml(dashboardUrl)}">View your estimates</a></p>`,
+        });
+      }
+    } else if (homeownerEmail) {
+      const homeownerMsg =
+        `ProjectPrice: We weren't able to match your ${specialty} request (Ref: ${ref}) in ${zip} with an available contractor right now. ` +
+        `Our team has been notified and will follow up shortly. You can also re-submit anytime at: ${dashboardUrl}`;
+      await sendEmail({
+        to: homeownerEmail,
+        subject: `ProjectPrice update for request ${ref}`,
+        html: `<p>${escapeXml(homeownerMsg)}</p><p><a href="${escapeXml(dashboardUrl)}">View your estimates</a></p>`,
+      });
     }
   } catch {
     // Non-fatal: log silently, don't block the response
@@ -331,12 +362,14 @@ const dispatchNextOffer = async (leadRequestId) => {
 
   const q = new URLSearchParams({
     id: `eq.${next.professional_id}`,
-    select: 'id,company_name,contact_phone',
+    select: 'id,user_id,company_name,contact_phone',
     limit: '1',
   });
   const pros = await supabaseRequest(`/rest/v1/professionals?${q.toString()}`);
   const pro = pros?.[0];
   if (!pro) throw new Error('Professional contact not found.');
+
+  const authPro = await getAuthUserContact(pro.user_id);
 
   const specialty = lead.project?.project_type || lead.specialty || 'Construction';
   const zip = lead.zip_code || '';
@@ -344,6 +377,13 @@ const dispatchNextOffer = async (leadRequestId) => {
   const smsBody = `ProjectPrice Lead: ${specialty} in ${zip}${desc}. Reply YES within ${CLAIM_WINDOW_MINUTES} min to claim. Ref: ${leadRequestId.slice(0, 8)}`;
 
   const sms = await sendTwilioMessage(pro.contact_phone, smsBody);
+  const email = authPro?.email
+    ? await sendEmail({
+      to: authPro.email,
+      subject: `ProjectPrice lead available ${leadRequestId.slice(0, 8)}`,
+      html: `<p>${escapeXml(smsBody)}</p>`,
+    })
+    : { skipped: true, reason: 'Professional email not available.' };
 
   await markOffer(next.id, {
     offered_at: new Date().toISOString(),
@@ -351,7 +391,7 @@ const dispatchNextOffer = async (leadRequestId) => {
     twilio_message_sid: sms.sid,
   });
 
-  return { message: `Offer sent to position ${next.position}.`, twilio: sms };
+  return { message: `Offer sent to position ${next.position}.`, twilio: sms, email };
 };
 
 const handleTwilioReply = async (fromPhone, body) => {
