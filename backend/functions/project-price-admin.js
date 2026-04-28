@@ -66,7 +66,7 @@ const buildActivityEntry = (event, payload, action, result) => {
   if (action === 'assign_lead' || action === 'remove_lead') {
     base.targetType = 'lead';
     base.targetId = payload.leadRequestId || null;
-  } else if (action === 'approve_contractor' || action === 'pause_contractor' || action === 'deny_contractor' || action === 'update_contractor_profile' || action === 'reset_contractor_password' || action === 'generate_contractor_recovery' || action === 'delete_professional' || action === 'create_contractor') {
+  } else if (action === 'approve_contractor' || action === 'pause_contractor' || action === 'deny_contractor' || action === 'update_contractor_profile' || action === 'reset_contractor_password' || action === 'generate_contractor_recovery' || action === 'reinvite_contractor' || action === 'delete_professional' || action === 'create_contractor') {
     base.targetType = 'professional';
     base.targetId = payload.professionalId || result?.professionalId || null;
   } else if (action === 'set_lead_homeowner_email' || action === 'set_lead_homeowner_phone') {
@@ -839,6 +839,36 @@ const generateContractorRecovery = async (professionalId, redirectTo) => {
   return generateRecoveryLink(auth.email, redirectTo);
 };
 
+const reinviteContractor = async (professionalId, payload = {}) => {
+  if (!professionalId) throw new Error('professionalId is required.');
+
+  const contractor = await getContractorById(professionalId);
+  if (!contractor) throw new Error('Contractor not found.');
+
+  const auth = contractor.user_id ? await getAuthUserContact(contractor.user_id) : null;
+  const recovery = auth?.email
+    ? await generateRecoveryLink(auth.email, buildDefaultRecoveryRedirect())
+    : null;
+
+  const onboardingLink = recovery?.actionLink || `${resolvePublicBaseUrl()}/contractor-portal.html`;
+  const template = String(payload.welcomeTemplate || 'standard').trim().toLowerCase();
+  const welcomeMessage = template === 'founding'
+    ? `Project Price check-in: your Founding Pro invite is ready. Complete setup and claim leads here: ${onboardingLink}`
+    : `Project Price invite reminder: your contractor account is ready. Complete setup and start receiving leads here: ${onboardingLink}`;
+
+  const smsResult = await sendTwilioMessage(contractor.contact_phone, welcomeMessage);
+  const smsSuffix = smsResult?.skipped
+    ? ` Invite SMS not sent: ${smsResult.reason}`
+    : ' Invite SMS sent.';
+
+  return {
+    message: `Invite resent to ${contractor.company_name || professionalId}.${smsSuffix}`,
+    professionalId,
+    welcomeLink: onboardingLink,
+    welcomeSms: smsResult,
+  };
+};
+
 const deleteHomeowner = async (homeownerId) => {
   if (!homeownerId) throw new Error('homeownerId is required.');
 
@@ -1338,6 +1368,12 @@ exports.handler = async (event) => {
 
     if (action === 'generate_contractor_recovery') {
       const result = await generateContractorRecovery(payload.professionalId, payload.redirectTo || null);
+      await appendActivityLog(supabaseRequest, buildActivityEntry(event, payload, action, result));
+      return jsonResponse(200, result);
+    }
+
+    if (action === 'reinvite_contractor') {
+      const result = await reinviteContractor(payload.professionalId, payload);
       await appendActivityLog(supabaseRequest, buildActivityEntry(event, payload, action, result));
       return jsonResponse(200, result);
     }

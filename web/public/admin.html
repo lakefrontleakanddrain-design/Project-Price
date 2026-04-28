@@ -992,6 +992,7 @@
             <button class="small" onclick="resetContractorPassword('${c.id}')">Temp Password</button>
             <button class="small secondary" onclick="generateContractorRecovery('${c.id}')">Recovery Link</button>
             <button class="small" onclick="emailContractorRecovery('${c.id}')">Prepare Email</button>
+            <button class="small secondary" onclick="reinviteContractor('${c.id}')">Reinvite</button>
           </div>
           <div class="actions">
             <input id="contractor-recovery-link-${c.id}" type="text" placeholder="Recovery link will appear here" readonly />
@@ -1671,6 +1672,22 @@
         label: 'Contractor',
         prepareEmail: true,
       });
+    };
+
+    window.reinviteContractor = async (professionalId) => {
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ action: 'reinvite_contractor', professionalId, welcomeTemplate: 'standard' }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        if (data.welcomeLink) setRecoveryField(`contractor-recovery-link-${professionalId}`, data.welcomeLink);
+        showMessage(data.message || 'Invite resent.', 'success');
+      } catch (err) {
+        showMessage(err.message || 'Unable to resend invite.', 'error');
+      }
     };
 
     window.resetContractorPassword = async (professionalId) => {
