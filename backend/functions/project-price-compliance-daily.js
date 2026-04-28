@@ -8,7 +8,8 @@ const env = () => ({
   supabaseUrl: process.env.SUPABASE_URL,
   serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   resendApiKey: process.env.RESEND_API_KEY || '',
-  notificationsFromEmail: process.env.NOTIFICATIONS_FROM_EMAIL || 'Projectpriceapp@gmail.com',
+  notificationsFromEmail: process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectpriceapp.com',
+  notificationsReplyToEmail: process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'Projectpriceapp@gmail.com',
   complianceFromEmail: process.env.COMPLIANCE_FROM_EMAIL || 'compliance@projectprice.app',
   appBaseUrl: process.env.APP_BASE_URL || 'https://project-price-app.netlify.app',
   complianceRunKey: process.env.COMPLIANCE_RUN_KEY || '',
@@ -42,7 +43,7 @@ const supabaseRequest = async (path, { method = 'GET', body, headers = {} } = {}
 };
 
 const sendEmail = async ({ to, subject, html }) => {
-  const { resendApiKey, complianceFromEmail } = env();
+  const { resendApiKey, notificationsFromEmail, notificationsReplyToEmail } = env();
   if (!resendApiKey || !to) return { skipped: true };
 
   const res = await fetch('https://api.resend.com/emails', {
@@ -52,8 +53,9 @@ const sendEmail = async ({ to, subject, html }) => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: complianceFromEmail,
+      from: notificationsFromEmail,
       to: [to],
+      reply_to: notificationsReplyToEmail,
       subject,
       html,
     }),

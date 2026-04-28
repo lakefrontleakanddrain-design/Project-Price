@@ -27,7 +27,8 @@ const env = () => ({
   adminPhone: process.env.ADMIN_PHONE_NUMBER,
   appBaseUrl: process.env.APP_BASE_URL || 'https://project-price-app.netlify.app',
   resendApiKey: process.env.RESEND_API_KEY || '',
-  notificationsFromEmail: process.env.NOTIFICATIONS_FROM_EMAIL || 'Projectpriceapp@gmail.com',
+  notificationsFromEmail: process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectpriceapp.com',
+  notificationsReplyToEmail: process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'Projectpriceapp@gmail.com',
 });
 
 const supabaseRequest = async (path, { method = 'GET', body, headers = {} } = {}) => {
@@ -90,7 +91,7 @@ const sendTwilioMessage = async (to, message) => {
 };
 
 const sendEmail = async ({ to, subject, html }) => {
-  const { resendApiKey, notificationsFromEmail } = env();
+  const { resendApiKey, notificationsFromEmail, notificationsReplyToEmail } = env();
   if (!resendApiKey || !to) return { skipped: true, reason: 'Missing Resend API key or recipient email.' };
 
   const res = await fetch('https://api.resend.com/emails', {
@@ -102,6 +103,7 @@ const sendEmail = async ({ to, subject, html }) => {
     body: JSON.stringify({
       from: notificationsFromEmail,
       to: [to],
+      reply_to: notificationsReplyToEmail,
       subject,
       html,
     }),

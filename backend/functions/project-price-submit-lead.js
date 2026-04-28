@@ -69,7 +69,8 @@ const getAppBaseUrl = () => (process.env.APP_BASE_URL || 'https://project-price-
 const getAdminPhone = () => String(process.env.ADMIN_PHONE_NUMBER || '').trim();
 const getGoogleMapsApiKey = () => String(process.env.GOOGLE_MAPS_API_KEY || '').trim();
 const getResendApiKey = () => String(process.env.RESEND_API_KEY || '').trim();
-const getNotificationsFromEmail = () => String(process.env.NOTIFICATIONS_FROM_EMAIL || 'Projectpriceapp@gmail.com').trim();
+const getNotificationsFromEmail = () => String(process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectpriceapp.com').trim();
+const getNotificationsReplyToEmail = () => String(process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'Projectpriceapp@gmail.com').trim();
 
 const toFloatOrNull = (value) => {
   const num = Number(value);
@@ -272,6 +273,7 @@ const sendTwilioMessage = async (to, message) => {
 const sendEmail = async ({ to, subject, html }) => {
   const resendApiKey = getResendApiKey();
   const notificationsFromEmail = getNotificationsFromEmail();
+  const notificationsReplyToEmail = getNotificationsReplyToEmail();
   if (!resendApiKey || !to) return { skipped: true, reason: 'Missing Resend API key or recipient email.' };
 
   const res = await fetch('https://api.resend.com/emails', {
@@ -283,6 +285,7 @@ const sendEmail = async ({ to, subject, html }) => {
     body: JSON.stringify({
       from: notificationsFromEmail,
       to: [to],
+      reply_to: notificationsReplyToEmail,
       subject,
       html,
     }),
