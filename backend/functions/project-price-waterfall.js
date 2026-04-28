@@ -25,11 +25,21 @@ const env = () => ({
   twilioFrom: process.env.TWILIO_FROM_NUMBER,
   contractorDashboardUrl: process.env.CONTRACTOR_DASHBOARD_URL,
   adminPhone: process.env.ADMIN_PHONE_NUMBER,
+  adminNotificationEmail: process.env.ADMIN_NOTIFICATION_EMAIL || '',
+  salesNotificationEmail: process.env.SALES_NOTIFICATION_EMAIL || '',
   appBaseUrl: process.env.APP_BASE_URL || 'https://project-price-app.netlify.app',
   resendApiKey: process.env.RESEND_API_KEY || '',
   notificationsFromEmail: process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectpriceapp.com',
   notificationsReplyToEmail: process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'Projectpriceapp@gmail.com',
 });
+
+const getInternalNotificationEmails = () => {
+  const { adminNotificationEmail, salesNotificationEmail } = env();
+  return Array.from(new Set([
+    String(adminNotificationEmail || '').trim().toLowerCase(),
+    String(salesNotificationEmail || '').trim().toLowerCase(),
+  ].filter((email) => /^\S+@\S+\.\S+$/.test(email))));
+};
 
 const supabaseRequest = async (path, { method = 'GET', body, headers = {} } = {}) => {
   const { supabaseUrl, serviceKey } = env();
@@ -272,6 +282,7 @@ const claimOffer = async (offer) => {
 
 const notifyNoMatch = async (lead, leadRequestId, prosTried = 0) => {
   const { adminPhone, appBaseUrl } = env();
+  const internalEmails = getInternalNotificationEmails();
   const specialty = lead.project?.project_type || lead.specialty || 'project';
   const zip = lead.zip_code || 'unknown zip';
   const ref = leadRequestId.slice(0, 8);
@@ -316,14 +327,23 @@ const notifyNoMatch = async (lead, leadRequestId, prosTried = 0) => {
 
   // Option C: Notify admin/sales for manual follow-up
   try {
+    const triedText = prosTried > 0 ? `\nContractors tried: ${prosTried} (all declined or timed out).` : '';
+    const adminMsg =
+      `ACTION NEEDED \u2014 ProjectPrice No-Match Alert\n` +
+      `Lead Ref: ${ref}\n` +
+      `Type: ${specialty} in ${zip}${triedText}\n` +
+      `Manually follow up or expand contractor coverage.`;
+
     if (adminPhone) {
-      const triedText = prosTried > 0 ? `\nContractors tried: ${prosTried} (all declined or timed out).` : '';
-      const adminMsg =
-        `ACTION NEEDED \u2014 ProjectPrice No-Match Alert\n` +
-        `Lead Ref: ${ref}\n` +
-        `Type: ${specialty} in ${zip}${triedText}\n` +
-        `Manually follow up or expand contractor coverage.`;
       await sendTwilioMessage(adminPhone, adminMsg);
+    }
+
+    for (const recipient of internalEmails) {
+      await sendEmail({
+        to: recipient,
+        subject: `ACTION NEEDED: ProjectPrice no-match ${ref}`,
+        html: `<p>${escapeXml(adminMsg).replace(/\n/g, '<br>')}</p>`,
+      });
     }
   } catch {
     // Non-fatal

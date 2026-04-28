@@ -80,10 +80,16 @@ const loadOwnedProject = async (projectId, ownerId) => {
 
 const getAppBaseUrl = () => (process.env.APP_BASE_URL || 'https://project-price-app.netlify.app').replace(/\/$/, '');
 const getAdminPhone = () => String(process.env.ADMIN_PHONE_NUMBER || '').trim();
+const getAdminNotificationEmail = () => String(process.env.ADMIN_NOTIFICATION_EMAIL || '').trim().toLowerCase();
+const getSalesNotificationEmail = () => String(process.env.SALES_NOTIFICATION_EMAIL || '').trim().toLowerCase();
 const getGoogleMapsApiKey = () => String(process.env.GOOGLE_MAPS_API_KEY || '').trim();
 const getResendApiKey = () => String(process.env.RESEND_API_KEY || '').trim();
 const getNotificationsFromEmail = () => String(process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectpriceapp.com').trim();
 const getNotificationsReplyToEmail = () => String(process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'Projectpriceapp@gmail.com').trim();
+const getInternalNotificationEmails = () => Array.from(new Set([
+  getAdminNotificationEmail(),
+  getSalesNotificationEmail(),
+].filter((email) => /^\S+@\S+\.\S+$/.test(email))));
 
 const toFloatOrNull = (value) => {
   const num = Number(value);
@@ -311,7 +317,10 @@ const sendEmail = async ({ to, subject, html }) => {
 
 const notifyAdminNoMatch = async (leadRequestId, lead) => {
   const adminPhone = getAdminPhone();
-  if (!adminPhone) return { sid: null, skipped: true, reason: 'Missing ADMIN_PHONE_NUMBER.' };
+  const internalEmails = getInternalNotificationEmails();
+  if (!adminPhone && internalEmails.length === 0) {
+    return { skipped: true, reason: 'Missing internal no-match notification targets.' };
+  }
 
   const specialty = lead.projectType || lead.specialty || 'project';
   const zip = lead.zip_code || 'unknown zip';
@@ -321,8 +330,21 @@ const notifyAdminNoMatch = async (leadRequestId, lead) => {
     `Lead Ref: ${ref}\n` +
     `Type: ${specialty} in ${zip}\n` +
     `No approved contractors matched at submission. Manually follow up or expand contractor coverage.`;
+  const sms = adminPhone
+    ? await sendTwilioMessage(adminPhone, message)
+    : { sid: null, skipped: true, reason: 'Missing ADMIN_PHONE_NUMBER.' };
 
-  return sendTwilioMessage(adminPhone, message);
+  const emailResults = [];
+  for (const recipient of internalEmails) {
+    const email = await sendEmail({
+      to: recipient,
+      subject: `ACTION NEEDED: ProjectPrice no-match ${ref}`,
+      html: `<p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>`,
+    });
+    emailResults.push({ to: recipient, ...email });
+  }
+
+  return { sms, emails: emailResults };
 };
 
 const dispatchFirstOffer = async (leadRequestId, lead) => {
