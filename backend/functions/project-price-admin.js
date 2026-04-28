@@ -13,7 +13,7 @@ const escapeHtml = (value) => String(value || '')
 
 const formatLeadRef = (leadRequestId) => `PP-${String(leadRequestId || '').slice(0, 8).toUpperCase()}`;
 
-const renderEmailTemplate = ({ title, intro, details = [], ctaLabel, ctaUrl, reference = null }) => {
+const renderEmailTemplate = ({ title, intro, details = [], ctaLabel, ctaUrl, reference = null, logoUrl = `${resolvePublicBaseUrl()}/logo.jpg` }) => {
   const detailsHtml = details.length
     ? `<ul style="margin:0 0 16px 18px;padding:0;color:#2f3b4a;">${details.map((item) => `<li style="margin:0 0 6px 0;">${escapeHtml(item)}</li>`).join('')}</ul>`
     : '';
@@ -23,10 +23,14 @@ const renderEmailTemplate = ({ title, intro, details = [], ctaLabel, ctaUrl, ref
   const referenceHtml = reference
     ? `<p style="margin:12px 0 0 0;color:#68778d;font-size:13px;">Reference: ${escapeHtml(reference)}</p>`
     : '';
+  const logoHtml = logoUrl
+    ? `<p style="margin:0 0 12px 0;"><img src="${escapeHtml(logoUrl)}" alt="Project Price" style="height:36px;width:auto;border:0;display:block;" /></p>`
+    : '';
 
   return `
     <div style="font-family:Segoe UI,Arial,sans-serif;background:#f5f8fc;padding:24px;">
       <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #dbe4ef;border-radius:12px;padding:24px;">
+        ${logoHtml}
         <p style="margin:0 0 12px 0;color:#0E3A78;font-weight:700;">Project Price</p>
         <h2 style="margin:0 0 12px 0;color:#112035;font-size:22px;">${escapeHtml(title)}</h2>
         <p style="margin:0 0 14px 0;color:#2f3b4a;line-height:1.5;">${escapeHtml(intro)}</p>
