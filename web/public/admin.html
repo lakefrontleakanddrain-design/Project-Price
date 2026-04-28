@@ -992,6 +992,10 @@
             <button class="small" onclick="resetContractorPassword('${c.id}')">Temp Password</button>
             <button class="small secondary" onclick="generateContractorRecovery('${c.id}')">Recovery Link</button>
             <button class="small" onclick="emailContractorRecovery('${c.id}')">Prepare Email</button>
+            <select id="contractor-reinvite-template-${c.id}">
+              <option value="standard" selected>Standard Invite</option>
+              <option value="founding">Founding Pro</option>
+            </select>
             <button class="small secondary" onclick="reinviteContractor('${c.id}')">Reinvite</button>
           </div>
           <div class="actions">
@@ -1675,11 +1679,12 @@
     };
 
     window.reinviteContractor = async (professionalId) => {
+      const template = document.getElementById(`contractor-reinvite-template-${professionalId}`)?.value || 'standard';
       try {
         const res = await fetch('/.netlify/functions/project-price-admin', {
           method: 'POST',
           headers: getHeaders(),
-          body: JSON.stringify({ action: 'reinvite_contractor', professionalId, welcomeTemplate: 'standard' }),
+          body: JSON.stringify({ action: 'reinvite_contractor', professionalId, welcomeTemplate: template }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Action failed.');
