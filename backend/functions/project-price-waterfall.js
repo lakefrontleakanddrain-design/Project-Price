@@ -26,6 +26,8 @@ const env = () => ({
   contractorDashboardUrl: process.env.CONTRACTOR_DASHBOARD_URL,
   adminPhone: process.env.ADMIN_PHONE_NUMBER,
   appBaseUrl: process.env.APP_BASE_URL || 'https://project-price-app.netlify.app',
+  resendApiKey: process.env.RESEND_API_KEY || '',
+  notificationsFromEmail: process.env.NOTIFICATIONS_FROM_EMAIL || 'Projectpriceapp@gmail.com',
 });
 
 const supabaseRequest = async (path, { method = 'GET', body, headers = {} } = {}) => {
@@ -85,6 +87,29 @@ const sendTwilioMessage = async (to, message) => {
     throw new Error(`Twilio error ${res.status}: ${JSON.stringify(data)}`);
   }
   return { sid: data.sid, skipped: false };
+};
+
+const sendEmail = async ({ to, subject, html }) => {
+  const { resendApiKey, notificationsFromEmail } = env();
+  if (!resendApiKey || !to) return { skipped: true, reason: 'Missing Resend API key or recipient email.' };
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: notificationsFromEmail,
+      to: [to],
+      subject,
+      html,
+    }),
+  });
+
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Resend error ${res.status}: ${text}`);
+  return { skipped: false };
 };
 
 const CLAIM_WINDOW_MINUTES = 10;

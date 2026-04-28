@@ -11,6 +11,8 @@ const env = () => ({
   serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   adminKey: process.env.ADMIN_DASHBOARD_KEY || '',
   siteUrl: process.env.SITE_URL || process.env.URL || '',
+  resendApiKey: process.env.RESEND_API_KEY || '',
+  notificationsFromEmail: process.env.NOTIFICATIONS_FROM_EMAIL || 'Projectpriceapp@gmail.com',
 });
 
 const supabaseRequest = async (path, { method = 'GET', body, headers = {} } = {}) => {
@@ -276,6 +278,29 @@ const sendTwilioMessage = async (to, message) => {
   }
 
   return { sid: data.sid, skipped: false, to: normalizedTo };
+};
+
+const sendEmail = async ({ to, subject, html }) => {
+  const { resendApiKey, notificationsFromEmail } = env();
+  if (!resendApiKey || !to) return { skipped: true, reason: 'Missing Resend API key or recipient email.' };
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: notificationsFromEmail,
+      to: [to],
+      subject,
+      html,
+    }),
+  });
+
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Resend error ${res.status}: ${text}`);
+  return { skipped: false };
 };
 
 const loadContractors = async () => {

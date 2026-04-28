@@ -68,6 +68,8 @@ const loadOwnedProject = async (projectId, ownerId) => {
 const getAppBaseUrl = () => (process.env.APP_BASE_URL || 'https://project-price-app.netlify.app').replace(/\/$/, '');
 const getAdminPhone = () => String(process.env.ADMIN_PHONE_NUMBER || '').trim();
 const getGoogleMapsApiKey = () => String(process.env.GOOGLE_MAPS_API_KEY || '').trim();
+const getResendApiKey = () => String(process.env.RESEND_API_KEY || '').trim();
+const getNotificationsFromEmail = () => String(process.env.NOTIFICATIONS_FROM_EMAIL || 'Projectpriceapp@gmail.com').trim();
 
 const toFloatOrNull = (value) => {
   const num = Number(value);
@@ -265,6 +267,30 @@ const sendTwilioMessage = async (to, message) => {
   const data = await res.json();
   if (!res.ok) throw new Error(`Twilio error ${res.status}: ${JSON.stringify(data)}`);
   return { sid: data.sid, skipped: false };
+};
+
+const sendEmail = async ({ to, subject, html }) => {
+  const resendApiKey = getResendApiKey();
+  const notificationsFromEmail = getNotificationsFromEmail();
+  if (!resendApiKey || !to) return { skipped: true, reason: 'Missing Resend API key or recipient email.' };
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: notificationsFromEmail,
+      to: [to],
+      subject,
+      html,
+    }),
+  });
+
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Resend error ${res.status}: ${text}`);
+  return { skipped: false };
 };
 
 const notifyAdminNoMatch = async (leadRequestId, lead) => {
