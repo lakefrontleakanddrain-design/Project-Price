@@ -38,3 +38,12 @@ apps/mobile/.flutter-plugins-dependencies
 
 # Local-only scripts
 infra/scripts/*.local.*
+
+# Signing keys and certificates
+*.p8
+*.p12
+*.mobileprovision
+*.jks
+*.keystore
+**/key.properties
+**/*secrets*.txt
