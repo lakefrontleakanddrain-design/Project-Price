@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -6,7 +6,7 @@
   <link rel="icon" type="image/jpeg" href="/logo.jpg" />
   <link rel="shortcut icon" type="image/jpeg" href="/logo.jpg" />
   <link rel="apple-touch-icon" href="/logo.jpg" />
-  <title>ProjectPrice - Admin Console</title>
+  <title>ProjectPrice™ - Admin Console</title>
   <style>
     :root { --navy: #0e3a78; --emerald: #16a36a; --bg: #f3f8ff; }
     * { box-sizing: border-box; }
@@ -152,6 +152,8 @@
     .tag.pending { background: #fff7e8; color: #8a5800; border: 1px solid #ffd591; }
     .tag.expired { background: #f5f5f5; color: #666; border: 1px solid #d9d9d9; }
     .tag.denied { background: #fdecea; color: #7a1a14; border: 1px solid #f5b7b1; }
+    .tag.warn { background: #fff7e8; color: #8a5800; border: 1px solid #ffd591; }
+    .tag.breach { background: #fdecea; color: #7a1a14; border: 1px solid #f5b7b1; }
     .meta { margin: 0; color: #4a6a8a; font-size: .82rem; }
     .actions {
       margin-top: 8px;
@@ -178,11 +180,100 @@
       color: #6a86a3;
       word-break: break-word;
     }
+    .admin-banner {
+      border: 1px solid #ffd591;
+      background: #fff7e8;
+      color: #8a5800;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin: 0 0 12px;
+      font-size: .88rem;
+      font-weight: 700;
+    }
+    .queue-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .queue-card {
+      border: 1px solid #d5e3f8;
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px;
+      cursor: pointer;
+      text-align: left;
+      color: #16385b;
+      font-weight: 600;
+    }
+    .queue-card:hover { border-color: #0e3a78; }
+    .queue-card span {
+      color: #4a6a8a;
+      font-size: .83rem;
+    }
+    .queue-card strong {
+      display: block;
+      font-size: 1.05rem;
+      color: #0e3a78;
+      margin-bottom: 4px;
+    }
+    .queue-card.active {
+      border-color: #0e3a78;
+      box-shadow: 0 0 0 2px rgba(14, 58, 120, 0.08);
+      background: #f6faff;
+    }
+    .queue-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 4px;
+    }
+    @media (max-width: 1280px) {
+      .queue-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 980px) {
+      .queue-grid { grid-template-columns: 1fr; }
+    }
+    .column-search {
+      width: 100%;
+      border: 1px solid #bfd2ee;
+      border-radius: 10px;
+      padding: 8px 10px;
+      margin: 0 0 8px;
+      font-size: .85rem;
+      outline: none;
+      background: #fff;
+    }
+    .column-search:focus {
+      border-color: #0e3a78;
+    }
+    .ops-toolbar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+      align-items: end;
+    }
+    .bulk-bar {
+      border: 1px solid #d5e3f8;
+      background: #f8fbff;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+      align-items: end;
+    }
+    .bulk-bar label {
+      font-size: .78rem;
+      margin-bottom: 4px;
+    }
   </style>
 </head>
 <body>
   <header class="brand-bar">
-    <a href="/" class="brand-logo"><img src="/logo.jpg" alt="ProjectPrice" /></a>
+    <a href="/" class="brand-logo"><img src="/logo.jpg" alt="ProjectPrice™" /></a>
     <nav class="brand-nav">
       <a href="/get-quotes.html">Request Estimate</a>
       <a href="/my-estimates.html">My Saved Projects</a>
@@ -193,7 +284,6 @@
 
   <main class="card">
     <h1>Admin Console</h1>
-    <p class="sub">Review contractors, edit account contact info, reset passwords, inspect lead ownership, and manually assign leads.</p>
 
     <div class="top">
       <div>
@@ -222,6 +312,88 @@
     </div>
 
     <div class="result" id="result"></div>
+
+    <section class="panel" style="min-height:0;margin-bottom:14px;">
+      <h2>National Ops Controls</h2>
+      <div class="ops-toolbar">
+        <div>
+          <label for="adminRole">Role Preset</label>
+          <select id="adminRole">
+            <option value="ops" selected>Operations Admin</option>
+            <option value="contractor_success">Contractor Success</option>
+            <option value="risk_compliance">Risk / Compliance</option>
+            <option value="super_admin">Super Admin</option>
+          </select>
+        </div>
+        <div>
+          <label for="regionFilter">Region</label>
+          <select id="regionFilter">
+            <option value="all" selected>All Regions</option>
+            <option value="northeast">Northeast</option>
+            <option value="south">South</option>
+            <option value="midwest">Midwest</option>
+            <option value="west">West</option>
+            <option value="unknown">Unknown</option>
+          </select>
+        </div>
+        <div>
+          <label for="stateFilter">State</label>
+          <select id="stateFilter">
+            <option value="all" selected>All States</option>
+          </select>
+        </div>
+        <div>
+          <label for="savedViewName">Saved View Name</label>
+          <input id="savedViewName" type="text" placeholder="e.g. morning-triage" />
+        </div>
+        <div>
+          <label for="savedViewSelect">Saved Views</label>
+          <select id="savedViewSelect">
+            <option value="">Select saved view...</option>
+          </select>
+        </div>
+        <button id="saveViewBtn" class="secondary" type="button">Save View</button>
+        <button id="loadSavedViewBtn" class="secondary" type="button">Load Saved View</button>
+        <button id="deleteSavedViewBtn" type="button">Delete Saved View</button>
+        <button id="loadRoleViewBtn" type="button">Load Role Defaults</button>
+      </div>
+    </section>
+
+    <section class="bulk-bar" style="min-height:0;">
+      <div>
+        <label for="bulkLeadAssignProfessional">Bulk Lead Assignment</label>
+        <select id="bulkLeadAssignProfessional">
+          <option value="">Select approved contractor...</option>
+        </select>
+      </div>
+      <button id="bulkAssignLeadsBtn" class="secondary" type="button">Assign Selected Leads</button>
+      <button id="bulkRemoveLeadsBtn" type="button">Remove Selected Leads</button>
+      <button id="bulkApproveContractorsBtn" class="secondary" type="button">Approve Selected Contractors</button>
+      <button id="bulkPauseContractorsBtn" type="button">Pause Selected Contractors</button>
+    </section>
+
+    <section class="panel" style="min-height:0;margin-bottom:14px;">
+      <h2>Operations Queues</h2>
+      <p class="meta" style="margin-bottom:10px;">Prioritize urgent work without losing detailed contractor/homeowner/lead controls below.</p>
+      <div class="queue-cards" id="queueCards"></div>
+      <div class="queue-grid">
+        <section class="panel" style="min-height:0;">
+          <h2>Lead Queue</h2>
+          <input id="queueLeadSearch" class="column-search" type="text" placeholder="Search lead queue" />
+          <div class="list" id="queueLeadsList"></div>
+        </section>
+        <section class="panel" style="min-height:0;">
+          <h2>Contractor Queue</h2>
+          <input id="queueContractorSearch" class="column-search" type="text" placeholder="Search contractor queue" />
+          <div class="list" id="queueContractorsList"></div>
+        </section>
+        <section class="panel" style="min-height:0;">
+          <h2>Compliance Queue</h2>
+          <input id="queueComplianceSearch" class="column-search" type="text" placeholder="Search compliance queue" />
+          <div class="list" id="queueComplianceList"></div>
+        </section>
+      </div>
+    </section>
 
     <section class="panel" style="min-height:0;margin-bottom:14px;">
       <h2>Create Contractor</h2>
@@ -283,21 +455,25 @@
     <div class="grid">
       <section class="panel">
         <h2>Contractors</h2>
+        <input id="contractorSearch" class="column-search" type="text" placeholder="Search contractors" />
         <div class="list" id="contractorsList"></div>
       </section>
 
       <section class="panel">
         <h2>Homeowners</h2>
+        <input id="homeownerSearch" class="column-search" type="text" placeholder="Search homeowners" />
         <div class="list" id="homeownersList"></div>
       </section>
 
       <section class="panel">
         <h2>Leads</h2>
+        <input id="leadSearch" class="column-search" type="text" placeholder="Search leads" />
         <div class="list" id="leadsList"></div>
       </section>
 
       <section class="panel">
         <h2>Activity Log</h2>
+        <input id="activitySearch" class="column-search" type="text" placeholder="Search activity log" />
         <div class="list" id="activityLogsList"></div>
       </section>
     </div>
@@ -323,13 +499,40 @@
     const createWelcomeTemplateInput = document.getElementById('createWelcomeTemplate');
     const createContractorBtn = document.getElementById('createContractorBtn');
     const statsEl = document.getElementById('stats');
+    const queueCardsEl = document.getElementById('queueCards');
+    const adminRoleInput = document.getElementById('adminRole');
+    const regionFilterInput = document.getElementById('regionFilter');
+    const stateFilterInput = document.getElementById('stateFilter');
+    const savedViewNameInput = document.getElementById('savedViewName');
+    const savedViewSelectInput = document.getElementById('savedViewSelect');
+    const saveViewBtn = document.getElementById('saveViewBtn');
+    const loadSavedViewBtn = document.getElementById('loadSavedViewBtn');
+    const deleteSavedViewBtn = document.getElementById('deleteSavedViewBtn');
+    const loadRoleViewBtn = document.getElementById('loadRoleViewBtn');
+    const bulkLeadAssignProfessionalInput = document.getElementById('bulkLeadAssignProfessional');
+    const bulkAssignLeadsBtn = document.getElementById('bulkAssignLeadsBtn');
+    const bulkRemoveLeadsBtn = document.getElementById('bulkRemoveLeadsBtn');
+    const bulkApproveContractorsBtn = document.getElementById('bulkApproveContractorsBtn');
+    const bulkPauseContractorsBtn = document.getElementById('bulkPauseContractorsBtn');
+    const queueLeadSearchInput = document.getElementById('queueLeadSearch');
+    const queueContractorSearchInput = document.getElementById('queueContractorSearch');
+    const queueComplianceSearchInput = document.getElementById('queueComplianceSearch');
+    const queueLeadsListEl = document.getElementById('queueLeadsList');
+    const queueContractorsListEl = document.getElementById('queueContractorsList');
+    const queueComplianceListEl = document.getElementById('queueComplianceList');
+    const contractorSearchInput = document.getElementById('contractorSearch');
+    const homeownerSearchInput = document.getElementById('homeownerSearch');
+    const leadSearchInput = document.getElementById('leadSearch');
+    const activitySearchInput = document.getElementById('activitySearch');
     const contractorsListEl = document.getElementById('contractorsList');
     const homeownersListEl = document.getElementById('homeownersList');
     const leadsListEl = document.getElementById('leadsList');
     const activityLogsListEl = document.getElementById('activityLogsList');
 
     let state = { contractors: [], homeowners: [], leads: [], activityLogs: [], counts: {} };
+    let activeQueue = 'all';
     const ADMIN_SESSION_KEY = 'projectprice_admin_session';
+    const ADMIN_VIEWS_KEY = 'projectprice_admin_saved_views_v1';
 
     const showMessage = (text, type = 'success') => {
       resultEl.className = `result ${type}`;
@@ -383,6 +586,242 @@
       return parts.some((part) => String(part || '').toLowerCase().includes(search));
     };
 
+    const includesColumnSearch = (parts, input) => {
+      const search = String(input?.value || '').trim().toLowerCase();
+      if (!search) return true;
+      return parts.some((part) => String(part || '').toLowerCase().includes(search));
+    };
+
+    const zipToRegion = (zip) => {
+      const d = String(zip || '').trim().charAt(0);
+      if (['0', '1', '2'].includes(d)) return 'northeast';
+      if (['3', '4'].includes(d)) return 'south';
+      if (['5', '6'].includes(d)) return 'midwest';
+      if (['7', '8', '9'].includes(d)) return 'west';
+      return 'unknown';
+    };
+
+    const detectStateCode = (...candidates) => {
+      const text = candidates.filter(Boolean).map((v) => String(v)).join(' | ');
+      const match = text.match(/\b([A-Z]{2})\b/);
+      return match ? match[1] : '';
+    };
+
+    const passesNationalFilter = ({ zip, stateCode }) => {
+      const regionWanted = regionFilterInput.value || 'all';
+      const stateWanted = stateFilterInput.value || 'all';
+      const regionActual = zipToRegion(zip);
+      if (regionWanted !== 'all' && regionActual !== regionWanted) return false;
+      if (stateWanted !== 'all' && String(stateCode || 'unknown') !== stateWanted) return false;
+      return true;
+    };
+
+    const buildStateOptions = () => {
+      const set = new Set();
+      (state.homeowners || []).forEach((h) => {
+        const s = detectStateCode(h.state, h.street_address, h.zip_code);
+        if (s) set.add(s);
+      });
+      (state.leads || []).forEach((l) => {
+        const s = detectStateCode(l.homeowner?.state, l.homeowner?.street_address, l.zipCode);
+        if (s) set.add(s);
+      });
+      const existing = stateFilterInput.value || 'all';
+      const options = ['<option value="all">All States</option>']
+        .concat([...set].sort().map((s) => `<option value="${s}">${s}</option>`))
+        .concat(['<option value="unknown">Unknown</option>']);
+      stateFilterInput.innerHTML = options.join('');
+      stateFilterInput.value = options.some((o) => o.includes(`value="${existing}"`)) ? existing : 'all';
+    };
+
+    const leadSlaTag = (lead) => {
+      const createdTs = new Date(lead.createdAt || lead.created_at || 0).getTime();
+      if (!Number.isFinite(createdTs)) return '<span class="tag expired">SLA Unknown</span>';
+      const mins = Math.max(0, Math.round((Date.now() - createdTs) / 60000));
+      const status = String(lead.status || '').toLowerCase();
+      if (status === 'claimed') return `<span class="tag approved">Claimed ${mins}m</span>`;
+      if (status === 'expired') return `<span class="tag expired">Expired ${mins}m</span>`;
+      if (mins <= 10) return `<span class="tag approved">On Time ${mins}m</span>`;
+      if (mins <= 30) return `<span class="tag warn">Watch ${mins}m</span>`;
+      return `<span class="tag breach">Breach ${mins}m</span>`;
+    };
+
+    const saveCurrentView = () => {
+      const name = String(savedViewNameInput.value || '').trim();
+      if (!name) {
+        showMessage('Enter a saved view name first.', 'error');
+        return;
+      }
+      const role = adminRoleInput.value || 'ops';
+      const payload = {
+        role,
+        region: regionFilterInput.value,
+        state: stateFilterInput.value,
+        contractorFilter: contractorFilterInput.value,
+        accountSearch: accountSearchInput.value,
+        contractorSearch: contractorSearchInput.value,
+        homeownerSearch: homeownerSearchInput.value,
+        leadSearch: leadSearchInput.value,
+        activitySearch: activitySearchInput.value,
+        queueLeadSearch: queueLeadSearchInput.value,
+        queueContractorSearch: queueContractorSearchInput.value,
+        queueComplianceSearch: queueComplianceSearchInput.value,
+        activeQueue,
+      };
+      let store = {};
+      try { store = JSON.parse(localStorage.getItem(ADMIN_VIEWS_KEY) || '{}'); } catch {}
+      store[name] = payload;
+      localStorage.setItem(ADMIN_VIEWS_KEY, JSON.stringify(store));
+      populateSavedViews(name);
+      showMessage(`Saved view '${name}'.`, 'success');
+    };
+
+    const getSavedViews = () => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(ADMIN_VIEWS_KEY) || '{}');
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch {
+        return {};
+      }
+    };
+
+    const applyViewPayload = (view) => {
+      if (!view || typeof view !== 'object') return;
+      adminRoleInput.value = view.role || adminRoleInput.value || 'ops';
+      regionFilterInput.value = view.region || 'all';
+      contractorFilterInput.value = view.contractorFilter || 'all';
+      accountSearchInput.value = view.accountSearch || '';
+      contractorSearchInput.value = view.contractorSearch || '';
+      homeownerSearchInput.value = view.homeownerSearch || '';
+      leadSearchInput.value = view.leadSearch || '';
+      activitySearchInput.value = view.activitySearch || '';
+      queueLeadSearchInput.value = view.queueLeadSearch || '';
+      queueContractorSearchInput.value = view.queueContractorSearch || '';
+      queueComplianceSearchInput.value = view.queueComplianceSearch || '';
+      activeQueue = view.activeQueue || 'all';
+      buildStateOptions();
+      stateFilterInput.value = view.state || 'all';
+      renderAll();
+    };
+
+    const populateSavedViews = (selectedName = '') => {
+      const views = getSavedViews();
+      const names = Object.keys(views).sort((a, b) => a.localeCompare(b));
+      savedViewSelectInput.innerHTML = ['<option value="">Select saved view...</option>']
+        .concat(names.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`))
+        .join('');
+      if (selectedName && names.includes(selectedName)) {
+        savedViewSelectInput.value = selectedName;
+      }
+    };
+
+    const loadSavedView = () => {
+      const key = String(savedViewSelectInput.value || '').trim();
+      if (!key) return showMessage('Select a saved view first.', 'error');
+      const views = getSavedViews();
+      const view = views[key];
+      if (!view) return showMessage('Saved view not found.', 'error');
+      savedViewNameInput.value = key;
+      applyViewPayload(view);
+      showMessage(`Loaded saved view '${key}'.`, 'success');
+    };
+
+    const deleteSavedView = () => {
+      const key = String(savedViewSelectInput.value || '').trim();
+      if (!key) return showMessage('Select a saved view to delete.', 'error');
+      if (!window.confirm(`Delete saved view '${key}'?`)) return;
+      const views = getSavedViews();
+      delete views[key];
+      localStorage.setItem(ADMIN_VIEWS_KEY, JSON.stringify(views));
+      populateSavedViews();
+      if (savedViewNameInput.value.trim() === key) savedViewNameInput.value = '';
+      showMessage(`Deleted saved view '${key}'.`, 'success');
+    };
+
+    const applyRoleDefaults = () => {
+      const role = adminRoleInput.value || 'ops';
+      if (role === 'ops') {
+        activeQueue = 'pendingLeads';
+      } else if (role === 'contractor_success') {
+        activeQueue = 'pendingPros';
+      } else if (role === 'risk_compliance') {
+        activeQueue = 'noMatchLeads';
+      } else {
+        activeQueue = 'all';
+      }
+      renderAll();
+      showMessage(`Loaded role defaults for ${role}.`, 'success');
+    };
+
+    const selectedLeadIds = () => Array.from(document.querySelectorAll('.lead-select:checked')).map((el) => el.value);
+    const selectedContractorIds = () => Array.from(document.querySelectorAll('.contractor-select:checked')).map((el) => el.value);
+
+    const bulkAssignLeads = async () => {
+      const leadIds = selectedLeadIds();
+      const professionalId = bulkLeadAssignProfessionalInput.value;
+      if (!leadIds.length) return showMessage('Select at least one lead.', 'error');
+      if (!professionalId) return showMessage('Select an approved contractor for bulk assign.', 'error');
+      try {
+        for (const leadRequestId of leadIds) {
+          const res = await fetch('/.netlify/functions/project-price-admin', {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ action: 'assign_lead', leadRequestId, professionalId, adminActor: adminActorInput.value.trim() || 'admin' }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Bulk lead assign failed.');
+        }
+        showMessage(`Assigned ${leadIds.length} leads.`, 'success');
+        await loadData();
+      } catch (err) {
+        showMessage(err.message || 'Bulk lead assign failed.', 'error');
+      }
+    };
+
+    const bulkRemoveLeads = async () => {
+      const leadIds = selectedLeadIds();
+      if (!leadIds.length) return showMessage('Select at least one lead.', 'error');
+      if (!window.confirm(`Remove ${leadIds.length} selected leads? This cannot be undone.`)) return;
+      try {
+        for (const leadRequestId of leadIds) {
+          const res = await fetch('/.netlify/functions/project-price-admin', {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ action: 'remove_lead', leadRequestId }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Bulk remove failed.');
+        }
+        showMessage(`Removed ${leadIds.length} leads.`, 'success');
+        await loadData();
+      } catch (err) {
+        showMessage(err.message || 'Bulk remove failed.', 'error');
+      }
+    };
+
+    const bulkContractorState = async (approved) => {
+      const contractorIds = selectedContractorIds();
+      if (!contractorIds.length) return showMessage('Select at least one contractor.', 'error');
+      try {
+        for (const professionalId of contractorIds) {
+          const body = approved
+            ? { action: 'approve_contractor', professionalId, approved: true }
+            : { action: 'pause_contractor', professionalId };
+          const res = await fetch('/.netlify/functions/project-price-admin', {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(body),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Bulk contractor update failed.');
+        }
+        showMessage(`${approved ? 'Approved' : 'Paused'} ${contractorIds.length} contractors.`, 'success');
+        await loadData();
+      } catch (err) {
+        showMessage(err.message || 'Bulk contractor update failed.', 'error');
+      }
+    };
+
     const renderStats = () => {
       const c = state.counts || {};
       const cards = [
@@ -414,6 +853,65 @@
       return '<span class="tag pending">Paused</span>';
     };
 
+    const queueCounts = () => {
+      const leads = Array.isArray(state.leads) ? state.leads : [];
+      const contractors = Array.isArray(state.contractors) ? state.contractors : [];
+      const now = Date.now();
+      const staleLeadMs = 30 * 60 * 1000;
+      const pendingLeads = leads.filter((lead) => String(lead.status || '').toLowerCase() === 'pending');
+      const staleLeads = pendingLeads.filter((lead) => {
+        const ts = new Date(lead.createdAt || lead.created_at || 0).getTime();
+        return Number.isFinite(ts) && now - ts > staleLeadMs;
+      });
+      const noMatchLeads = leads.filter((lead) => String(lead.workflow?.status || '').toLowerCase() === 'no_match');
+      const pendingPros = contractors.filter((c) => contractorState(c) === 'paused');
+      const deniedPros = contractors.filter((c) => contractorState(c) === 'denied');
+      const incompletePros = contractors.filter((c) => {
+        const specialties = Array.isArray(c.specialties) ? c.specialties : [];
+        const zip = (c.service_zip_codes || [])[0];
+        return !specialties.length || !zip;
+      });
+
+      return {
+        all: leads.length + contractors.length,
+        pendingLeads: pendingLeads.length,
+        staleLeads: staleLeads.length,
+        noMatchLeads: noMatchLeads.length,
+        pendingPros: pendingPros.length,
+        deniedPros: deniedPros.length,
+        incompletePros: incompletePros.length,
+      };
+    };
+
+    const renderQueueCards = () => {
+      const counts = queueCounts();
+      const cards = [
+        { key: 'all', label: 'All Ops Items', value: counts.all },
+        { key: 'pendingLeads', label: 'Pending Leads', value: counts.pendingLeads },
+        { key: 'staleLeads', label: 'Stale Leads (30m+)', value: counts.staleLeads },
+        { key: 'noMatchLeads', label: 'No-Match Leads', value: counts.noMatchLeads },
+        { key: 'pendingPros', label: 'Pending Contractors', value: counts.pendingPros },
+        { key: 'incompletePros', label: 'Incomplete Profiles', value: counts.incompletePros },
+      ];
+
+      queueCardsEl.innerHTML = cards.map((card) => `
+        <button class="queue-card ${activeQueue === card.key ? 'active' : ''}" type="button" data-queue="${card.key}">
+          <strong>${card.value}</strong>
+          <span>${card.label}</span>
+        </button>
+      `).join('');
+
+      queueCardsEl.querySelectorAll('[data-queue]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          activeQueue = btn.dataset.queue || 'all';
+          renderQueueCards();
+          renderQueueLeads();
+          renderQueueContractors();
+          renderQueueCompliance();
+        });
+      });
+    };
+
     const leadStatusTag = (status) => {
       const s = String(status || 'pending').toLowerCase();
       const cls = s === 'claimed' ? 'claimed' : (s === 'expired' ? 'expired' : 'pending');
@@ -443,7 +941,19 @@
       const filteredContractors = (selectedFilter === 'all'
         ? state.contractors
         : state.contractors.filter((c) => contractorState(c) === selectedFilter))
+        .filter((c) => passesNationalFilter({
+          zip: (c.service_zip_codes || [])[0],
+          stateCode: detectStateCode(c.state, c.service_state),
+        }))
         .filter((c) => includesSearch([
+          c.company_name,
+          c.email,
+          c.contact_phone,
+          c.account_phone,
+          (c.specialties || []).join(' '),
+          (c.service_zip_codes || []).join(' '),
+        ]))
+        .filter((c) => includesColumnSearch([
           c.company_name,
           c.email,
           c.contact_phone,
@@ -463,6 +973,7 @@
             <span>${displayValue(c.company_name, 'Unnamed Contractor')}</span>
             ${contractorStatusTag(c)}
           </h3>
+          <p class="meta"><label><input class="contractor-select" type="checkbox" value="${c.id}" /> Select for bulk</label></p>
           <p class="meta">ID: ${displayValue(c.id)}</p>
           <p class="meta">Email: ${displayValue(c.email)}</p>
           <p class="meta">Phone: ${displayValue(c.contact_phone || c.account_phone)}</p>
@@ -507,7 +1018,15 @@
         homeowner.zip_code,
         homeowner.latestProjectName,
         homeowner.latestProjectType,
-      ]));
+      ])).filter((homeowner) => passesNationalFilter({ zip: homeowner.zip_code, stateCode: detectStateCode(homeowner.state, homeowner.street_address) }))
+      .filter((homeowner) => includesColumnSearch([
+        homeowner.full_name,
+        homeowner.email,
+        homeowner.phone,
+        homeowner.zip_code,
+        homeowner.latestProjectName,
+        homeowner.latestProjectType,
+      ], homeownerSearchInput));
 
       if (!filteredHomeowners.length) {
         homeownersListEl.innerHTML = '<p class="meta">No homeowners found.</p>';
@@ -550,6 +1069,162 @@
       return approved.map((c) => `<option value="${c.id}">${c.company_name || c.id}</option>`).join('');
     };
 
+    const queueLeadsForActiveView = () => {
+      const leads = Array.isArray(state.leads) ? [...state.leads] : [];
+      const now = Date.now();
+      const staleLeadMs = 30 * 60 * 1000;
+      if (activeQueue === 'pendingLeads') return leads.filter((lead) => String(lead.status || '').toLowerCase() === 'pending');
+      if (activeQueue === 'staleLeads') {
+        return leads.filter((lead) => {
+          if (String(lead.status || '').toLowerCase() !== 'pending') return false;
+          const ts = new Date(lead.createdAt || lead.created_at || 0).getTime();
+          return Number.isFinite(ts) && now - ts > staleLeadMs;
+        });
+      }
+      if (activeQueue === 'noMatchLeads') return leads.filter((lead) => String(lead.workflow?.status || '').toLowerCase() === 'no_match');
+      return leads;
+    };
+
+    const renderQueueLeads = () => {
+      const leads = queueLeadsForActiveView()
+        .filter((lead) => passesNationalFilter({
+          zip: lead.zipCode,
+          stateCode: detectStateCode(lead.homeowner?.state, lead.homeowner?.street_address),
+        }))
+        .filter((lead) => includesColumnSearch([
+          lead.specialty,
+          lead.zipCode,
+          lead.status,
+          lead.homeowner?.full_name,
+          lead.homeowner?.email,
+          lead.homeowner?.phone,
+          lead.claimedProfessional?.company_name,
+        ], queueLeadSearchInput))
+        .sort((a, b) => new Date(b.createdAt || b.created_at || 0).getTime() - new Date(a.createdAt || a.created_at || 0).getTime())
+        .slice(0, 10);
+
+      if (!leads.length) {
+        queueLeadsListEl.innerHTML = '<p class="meta">No lead items in this queue.</p>';
+        return;
+      }
+
+      const options = contractorOptions();
+      queueLeadsListEl.innerHTML = leads.map((lead) => `
+        <article class="item">
+          <h3>
+            <span>${displayValue(lead.specialty, 'Unknown')} ${displayValue(lead.zipCode ? `(${lead.zipCode})` : '')}</span>
+            ${leadStatusTag(lead.status)}
+          </h3>
+          <p class="meta"><label><input class="lead-select" type="checkbox" value="${lead.id}" /> Select for bulk</label> ${leadSlaTag(lead)}</p>
+          <p class="meta">Homeowner: ${displayValue(lead.homeowner?.full_name)} | ${displayValue(lead.homeowner?.phone)}</p>
+          <p class="meta">Created: ${fmtDate(lead.createdAt)}</p>
+          <div class="actions">
+            <select id="queue-assign-${lead.id}">
+              <option value="">Select approved contractor...</option>
+              ${options}
+            </select>
+            <button class="small" onclick="assignLeadFromQueue('${lead.id}')">Assign</button>
+            <button class="small secondary" onclick="removeLead('${lead.id}')">Remove</button>
+          </div>
+        </article>
+      `).join('');
+    };
+
+    const queueContractorsForActiveView = () => {
+      const contractors = Array.isArray(state.contractors) ? [...state.contractors] : [];
+      if (activeQueue === 'pendingPros') return contractors.filter((c) => contractorState(c) === 'paused');
+      if (activeQueue === 'incompletePros') {
+        return contractors.filter((c) => {
+          const specialties = Array.isArray(c.specialties) ? c.specialties : [];
+          const zip = (c.service_zip_codes || [])[0];
+          return !specialties.length || !zip;
+        });
+      }
+      return contractors.filter((c) => contractorState(c) !== 'active' || !(c.specialties || []).length);
+    };
+
+    const renderQueueContractors = () => {
+      const contractors = queueContractorsForActiveView()
+        .filter((c) => passesNationalFilter({
+          zip: (c.service_zip_codes || [])[0],
+          stateCode: detectStateCode(c.state, c.service_state),
+        }))
+        .filter((c) => includesColumnSearch([
+          c.company_name,
+          c.email,
+          c.contact_phone,
+          c.account_phone,
+          c.denied_reason,
+          (c.specialties || []).join(' '),
+          (c.service_zip_codes || []).join(' '),
+        ], queueContractorSearchInput))
+        .slice(0, 10);
+      if (!contractors.length) {
+        queueContractorsListEl.innerHTML = '<p class="meta">No contractor items in this queue.</p>';
+        return;
+      }
+
+      queueContractorsListEl.innerHTML = contractors.map((c) => `
+        <article class="item">
+          <h3>
+            <span>${displayValue(c.company_name, 'Unnamed Contractor')}</span>
+            ${contractorStatusTag(c)}
+          </h3>
+          <p class="meta"><label><input class="contractor-select" type="checkbox" value="${c.id}" /> Select for bulk</label></p>
+          <p class="meta">Email: ${displayValue(c.email)}</p>
+          <p class="meta">Specialties: ${displayValue((c.specialties || []).join(', '))}</p>
+          <p class="meta">ZIP: ${displayValue((c.service_zip_codes || [])[0])}</p>
+          <div class="actions">
+            <button class="small" onclick="approveContractor('${c.id}', true)">Approve</button>
+            <button class="small secondary" onclick="pauseContractor('${c.id}')">Pause</button>
+          </div>
+        </article>
+      `).join('');
+    };
+
+    const renderQueueCompliance = () => {
+      const denied = (Array.isArray(state.contractors) ? state.contractors : []).filter((c) => contractorState(c) === 'denied').slice(0, 8);
+      const recentLogs = (Array.isArray(state.activityLogs) ? state.activityLogs : [])
+        .filter((log) => String(log.action || '').includes('delete') || String(log.action || '').includes('deny'))
+        .slice(0, 8);
+
+      const deniedFiltered = denied.filter((c) => includesColumnSearch([
+        c.company_name,
+        c.email,
+        c.denied_reason,
+      ], queueComplianceSearchInput));
+
+      const logsFiltered = recentLogs.filter((log) => includesColumnSearch([
+        log.action,
+        log.actor,
+        log.target_type,
+        log.target_id,
+        log.message,
+      ], queueComplianceSearchInput));
+
+      if (!deniedFiltered.length && !logsFiltered.length) {
+        queueComplianceListEl.innerHTML = '<p class="meta">No compliance alerts right now.</p>';
+        return;
+      }
+
+      const deniedHtml = deniedFiltered.map((c) => `
+        <article class="item">
+          <h3><span>${displayValue(c.company_name, 'Contractor')}</span><span class="tag denied">Denied</span></h3>
+          <p class="meta">Reason: ${displayValue(c.denied_reason)}</p>
+          <p class="meta">Email: ${displayValue(c.email)}</p>
+        </article>
+      `).join('');
+
+      const logsHtml = logsFiltered.map((log) => `
+        <article class="item">
+          <h3><span>${displayValue(log.action)}</span><span class="tag pending">${fmtDate(log.created_at)}</span></h3>
+          <p class="meta">${displayValue(log.message)}</p>
+        </article>
+      `).join('');
+
+      queueComplianceListEl.innerHTML = `${deniedHtml}${logsHtml}`;
+    };
+
     const renderLeads = () => {
       const filteredLeads = state.leads.filter((lead) => includesSearch([
         lead.specialty,
@@ -560,7 +1235,20 @@
         lead.project?.project_type,
         lead.project?.description,
         lead.claimedProfessional?.company_name,
-      ]));
+      ])).filter((lead) => passesNationalFilter({
+        zip: lead.zipCode,
+        stateCode: detectStateCode(lead.homeowner?.state, lead.homeowner?.street_address),
+      })).filter((lead) => includesColumnSearch([
+        lead.specialty,
+        lead.zipCode,
+        lead.status,
+        lead.homeowner?.full_name,
+        lead.homeowner?.email,
+        lead.homeowner?.phone,
+        lead.project?.project_type,
+        lead.project?.description,
+        lead.claimedProfessional?.company_name,
+      ], leadSearchInput));
 
       if (!filteredLeads.length) {
         leadsListEl.innerHTML = '<p class="meta">No leads found.</p>';
@@ -575,6 +1263,7 @@
             <span>${displayValue(lead.specialty, 'Unknown')} in ${displayValue(lead.zipCode)}</span>
             ${leadStatusTag(lead.status)}
           </h3>
+          <p class="meta"><label><input class="lead-select" type="checkbox" value="${lead.id}" /> Select for bulk</label> ${leadSlaTag(lead)}</p>
           <p class="meta">Lead ID: ${displayValue(lead.id)}</p>
           <p class="meta">Created: ${fmtDate(lead.createdAt)}</p>
           <p class="meta">Homeowner: ${displayValue(lead.homeowner?.full_name)}</p>
@@ -606,7 +1295,14 @@
     };
 
     const renderActivityLogs = () => {
-      const logs = Array.isArray(state.activityLogs) ? state.activityLogs : [];
+      const logs = (Array.isArray(state.activityLogs) ? state.activityLogs : []).filter((log) => includesColumnSearch([
+        log.action,
+        log.actor,
+        log.target_type,
+        log.target_id,
+        log.message,
+        log.metadata ? JSON.stringify(log.metadata) : '',
+      ], activitySearchInput));
       if (!logs.length) {
         activityLogsListEl.innerHTML = '<p class="meta">No activity logged yet.</p>';
         return;
@@ -636,10 +1332,42 @@
 
     const renderAll = () => {
       renderStats();
+      renderQueueCards();
+      renderQueueLeads();
+      renderQueueContractors();
+      renderQueueCompliance();
       renderContractors();
       renderHomeowners();
       renderLeads();
       renderActivityLogs();
+    };
+
+    window.assignLeadFromQueue = async (leadRequestId) => {
+      const select = document.getElementById(`queue-assign-${leadRequestId}`);
+      const professionalId = select?.value || '';
+      if (!professionalId) {
+        showMessage('Select an approved contractor first.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            action: 'assign_lead',
+            leadRequestId,
+            professionalId,
+            adminActor: adminActorInput.value.trim() || 'admin',
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Action failed.');
+        showMessage(data.message || 'Lead assigned.', 'success');
+        await loadData();
+      } catch (err) {
+        showMessage(err.message || 'Unable to assign lead.', 'error');
+      }
     };
 
     const loadData = async () => {
@@ -655,6 +1383,12 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to load admin data.');
         state = data;
+        buildStateOptions();
+        const approved = state.contractors.filter((c) => c.is_verified);
+        bulkLeadAssignProfessionalInput.innerHTML = ['<option value="">Select approved contractor...</option>']
+          .concat(approved.map((c) => `<option value="${c.id}">${escapeHtml(c.company_name || c.id)}</option>`))
+          .join('');
+        populateSavedViews(savedViewSelectInput.value);
         renderAll();
       } catch (err) {
         showMessage(err.message || 'Failed to load admin data.', 'error');
@@ -693,8 +1427,8 @@
     };
 
     const openRecoveryEmailDraft = (email, actionLink) => {
-      const subject = encodeURIComponent('ProjectPrice password recovery');
-      const body = encodeURIComponent(`Use this secure ProjectPrice password recovery link:\n\n${actionLink}\n\nThis link expires automatically.`);
+      const subject = encodeURIComponent('ProjectPrice™ password recovery');
+      const body = encodeURIComponent(`Use this secure ProjectPrice™ password recovery link:\n\n${actionLink}\n\nThis link expires automatically.`);
       window.location.href = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
     };
 
@@ -1203,12 +1937,30 @@
     adminKeyInput.addEventListener('input', persistSession);
     adminActorInput.addEventListener('input', persistSession);
     contractorFilterInput.addEventListener('change', persistSession);
+    regionFilterInput.addEventListener('change', renderAll);
+    stateFilterInput.addEventListener('change', renderAll);
     accountSearchInput.addEventListener('input', renderAll);
     accountSearchInput.addEventListener('input', persistSession);
+    contractorSearchInput.addEventListener('input', renderContractors);
+    homeownerSearchInput.addEventListener('input', renderHomeowners);
+    leadSearchInput.addEventListener('input', renderLeads);
+    activitySearchInput.addEventListener('input', renderActivityLogs);
+    queueLeadSearchInput.addEventListener('input', renderQueueLeads);
+    queueContractorSearchInput.addEventListener('input', renderQueueContractors);
+    queueComplianceSearchInput.addEventListener('input', renderQueueCompliance);
+    saveViewBtn.addEventListener('click', saveCurrentView);
+    loadSavedViewBtn.addEventListener('click', loadSavedView);
+    deleteSavedViewBtn.addEventListener('click', deleteSavedView);
+    loadRoleViewBtn.addEventListener('click', applyRoleDefaults);
+    bulkAssignLeadsBtn.addEventListener('click', bulkAssignLeads);
+    bulkRemoveLeadsBtn.addEventListener('click', bulkRemoveLeads);
+    bulkApproveContractorsBtn.addEventListener('click', () => bulkContractorState(true));
+    bulkPauseContractorsBtn.addEventListener('click', () => bulkContractorState(false));
     refreshBtn.addEventListener('click', loadData);
     createContractorBtn.addEventListener('click', createContractor);
 
     restoreSession();
+    populateSavedViews();
     loadData();
   </script>
 
@@ -1220,7 +1972,7 @@
       <a href="/admin.html" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Admin</a>
       <a href="/" style="color:#446684;text-decoration:none;font-weight:700;margin:0 8px;">Home</a>
     </p>
-    <p style="margin:0;">&copy; 2026 ProjectPrice. All rights reserved.</p>
+    <p style="margin:0;">&copy; 2026 ProjectPrice™. All rights reserved.</p>
   </footer>
 
 </body>
