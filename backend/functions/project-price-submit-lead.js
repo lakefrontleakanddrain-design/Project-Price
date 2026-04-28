@@ -11,6 +11,33 @@ const escapeHtml = (value) => String(value || '')
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#39;');
 
+const formatLeadRef = (leadRequestId) => `PP-${String(leadRequestId || '').slice(0, 8).toUpperCase()}`;
+
+const renderEmailTemplate = ({ title, intro, details = [], ctaLabel, ctaUrl, reference = null }) => {
+  const detailsHtml = details.length
+    ? `<ul style="margin:0 0 16px 18px;padding:0;color:#2f3b4a;">${details.map((item) => `<li style="margin:0 0 6px 0;">${escapeHtml(item)}</li>`).join('')}</ul>`
+    : '';
+  const ctaHtml = ctaLabel && ctaUrl
+    ? `<p style="margin:20px 0;"><a href="${escapeHtml(ctaUrl)}" style="display:inline-block;background:#0E3A78;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600;">${escapeHtml(ctaLabel)}</a></p>`
+    : '';
+  const referenceHtml = reference
+    ? `<p style="margin:12px 0 0 0;color:#68778d;font-size:13px;">Reference: ${escapeHtml(reference)}</p>`
+    : '';
+
+  return `
+    <div style="font-family:Segoe UI,Arial,sans-serif;background:#f5f8fc;padding:24px;">
+      <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #dbe4ef;border-radius:12px;padding:24px;">
+        <p style="margin:0 0 12px 0;color:#0E3A78;font-weight:700;">Project Price</p>
+        <h2 style="margin:0 0 12px 0;color:#112035;font-size:22px;">${escapeHtml(title)}</h2>
+        <p style="margin:0 0 14px 0;color:#2f3b4a;line-height:1.5;">${escapeHtml(intro)}</p>
+        ${detailsHtml}
+        ${ctaHtml}
+        ${referenceHtml}
+      </div>
+    </div>
+  `;
+};
+
 const supabaseRequest = async (path, { method = 'GET', body, headers = {} } = {}) => {
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -324,7 +351,7 @@ const notifyAdminNoMatch = async (leadRequestId, lead) => {
 
   const specialty = lead.projectType || lead.specialty || 'project';
   const zip = lead.zip_code || 'unknown zip';
-  const ref = leadRequestId.slice(0, 8);
+  const ref = formatLeadRef(leadRequestId);
   const message =
     `ACTION NEEDED - ProjectPrice No-Match Alert\n` +
     `Lead Ref: ${ref}\n` +
@@ -338,8 +365,16 @@ const notifyAdminNoMatch = async (leadRequestId, lead) => {
   for (const recipient of internalEmails) {
     const email = await sendEmail({
       to: recipient,
-      subject: `ACTION NEEDED: ProjectPrice no-match ${ref}`,
-      html: `<p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>`,
+      subject: `Manual follow-up needed for ${ref}`,
+      html: renderEmailTemplate({
+        title: 'No-match lead needs manual follow-up',
+        intro: 'No approved contractors matched this lead at submission time. Please review and follow up manually.',
+        details: [
+          `Service: ${specialty}`,
+          `ZIP: ${zip}`,
+        ],
+        reference: ref,
+      }),
     });
     emailResults.push({ to: recipient, ...email });
   }
@@ -424,6 +459,7 @@ const dispatchFirstOffer = async (leadRequestId, lead) => {
   const offerId = offerRows?.[0]?.id;
 
   const specialty = lead.projectType || lead.specialty || 'Construction';
+  const leadRef = formatLeadRef(leadRequestId);
   const desc = lead.description ? ` - ${lead.description.slice(0, 80)}` : '';
   const smsBody = `ProjectPrice Lead: ${specialty} in ${lead.zip_code}${desc}. Reply YES within ${CLAIM_WINDOW_MINUTES} min to claim. Ref: ${leadRequestId.slice(0, 8)}`;
 
@@ -431,8 +467,19 @@ const dispatchFirstOffer = async (leadRequestId, lead) => {
   const email = proEmail
     ? await sendEmail({
       to: proEmail,
-      subject: `ProjectPrice lead available ${leadRequestId.slice(0, 8)}`,
-      html: `<p>${escapeHtml(smsBody)}</p>`,
+      subject: `New lead opportunity (${leadRef})`,
+      html: renderEmailTemplate({
+        title: 'A new lead is available',
+        intro: 'You have a new lead opportunity in your service area. Please respond quickly to claim it.',
+        details: [
+          `Service: ${specialty}`,
+          `ZIP: ${lead.zip_code}`,
+          `Response window: ${CLAIM_WINDOW_MINUTES} minutes`,
+        ],
+        ctaLabel: 'Open contractor dashboard',
+        ctaUrl: `${getAppBaseUrl()}/contractor-dashboard.html?leadRequestId=${encodeURIComponent(leadRequestId)}&professionalId=${encodeURIComponent(first.professional_id)}`,
+        reference: leadRef,
+      }),
     })
     : { skipped: true, reason: 'Professional email not available.' };
 
@@ -643,6 +690,7 @@ exports.handler = async (event) => {
 
     const homeownerDashboardUrl = `${getAppBaseUrl()}/my-estimates.html`;
     const customerName = String(fullName || '').trim() || 'Customer';
+    const leadRef = formatLeadRef(lead.id);
 
     let homeownerSmsBody = `${customerName}, Project Price- We've received your request! To ensure top quality, we are hand-matching your project with one exclusive, verified Pro in your area. Please hang tight-we give our Pros a dedicated window to review your details carefully before they connect. Ref: ${lead.id.slice(0, 8)}.`;
     let responseMessage = `Success! Your request has been submitted. We are currently notifying an Approved contractor available in your area. We also sent a confirmation text while we hand-match your request.`;
@@ -673,8 +721,16 @@ exports.handler = async (event) => {
     try {
       homeownerEmail = await sendEmail({
         to: normalizedEmail,
-        subject: dispatchResult.noMatch ? 'Project Price update on your request' : 'Project Price request received',
-        html: `<p>${escapeHtml(homeownerSmsBody)}</p><p><a href="${escapeHtml(homeownerDashboardUrl)}">View your estimates dashboard</a></p>`,
+        subject: dispatchResult.noMatch
+          ? `Update on your project request (${leadRef})`
+          : `We received your Project Price request (${leadRef})`,
+        html: renderEmailTemplate({
+          title: dispatchResult.noMatch ? 'We are still working on your match' : 'Your request is in progress',
+          intro: homeownerSmsBody,
+          ctaLabel: 'View your estimates dashboard',
+          ctaUrl: homeownerDashboardUrl,
+          reference: leadRef,
+        }),
       });
     } catch {
       homeownerEmail = { skipped: true, reason: 'Email send failed.' };

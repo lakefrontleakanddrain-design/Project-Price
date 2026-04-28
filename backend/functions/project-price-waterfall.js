@@ -11,6 +11,33 @@ const escapeXml = (value) => String(value || '')
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&apos;');
 
+const formatLeadRef = (leadRequestId) => `PP-${String(leadRequestId || '').slice(0, 8).toUpperCase()}`;
+
+const renderEmailTemplate = ({ title, intro, details = [], ctaLabel, ctaUrl, reference = null }) => {
+  const detailsHtml = details.length
+    ? `<ul style="margin:0 0 16px 18px;padding:0;color:#2f3b4a;">${details.map((item) => `<li style="margin:0 0 6px 0;">${escapeXml(item)}</li>`).join('')}</ul>`
+    : '';
+  const ctaHtml = ctaLabel && ctaUrl
+    ? `<p style="margin:20px 0;"><a href="${escapeXml(ctaUrl)}" style="display:inline-block;background:#0E3A78;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600;">${escapeXml(ctaLabel)}</a></p>`
+    : '';
+  const referenceHtml = reference
+    ? `<p style="margin:12px 0 0 0;color:#68778d;font-size:13px;">Reference: ${escapeXml(reference)}</p>`
+    : '';
+
+  return `
+    <div style="font-family:Segoe UI,Arial,sans-serif;background:#f5f8fc;padding:24px;">
+      <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #dbe4ef;border-radius:12px;padding:24px;">
+        <p style="margin:0 0 12px 0;color:#0E3A78;font-weight:700;">Project Price</p>
+        <h2 style="margin:0 0 12px 0;color:#112035;font-size:22px;">${escapeXml(title)}</h2>
+        <p style="margin:0 0 14px 0;color:#2f3b4a;line-height:1.5;">${escapeXml(intro)}</p>
+        ${detailsHtml}
+        ${ctaHtml}
+        ${referenceHtml}
+      </div>
+    </div>
+  `;
+};
+
 const xmlResponse = (message) => ({
   statusCode: 200,
   headers: { 'Content-Type': 'text/xml' },
@@ -285,7 +312,7 @@ const notifyNoMatch = async (lead, leadRequestId, prosTried = 0) => {
   const internalEmails = getInternalNotificationEmails();
   const specialty = lead.project?.project_type || lead.specialty || 'project';
   const zip = lead.zip_code || 'unknown zip';
-  const ref = leadRequestId.slice(0, 8);
+  const ref = formatLeadRef(leadRequestId);
   const dashboardUrl = `${appBaseUrl.replace(/\/$/, '')}/my-estimates.html`;
 
   // Option A: Notify homeowner via SMS
@@ -307,8 +334,14 @@ const notifyNoMatch = async (lead, leadRequestId, prosTried = 0) => {
       if (homeownerEmail) {
         await sendEmail({
           to: homeownerEmail,
-          subject: `ProjectPrice update for request ${ref}`,
-          html: `<p>${escapeXml(homeownerMsg)}</p><p><a href="${escapeXml(dashboardUrl)}">View your estimates</a></p>`,
+          subject: `Update on your project request (${ref})`,
+          html: renderEmailTemplate({
+            title: 'We are still working on your match',
+            intro: homeownerMsg,
+            ctaLabel: 'View your estimates',
+            ctaUrl: dashboardUrl,
+            reference: ref,
+          }),
         });
       }
     } else if (homeownerEmail) {
@@ -317,8 +350,14 @@ const notifyNoMatch = async (lead, leadRequestId, prosTried = 0) => {
         `Our team has been notified and will follow up shortly. You can also re-submit anytime at: ${dashboardUrl}`;
       await sendEmail({
         to: homeownerEmail,
-        subject: `ProjectPrice update for request ${ref}`,
-        html: `<p>${escapeXml(homeownerMsg)}</p><p><a href="${escapeXml(dashboardUrl)}">View your estimates</a></p>`,
+        subject: `Update on your project request (${ref})`,
+        html: renderEmailTemplate({
+          title: 'We are still working on your match',
+          intro: homeownerMsg,
+          ctaLabel: 'View your estimates',
+          ctaUrl: dashboardUrl,
+          reference: ref,
+        }),
       });
     }
   } catch {
@@ -341,8 +380,17 @@ const notifyNoMatch = async (lead, leadRequestId, prosTried = 0) => {
     for (const recipient of internalEmails) {
       await sendEmail({
         to: recipient,
-        subject: `ACTION NEEDED: ProjectPrice no-match ${ref}`,
-        html: `<p>${escapeXml(adminMsg).replace(/\n/g, '<br>')}</p>`,
+        subject: `Manual follow-up needed for ${ref}`,
+        html: renderEmailTemplate({
+          title: 'No-match lead needs manual follow-up',
+          intro: 'All available contractors declined or timed out for this lead. Please review and follow up manually.',
+          details: [
+            `Service: ${specialty}`,
+            `ZIP: ${zip}`,
+            `Contractors tried: ${prosTried || 0}`,
+          ],
+          reference: ref,
+        }),
       });
     }
   } catch {
@@ -393,6 +441,10 @@ const dispatchNextOffer = async (leadRequestId) => {
 
   const specialty = lead.project?.project_type || lead.specialty || 'Construction';
   const zip = lead.zip_code || '';
+  const leadRef = formatLeadRef(leadRequestId);
+  const dashboardBaseUrl = env().contractorDashboardUrl || `${env().appBaseUrl.replace(/\/$/, '')}/contractor-dashboard.html`;
+  const dashboardSeparator = dashboardBaseUrl.includes('?') ? '&' : '?';
+  const dashboardUrl = `${dashboardBaseUrl}${dashboardSeparator}leadRequestId=${encodeURIComponent(leadRequestId)}&professionalId=${encodeURIComponent(next.professional_id)}`;
   const desc = lead.project?.description ? ` - ${lead.project.description.slice(0, 80)}` : '';
   const smsBody = `ProjectPrice Lead: ${specialty} in ${zip}${desc}. Reply YES within ${CLAIM_WINDOW_MINUTES} min to claim. Ref: ${leadRequestId.slice(0, 8)}`;
 
@@ -400,8 +452,19 @@ const dispatchNextOffer = async (leadRequestId) => {
   const email = authPro?.email
     ? await sendEmail({
       to: authPro.email,
-      subject: `ProjectPrice lead available ${leadRequestId.slice(0, 8)}`,
-      html: `<p>${escapeXml(smsBody)}</p>`,
+      subject: `New lead opportunity (${leadRef})`,
+      html: renderEmailTemplate({
+        title: 'A new lead is available',
+        intro: 'You have a new lead opportunity in your service area. Please respond quickly to claim it.',
+        details: [
+          `Service: ${specialty}`,
+          `ZIP: ${zip || 'N/A'}`,
+          `Response window: ${CLAIM_WINDOW_MINUTES} minutes`,
+        ],
+        ctaLabel: 'Open contractor dashboard',
+        ctaUrl: dashboardUrl,
+        reference: leadRef,
+      }),
     })
     : { skipped: true, reason: 'Professional email not available.' };
 

@@ -11,6 +11,33 @@ const escapeHtml = (value) => String(value || '')
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#39;');
 
+const formatLeadRef = (leadRequestId) => `PP-${String(leadRequestId || '').slice(0, 8).toUpperCase()}`;
+
+const renderEmailTemplate = ({ title, intro, details = [], ctaLabel, ctaUrl, reference = null }) => {
+  const detailsHtml = details.length
+    ? `<ul style="margin:0 0 16px 18px;padding:0;color:#2f3b4a;">${details.map((item) => `<li style="margin:0 0 6px 0;">${escapeHtml(item)}</li>`).join('')}</ul>`
+    : '';
+  const ctaHtml = ctaLabel && ctaUrl
+    ? `<p style="margin:20px 0;"><a href="${escapeHtml(ctaUrl)}" style="display:inline-block;background:#0E3A78;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600;">${escapeHtml(ctaLabel)}</a></p>`
+    : '';
+  const referenceHtml = reference
+    ? `<p style="margin:12px 0 0 0;color:#68778d;font-size:13px;">Reference: ${escapeHtml(reference)}</p>`
+    : '';
+
+  return `
+    <div style="font-family:Segoe UI,Arial,sans-serif;background:#f5f8fc;padding:24px;">
+      <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #dbe4ef;border-radius:12px;padding:24px;">
+        <p style="margin:0 0 12px 0;color:#0E3A78;font-weight:700;">Project Price</p>
+        <h2 style="margin:0 0 12px 0;color:#112035;font-size:22px;">${escapeHtml(title)}</h2>
+        <p style="margin:0 0 14px 0;color:#2f3b4a;line-height:1.5;">${escapeHtml(intro)}</p>
+        ${detailsHtml}
+        ${ctaHtml}
+        ${referenceHtml}
+      </div>
+    </div>
+  `;
+};
+
 const { appendActivityLog, loadRecentActivityLogs } = require('./_activity-log');
 
 const env = () => ({
@@ -843,8 +870,17 @@ const createContractor = async (payload) => {
   try {
     emailResult = await sendEmail({
       to: email,
-      subject: 'Project Price contractor invite',
-      html: `<p>${escapeHtml(welcomeMessage)}</p>`,
+      subject: 'Your Project Price contractor account is ready',
+      html: renderEmailTemplate({
+        title: 'Complete your contractor setup',
+        intro: 'Your Project Price contractor account has been created. Use the button below to finish setup and start receiving local leads.',
+        details: [
+          `Company: ${companyName}`,
+          approved ? 'Status: Approved' : 'Status: Pending review',
+        ],
+        ctaLabel: 'Complete setup',
+        ctaUrl: onboardingLink,
+      }),
     });
   } catch (err) {
     emailResult = { skipped: true, reason: 'Email send failed.' };
@@ -904,6 +940,7 @@ const reinviteContractor = async (professionalId, payload = {}) => {
 
   const onboardingLink = recovery?.actionLink || `${resolvePublicBaseUrl()}/contractor-portal.html`;
   const template = String(payload.welcomeTemplate || 'standard').trim().toLowerCase();
+  const templateLabel = template === 'founding' ? 'Founding Pro' : 'Standard Invite';
   const welcomeMessage = template === 'founding'
     ? `Project Price check-in: your Founding Pro invite is ready. Complete setup and claim leads here: ${onboardingLink}`
     : `Project Price invite reminder: your contractor account is ready. Complete setup and start receiving leads here: ${onboardingLink}`;
@@ -912,8 +949,17 @@ const reinviteContractor = async (professionalId, payload = {}) => {
   const emailResult = auth?.email
     ? await sendEmail({
       to: auth.email,
-      subject: 'Project Price contractor invite reminder',
-      html: `<p>${escapeHtml(welcomeMessage)}</p>`,
+      subject: 'Reminder: finish your Project Price contractor setup',
+      html: renderEmailTemplate({
+        title: 'Contractor invite reminder',
+        intro: 'We are ready when you are. Complete setup to start receiving leads in your service area.',
+        details: [
+          `Template: ${templateLabel}`,
+          `Company: ${contractor.company_name || 'Contractor account'}`,
+        ],
+        ctaLabel: 'Finish setup',
+        ctaUrl: onboardingLink,
+      }),
     })
     : { skipped: true, reason: 'Contractor email not available.' };
   const smsSuffix = smsResult?.skipped
@@ -1140,6 +1186,7 @@ const assignLeadManually = async (leadRequestId, professionalId, adminActor = 'a
   const actor = String(adminActor || 'admin').trim().slice(0, 60) || 'admin';
   const specialty = project?.project_type || lead.specialty || 'Construction';
   const zip = String(lead.zip_code || '').trim();
+  const leadRef = formatLeadRef(leadRequestId);
   const homeownerName = String(homeowner?.full_name || '').trim() || 'N/A';
   const homeownerPhone = String(homeowner?.phone || lead.homeowner_phone || '').trim() || 'N/A';
   const homeownerEmail = String(lead.homeowner_email || homeowner?.email || authHomeowner?.email || '').trim() || 'N/A';
@@ -1173,10 +1220,24 @@ const assignLeadManually = async (leadRequestId, professionalId, adminActor = 'a
   let emailWarning = null;
   if (authPro?.email) {
     try {
+      const dashboardUrl = `${resolvePublicBaseUrl()}/contractor-dashboard.html?leadRequestId=${encodeURIComponent(leadRequestId)}&professionalId=${encodeURIComponent(professionalId)}`;
       emailResult = await sendEmail({
         to: authPro.email,
-        subject: `Project Price lead assignment ${leadRequestId.slice(0, 8)}`,
-        html: `<p>${escapeHtml(smsBody).replace(/\n/g, '<br>')}</p>`,
+        subject: `New lead assigned to your account (${leadRef})`,
+        html: renderEmailTemplate({
+          title: 'A lead was assigned to you',
+          intro: 'An admin manually assigned a lead to your account. Review details and follow up with the homeowner.',
+          details: [
+            `Service: ${specialty} (${zip || 'N/A'})`,
+            `Homeowner: ${homeownerName}`,
+            `Phone: ${homeownerPhone}`,
+            `Email: ${homeownerEmail}`,
+            `Address: ${addressLine}`,
+          ],
+          ctaLabel: 'Open contractor dashboard',
+          ctaUrl: dashboardUrl,
+          reference: leadRef,
+        }),
       });
     } catch (error) {
       emailResult = { skipped: true, reason: 'Email send failed.' };
@@ -1433,8 +1494,16 @@ exports.handler = async (event) => {
         if (auth?.email) {
           result.welcomeEmail = await sendEmail({
             to: auth.email,
-            subject: 'Project Price temporary password',
-            html: `<p>${escapeHtml(smsBody)}</p>`,
+            subject: 'Your temporary Project Price password',
+            html: renderEmailTemplate({
+              title: 'Temporary password created',
+              intro: `Use this temporary password to sign in: ${String(payload.newPassword || '')}`,
+              details: [
+                'For security, change this password after you sign in.',
+              ],
+              ctaLabel: 'Sign in to contractor portal',
+              ctaUrl: `${resolvePublicBaseUrl()}/contractor-portal.html`,
+            }),
           });
         } else {
           result.welcomeEmail = { skipped: true, reason: 'Contractor email not available.' };
