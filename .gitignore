@@ -35,6 +35,7 @@ apps/mobile/build/
 apps/mobile/.dart_tool/
 apps/mobile/.flutter-plugins
 apps/mobile/.flutter-plugins-dependencies
+**/.gradle/
 
 # Local-only scripts
 infra/scripts/*.local.*
