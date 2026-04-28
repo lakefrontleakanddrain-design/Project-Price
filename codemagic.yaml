@@ -1,0 +1,178 @@
+workflows:
+  projectprice-flutter-web:
+    name: ProjectPrice Flutter Web
+    instance_type: linux_x2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      vars:
+        FLUTTER_APP_DIR: apps/mobile
+    scripts:
+      - name: Install dependencies
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          flutter pub get
+      - name: Analyze
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          flutter analyze
+      - name: Build web
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          flutter build web --release
+    artifacts:
+      - project-price-app/apps/flutter_app/build/web/**
+
+  projectprice-flutter-android:
+    name: ProjectPrice Flutter Android
+    instance_type: linux_x2
+    max_build_duration: 60
+    environment:
+      groups:
+        - projectprice_android_signing
+      flutter: stable
+      vars:
+        FLUTTER_APP_DIR: apps/mobile
+    scripts:
+      - name: Install dependencies
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          flutter pub get
+      - name: Validate mobile auth defines
+        script: |
+          PP_SUPABASE_URL="${PROJECTPRICE_SUPABASE_URL:-${SUPABASE_URL:-${projectprice_supabase_url:-https://api.projectpriceapp.com}}}"
+          PP_SUPABASE_ANON_KEY="${PROJECTPRICE_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY:-${projectprice_supabase_anon_key:-}}}"
+          PP_APP_API_SECRET="${APP_API_SECRET:-${PROJECTPRICE_APP_API_SECRET:-${app_api_secret:-}}}"
+
+          if [ -z "$PP_SUPABASE_URL" ]; then
+            echo "Missing Supabase URL for Android workflow. Set PROJECTPRICE_SUPABASE_URL or SUPABASE_URL."
+            exit 1
+          fi
+          if [ -z "$PP_SUPABASE_ANON_KEY" ]; then
+            echo "Missing Supabase anon key for Android workflow. Set PROJECTPRICE_SUPABASE_ANON_KEY or SUPABASE_ANON_KEY."
+            exit 1
+          fi
+          if [ -z "$PP_APP_API_SECRET" ]; then
+            echo "Missing app API secret for Android workflow. Set APP_API_SECRET or PROJECTPRICE_APP_API_SECRET."
+            exit 1
+          fi
+      - name: Validate Android signing secrets
+        script: |
+          if [ -z "$PROJECTPRICE_ANDROID_KEYSTORE_BASE64" ]; then
+            echo "Missing PROJECTPRICE_ANDROID_KEYSTORE_BASE64"
+            exit 1
+          fi
+          if [ -z "$PROJECTPRICE_ANDROID_KEYSTORE_PASSWORD" ]; then
+            echo "Missing PROJECTPRICE_ANDROID_KEYSTORE_PASSWORD"
+            exit 1
+          fi
+          if [ -z "$PROJECTPRICE_ANDROID_KEY_PASSWORD" ]; then
+            echo "Missing PROJECTPRICE_ANDROID_KEY_PASSWORD"
+            exit 1
+          fi
+      - name: Prepare Android keystore and key.properties
+        script: |
+          KEY_ALIAS_VALUE=${PROJECTPRICE_ANDROID_KEY_ALIAS:-upload}
+          echo "$PROJECTPRICE_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$FLUTTER_APP_DIR/android/upload-keystore.jks"
+          cat > "$FLUTTER_APP_DIR/android/key.properties" <<EOF
+          storePassword=$PROJECTPRICE_ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$PROJECTPRICE_ANDROID_KEY_PASSWORD
+          keyAlias=$KEY_ALIAS_VALUE
+          storeFile=../upload-keystore.jks
+          EOF
+      - name: Build Android App Bundle
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          APP_BUILD_NUMBER=${BUILD_NUMBER:-1}
+          PP_SUPABASE_URL="${PROJECTPRICE_SUPABASE_URL:-${SUPABASE_URL:-${projectprice_supabase_url:-https://api.projectpriceapp.com}}}"
+          PP_SUPABASE_ANON_KEY="${PROJECTPRICE_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY:-${projectprice_supabase_anon_key:-}}}"
+          PP_APP_API_SECRET="${APP_API_SECRET:-${PROJECTPRICE_APP_API_SECRET:-${app_api_secret:-}}}"
+          flutter build appbundle --release \
+            --build-number=$APP_BUILD_NUMBER \
+            --dart-define=PROJECTPRICE_SUPABASE_URL=$PP_SUPABASE_URL \
+            --dart-define=PROJECTPRICE_SUPABASE_ANON_KEY=$PP_SUPABASE_ANON_KEY \
+            --dart-define=PROJECTPRICE_SUPABASE_URL_FALLBACK=${PROJECTPRICE_SUPABASE_URL_FALLBACK:-} \
+            --dart-define=APP_API_SECRET=$PP_APP_API_SECRET
+      - name: Build Android APK
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          APP_BUILD_NUMBER=${BUILD_NUMBER:-1}
+          PP_SUPABASE_URL="${PROJECTPRICE_SUPABASE_URL:-${SUPABASE_URL:-${projectprice_supabase_url:-https://api.projectpriceapp.com}}}"
+          PP_SUPABASE_ANON_KEY="${PROJECTPRICE_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY:-${projectprice_supabase_anon_key:-}}}"
+          PP_APP_API_SECRET="${APP_API_SECRET:-${PROJECTPRICE_APP_API_SECRET:-${app_api_secret:-}}}"
+          flutter build apk --release \
+            --build-number=$APP_BUILD_NUMBER \
+            --dart-define=PROJECTPRICE_SUPABASE_URL=$PP_SUPABASE_URL \
+            --dart-define=PROJECTPRICE_SUPABASE_ANON_KEY=$PP_SUPABASE_ANON_KEY \
+            --dart-define=PROJECTPRICE_SUPABASE_URL_FALLBACK=${PROJECTPRICE_SUPABASE_URL_FALLBACK:-} \
+            --dart-define=APP_API_SECRET=$PP_APP_API_SECRET
+      - name: Create versioned Android artifacts
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          APP_BUILD_NUMBER=${BUILD_NUMBER:-1}
+          APP_VERSION_NAME=$(grep '^version:' pubspec.yaml | head -1 | awk '{print $2}' | cut -d'+' -f1)
+          VERSION_TAG="${APP_VERSION_NAME}+${APP_BUILD_NUMBER}"
+          mkdir -p build/app/outputs/versioned
+          cp build/app/outputs/bundle/release/app-release.aab "build/app/outputs/versioned/projectprice-android-${VERSION_TAG}.aab"
+          cp build/app/outputs/flutter-apk/app-release.apk "build/app/outputs/versioned/projectprice-android-${VERSION_TAG}.apk"
+    artifacts:
+      - apps/mobile/build/app/outputs/bundle/release/*.aab
+      - apps/mobile/build/app/outputs/flutter-apk/*.apk
+      - apps/mobile/build/app/outputs/versioned/*.aab
+      - apps/mobile/build/app/outputs/versioned/*.apk
+
+  projectprice-flutter-ios:
+    name: ProjectPrice Flutter iOS
+    integrations:
+      app_store_connect: "ProjectPrice Codemagic"
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+      groups:
+        - app_store_credentials
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.projectprice.app
+      vars:
+        FLUTTER_APP_DIR: apps/mobile
+    scripts:
+      - name: Install dependencies
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          flutter pub get
+      - name: Set up signing profiles
+        script: |
+          cd "$FLUTTER_APP_DIR"
+          xcode-project use-profiles
+      - name: Build signed IPA
+        script: |
+          set -euo pipefail
+          cd "$FLUTTER_APP_DIR"
+          PP_SUPABASE_URL="${PROJECTPRICE_SUPABASE_URL:-${SUPABASE_URL:-${projectprice_supabase_url:-https://api.projectpriceapp.com}}}"
+          PP_SUPABASE_ANON_KEY="${PROJECTPRICE_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY:-${projectprice_supabase_anon_key:-}}}"
+          PP_APP_API_SECRET="${APP_API_SECRET:-${PROJECTPRICE_APP_API_SECRET:-${app_api_secret:-}}}"
+
+          if [ -z "$PP_SUPABASE_URL" ] || [ -z "$PP_SUPABASE_ANON_KEY" ] || [ -z "$PP_APP_API_SECRET" ]; then
+            echo "Missing required env vars for ProjectPrice iOS build."
+            echo "Expected one of: PROJECTPRICE_SUPABASE_URL or SUPABASE_URL"
+            echo "Expected one of: PROJECTPRICE_SUPABASE_ANON_KEY or SUPABASE_ANON_KEY"
+            echo "Expected one of: APP_API_SECRET or PROJECTPRICE_APP_API_SECRET"
+            exit 1
+          fi
+
+          flutter build ipa --release \
+            --build-number=$BUILD_NUMBER \
+            --dart-define=PROJECTPRICE_SUPABASE_URL=$PP_SUPABASE_URL \
+            --dart-define=PROJECTPRICE_SUPABASE_ANON_KEY=$PP_SUPABASE_ANON_KEY \
+            --dart-define=PROJECTPRICE_SUPABASE_URL_FALLBACK=${PROJECTPRICE_SUPABASE_URL_FALLBACK:-} \
+            --dart-define=APP_API_SECRET=$PP_APP_API_SECRET \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - apps/mobile/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
