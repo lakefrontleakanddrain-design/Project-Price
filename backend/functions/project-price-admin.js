@@ -865,6 +865,14 @@ const deleteProfessional = async (professionalId) => {
   const contractor = await getContractorById(professionalId);
   if (!contractor) throw new Error('Contractor not found.');
 
+  // Detach any claimed leads so the professional row can be deleted safely.
+  const claimedLeadQ = new URLSearchParams({ claimed_professional_id: `eq.${professionalId}` });
+  await supabaseRequest(`/rest/v1/lead_requests?${claimedLeadQ.toString()}`, {
+    method: 'PATCH',
+    body: { claimed_professional_id: null },
+    headers: { Prefer: 'return=minimal' },
+  });
+
   const q = new URLSearchParams({ id: `eq.${professionalId}` });
   await supabaseRequest(`/rest/v1/professionals?${q.toString()}`, {
     method: 'DELETE',
