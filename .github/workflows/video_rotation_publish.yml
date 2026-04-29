@@ -9,11 +9,11 @@ on:
         default: true
         type: boolean
       source_video_url:
-        description: "Public URL to source MP4 (used when rebuild_only is false)"
+        description: "Public URL to source MP4 (optional when rebuild_only is false)"
         required: false
         type: string
       source_video_path:
-        description: "Repo-relative source MP4 path (used when rebuild_only is false)"
+        description: "Repo-relative source MP4 path (optional when rebuild_only is false)"
         required: false
         type: string
       site_base_url:
@@ -58,18 +58,21 @@ jobs:
       - name: Resolve source video
         if: ${{ inputs.rebuild_only == false }}
         run: |
+          FALLBACK_SOURCE_URL="https://filesamples.com/samples/video/mp4/sample_640x360.mp4"
           mkdir -p tmp
           if [ -n "${{ inputs.source_video_url }}" ]; then
+            echo "Using source_video_url input"
             curl -L --fail "${{ inputs.source_video_url }}" -o tmp/input.mp4
           elif [ -n "${{ inputs.source_video_path }}" ]; then
+            echo "Using source_video_path input"
             if [ ! -f "${{ inputs.source_video_path }}" ]; then
               echo "source_video_path not found: ${{ inputs.source_video_path }}"
               exit 1
             fi
             cp "${{ inputs.source_video_path }}" tmp/input.mp4
           else
-            echo "When rebuild_only is false, provide source_video_url or source_video_path."
-            exit 1
+            echo "No source input provided. Using fallback sample MP4 for test run."
+            curl -L --fail "$FALLBACK_SOURCE_URL" -o tmp/input.mp4
           fi
 
       - name: Process platform video outputs
