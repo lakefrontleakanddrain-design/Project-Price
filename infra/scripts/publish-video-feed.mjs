@@ -335,7 +335,7 @@ const buildMetricoolRss = (items) => {
     <title><![CDATA[${item.title}]]></title>
     <link>${escapeXml(link)}</link>
     <dc:creator><![CDATA[projectprice]]></dc:creator>
-    <guid isPermaLink="false">projectprice.com/live-video/${item.publishedAt.replace(/\D/g, '').slice(0, 14)}</guid>
+    <guid isPermaLink="false">projectpriceapp.com/live-video/${item.publishedAt.replace(/\D/g, '').slice(0, 14)}</guid>
     <pubDate>${itemPubDate}</pubDate>
     <description><![CDATA[${item.description}]]></description>
     <content:encoded><![CDATA[${contentHtml}]]></content:encoded>
