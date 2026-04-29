@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="shortcut icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="apple-touch-icon" href="/logo.jpg" />
+  <title>ProjectPrice Live Video Feed</title>
+  <meta name="description" content="Short-form Project Price videos for realtor-led buyer repair estimate guidance." />
+  <style>
+    :root { --navy:#0e3a78; --emerald:#16a36a; --line:#d3e2f5; --ink:#11365d; --paper:#fff; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Segoe UI, Arial, sans-serif;
+      color: var(--ink);
+      background: linear-gradient(170deg, #eaf2ff 0%, #f3f8ff 45%, #effff7 100%);
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    .brand { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .brand a { color:#4a6a8a; text-decoration:none; font-size:.85rem; font-weight:600; margin-left:14px; }
+    .hero {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .hero h1 { margin:0 0 8px; color:var(--navy); }
+    .hero p { margin:0; color:#4a6a8a; line-height:1.55; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+    .item {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      padding: 14px;
+    }
+    .item h3 { margin:0 0 8px; font-size:1rem; }
+    .item h3 a { color:var(--navy); text-decoration:none; }
+    .item p { margin:0 0 10px; color:#4a6a8a; font-size:.92rem; line-height:1.5; }
+    video { width:100%; border-radius:10px; border:1px solid var(--line); background:#000; }
+    .meta { margin-top:8px; color:#6b87a5; font-size:.8rem; }
+    .rss { margin-top: 12px; font-size: .88rem; color: #4a6a8a; }
+    .rss code { background:#f5f9ff; border:1px solid #d8e6f8; padding:2px 6px; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">
+      <a href="/"><img src="/logo.jpg" alt="Project Price" style="height:44px;width:auto;" /></a>
+      <nav>
+        <a href="/get-quotes.html">Request Estimate</a>
+        <a href="/my-estimates.html">My Saved Projects</a>
+      </nav>
+    </div>
+    <section class="hero">
+      <h1>ProjectPrice Live Video Feed</h1>
+      <p>Realtor-led buyer guidance clips generated from rotating topics. Each item includes a webpage and RSS entry for social distribution workflows.</p>
+      <p class="rss">RSS for Metricool: <code>/live-video-feed.xml</code></p>
+    </section>
+    <section class="grid">
+      <article class="item"><h3>No videos published yet</h3><p>Run the publish script after generating a new video to create feed entries.</p></article>
+    </section>
+  </div>
+</body>
+</html>

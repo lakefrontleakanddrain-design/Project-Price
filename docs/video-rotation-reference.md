@@ -104,3 +104,29 @@ Processing defaults:
 - FPS: 30
 - Max duration: 8 seconds (override with --max-seconds)
 - Codec: H.264 + AAC, faststart enabled
+
+## Publish to webpage and RSS
+
+After generation and social processing, publish one new item to the site page and feed:
+
+```bash
+npm run video:publish -- --source=infra/video/output/youtube-shorts-1080x1920.mp4 --title="${TOPIC_OUTPUT}" --topic="${TOPIC_OUTPUT}" --site-base-url=https://project-price-app.netlify.app
+```
+
+Outputs created/updated:
+
+- web/public/live-video/index.html
+- web/public/live-video/{slug}.html
+- web/public/live-video-feed.xml
+- web/public/metricool-live-video.xml
+- infra/video/feed-items.json
+
+Metricool RSS URL:
+
+- https://project-price-app.netlify.app/metricool-live-video.xml
+
+Initial rebuild-only command (no new video item):
+
+```bash
+npm run video:publish-rebuild
+```
