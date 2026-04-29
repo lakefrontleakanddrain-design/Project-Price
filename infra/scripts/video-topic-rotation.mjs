@@ -50,21 +50,44 @@ const truncateWithEllipsis = (text, maxChars) => {
   return `${clean.slice(0, maxChars - 3).trimEnd()}...`;
 };
 
-const REQUIRED_HASHTAGS = [
+const CORE_HASHTAGS = [
   '#ProjectPrice',
   '#AIEstimate',
-  '#HomeImprovement',
   '#RealEstateTools',
   '#ConstructionCost',
-  '#SmartHomeowner',
-  '#HouseHunting',
-  '#RemodelBudget',
-  '#PropTech',
-  '#StopOverpaying',
-  '#FirstTimeHomeBuyer',
-  '#HomeRepair',
-  '#LifeHacks',
-].join(' ');
+];
+
+const TOPIC_HASHTAG_RULES = [
+  { test: /buyer|starter/i, tag: '#FirstTimeHomeBuyer' },
+  { test: /home|buyer|hunting|listing/i, tag: '#HouseHunting' },
+  { test: /repair|roof|foundation|wiring|panel|hvac/i, tag: '#HomeRepair' },
+  { test: /budget|cost|credit|offer|overpaying/i, tag: '#StopOverpaying' },
+  { test: /budget|refresh|phased|remodel/i, tag: '#RemodelBudget' },
+  { test: /smart|strategy|realtor|estimate/i, tag: '#SmartHomeowner' },
+  { test: /project price|ai|estimate/i, tag: '#PropTech' },
+  { test: /improvement|refresh|repair|replacement/i, tag: '#HomeImprovement' },
+  { test: /hack|save|strategy/i, tag: '#LifeHacks' },
+];
+
+const buildHashtagSuffix = (topic) => {
+  const sourceText = [
+    topic?.pivot,
+    topic?.propertyType,
+    topic?.repairFocus,
+    topic?.decisionType,
+    topic?.pov,
+  ].map(toSingleLine).join(' ');
+
+  const selected = [...CORE_HASHTAGS];
+  for (const rule of TOPIC_HASHTAG_RULES) {
+    if (rule.test.test(sourceText) && !selected.includes(rule.tag)) {
+      selected.push(rule.tag);
+    }
+    if (selected.length >= 7) break;
+  }
+
+  return selected.join(' ');
+};
 
 const buildTopicTitle = (topic) => {
   const hook = toSingleLine(topic.pivot);
@@ -74,14 +97,15 @@ const buildTopicTitle = (topic) => {
 };
 
 const buildTopicOutput = (topic, maxChars) => {
+  const hashtagSuffix = buildHashtagSuffix(topic);
   const prefix = [
     `Buyer warning: ${toSingleLine(topic.repairFocus)} can blow up a deal fast.`,
     `Use Project Price to compare repair costs, plan a ${toSingleLine(topic.decisionType).toLowerCase()}, and stop overpaying.`,
   ].join(' ');
-  const reservedLength = REQUIRED_HASHTAGS.length + 1;
+  const reservedLength = hashtagSuffix.length + 1;
   const bodyMaxChars = Math.max(0, maxChars - reservedLength);
   const body = truncateWithEllipsis(prefix, bodyMaxChars);
-  return `${body} ${REQUIRED_HASHTAGS}`.trim();
+  return `${body} ${hashtagSuffix}`.trim();
 };
 
 const buildPrompt = (topic) => {

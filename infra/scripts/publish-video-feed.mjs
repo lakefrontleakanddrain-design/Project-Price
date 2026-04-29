@@ -19,21 +19,36 @@ const generatedDir = path.join(liveVideoDir, 'generated');
 const indexPath = path.join(liveVideoDir, 'index.html');
 const rssPath = path.join(publicDir, 'live-video-feed.xml');
 const metricoolPath = path.join(publicDir, 'metricool-live-video.xml');
-const requiredHashtags = [
+const coreHashtags = [
   '#ProjectPrice',
   '#AIEstimate',
-  '#HomeImprovement',
   '#RealEstateTools',
   '#ConstructionCost',
-  '#SmartHomeowner',
-  '#HouseHunting',
-  '#RemodelBudget',
-  '#PropTech',
-  '#StopOverpaying',
-  '#FirstTimeHomeBuyer',
-  '#HomeRepair',
-  '#LifeHacks',
-].join(' ');
+];
+
+const topicHashtagRules = [
+  { test: /buyer|starter/i, tag: '#FirstTimeHomeBuyer' },
+  { test: /home|buyer|hunting|listing/i, tag: '#HouseHunting' },
+  { test: /repair|roof|foundation|wiring|panel|hvac/i, tag: '#HomeRepair' },
+  { test: /budget|cost|credit|offer|overpaying/i, tag: '#StopOverpaying' },
+  { test: /budget|refresh|phased|remodel/i, tag: '#RemodelBudget' },
+  { test: /smart|strategy|realtor|estimate/i, tag: '#SmartHomeowner' },
+  { test: /project price|ai|estimate/i, tag: '#PropTech' },
+  { test: /improvement|refresh|repair|replacement/i, tag: '#HomeImprovement' },
+  { test: /hack|save|strategy/i, tag: '#LifeHacks' },
+];
+
+const buildHashtagSuffix = (text) => {
+  const selected = [...coreHashtags];
+  const sourceText = toSingleLine(text);
+  for (const rule of topicHashtagRules) {
+    if (rule.test.test(sourceText) && !selected.includes(rule.tag)) {
+      selected.push(rule.tag);
+    }
+    if (selected.length >= 7) break;
+  }
+  return selected.join(' ');
+};
 
 const source = readArg('source', null);
 const siteBaseUrl = String(readArg('site-base-url', 'https://projectpriceapp.com')).replace(/\/$/, '');
@@ -121,6 +136,7 @@ const normalizeLegacyTitle = (title) => {
 };
 
 const looksLegacyDescription = (description) => toSingleLine(description).startsWith('Project Price short-form video:');
+const looksGeneratedAdDescription = (description) => toSingleLine(description).startsWith('Buyer warning:');
 
 const formatDisplayDate = (iso) => {
   const d = new Date(iso);
@@ -135,10 +151,11 @@ const formatDisplayDate = (iso) => {
 };
 
 const buildDefaultDescription = (title) => {
+  const hashtagSuffix = buildHashtagSuffix(title);
   const prefix = `Buyer warning: ${toSingleLine(title)}. Use Project Price to compare repair costs, negotiate smarter, and stop overpaying.`;
-  const reservedLength = requiredHashtags.length + 1;
+  const reservedLength = hashtagSuffix.length + 1;
   const bodyMaxChars = Math.max(0, 300 - reservedLength);
-  return `${truncateWithEllipsis(prefix, bodyMaxChars)} ${requiredHashtags}`.trim();
+  return `${truncateWithEllipsis(prefix, bodyMaxChars)} ${hashtagSuffix}`.trim();
 };
 
 const buildVideoPage = (item) => {
@@ -518,7 +535,7 @@ const loadManifest = () => {
   const items = Array.isArray(data?.items)
     ? data.items.map((item) => {
       const normalizedTitle = normalizeLegacyTitle(item?.title || '');
-      const nextDescription = looksLegacyDescription(item?.description || '')
+      const nextDescription = (looksLegacyDescription(item?.description || '') || looksGeneratedAdDescription(item?.description || ''))
         ? buildDefaultDescription(normalizedTitle)
         : item?.description;
 
@@ -548,7 +565,7 @@ const publishVideo = (manifest) => {
   const ts = createTimestampToken(now);
   const titleCandidate = truncateWithEllipsis(titleArg || topicOutput || `Project Price Video ${ts}`, 300);
   const title = titleCandidate || `Project Price Video ${ts}`;
-  const description = truncateWithEllipsis(descriptionArg || buildDefaultDescription(title), 280);
+  const description = toSingleLine(descriptionArg || buildDefaultDescription(title));
   const baseSlug = slugify(title) || `video-${ts}`;
   const slug = `${baseSlug}-${ts}`;
 
