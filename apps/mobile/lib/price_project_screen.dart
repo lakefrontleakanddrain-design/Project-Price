@@ -27,7 +27,7 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
   String? _estimateSummary;
   List<_EstimateTier> _tiers = const [];
   Map<String, _TierPreviewImage> _tierPreviewImages = const {};
-  int _selectedTierIndex = 1;
+  int _selectedTierIndex = 2;
   Map<String, dynamic>? _savedHomeowner;
   HomeownerAccount? _sessionHomeowner;
 
@@ -80,10 +80,19 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
       _selectedImageBytes = bytes;
       _tiers = const [];
       _tierPreviewImages = const {};
-      _selectedTierIndex = 1;
+      _selectedTierIndex = 2;
       _estimateSummary = null;
       _errorMessage = null;
     });
+  }
+
+  int _preferredPremiumIndex(List<_EstimateTier> tiers) {
+    if (tiers.isEmpty) return 0;
+    final premiumIndex = tiers.indexWhere(
+      (tier) => tier.name.trim().toLowerCase() == 'premium',
+    );
+    if (premiumIndex >= 0) return premiumIndex;
+    return (tiers.length - 1).clamp(0, tiers.length - 1);
   }
 
   bool get _canGenerateEstimate {
@@ -218,7 +227,9 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
           _estimateSummary = decoded['summary'] as String?;
           _tiers = rawTiers.map(_EstimateTier.fromJson).toList();
           _tierPreviewImages = parsedPreviews;
-          _selectedTierIndex = rawTiers.length > 1 ? 1 : 0;
+          _selectedTierIndex = _preferredPremiumIndex(
+            rawTiers.map(_EstimateTier.fromJson).toList(),
+          );
         });
       }
     } catch (error) {
@@ -290,6 +301,7 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
 
     try {
       final endpoint = _functionEndpoint('project-price-save-project');
+      final selectedPreview = _previewForTierName(tier.name);
       final payload = {
         'userId': _sessionHomeowner?.userId ?? _savedHomeowner?['userId'],
         'fullName': form.fullName,
@@ -303,6 +315,10 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
         if (_selectedImageBytes != null && _selectedImage != null) ...{
           'imageBase64': base64Encode(_selectedImageBytes!),
           'mimeType': _guessMimeType(_selectedImage!.path),
+        },
+        if (selectedPreview != null) ...{
+          'renderedImageBase64': base64Encode(selectedPreview.imageBytes),
+          'renderedMimeType': selectedPreview.mimeType,
         },
         'selectedTier': {
           'name': tier.name,

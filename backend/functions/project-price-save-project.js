@@ -85,14 +85,15 @@ const ensureHomeownerProfile = async ({ userId, fullName, normalizedPhone, zipCo
   });
 };
 
-const uploadProjectPhoto = async (projectId, imageBase64, mimeType) => {
+const uploadProjectPhoto = async ({ projectId, imageBase64, mimeType, variant = 'original' }) => {
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceKey || !projectId || !imageBase64) return null;
 
   const contentType = String(mimeType || 'image/jpeg').trim() || 'image/jpeg';
   const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg';
-  const path = `${projectId}/${Date.now()}.${ext}`;
+  const safeVariant = String(variant || 'original').replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'original';
+  const path = `${projectId}/${safeVariant}-${Date.now()}.${ext}`;
 
   try {
     const buffer = Buffer.from(String(imageBase64), 'base64');
@@ -156,6 +157,8 @@ exports.handler = async (event) => {
     allTiers,
     imageBase64,
     mimeType,
+    renderedImageBase64,
+    renderedMimeType,
   } = payload;
 
   const normalizedEmail = String(email || '').trim().toLowerCase();
@@ -230,14 +233,31 @@ exports.handler = async (event) => {
     const project = Array.isArray(projectRows) ? projectRows[0] : null;
     if (!project?.id) throw new Error('Failed to save project.');
 
-    // Upload photo to Storage and store public URL (non-fatal if it fails)
+    // Upload photos to Storage and store public URLs (non-fatal if uploads fail)
     if (imageBase64 && project.id) {
-      const photoUrl = await uploadProjectPhoto(project.id, String(imageBase64), String(mimeType || ''));
-      if (photoUrl) {
+      const originalPhotoUrl = await uploadProjectPhoto({
+        projectId: project.id,
+        imageBase64: String(imageBase64),
+        mimeType: String(mimeType || ''),
+        variant: 'original',
+      });
+      const renderedPhotoUrl = renderedImageBase64
+        ? await uploadProjectPhoto({
+          projectId: project.id,
+          imageBase64: String(renderedImageBase64),
+          mimeType: String(renderedMimeType || ''),
+          variant: 'rendered',
+        })
+        : null;
+
+      if (originalPhotoUrl || renderedPhotoUrl) {
         const pq = new URLSearchParams({ id: `eq.${project.id}` });
         await supabaseRequest(`/rest/v1/projects?${pq.toString()}`, {
           method: 'PATCH',
-          body: { photo_url: photoUrl },
+          body: {
+            ...(originalPhotoUrl ? { photo_url: originalPhotoUrl } : {}),
+            ...(renderedPhotoUrl ? { rendered_photo_url: renderedPhotoUrl } : {}),
+          },
           headers: { Prefer: 'return=minimal' },
         }).catch(() => { /* non-fatal */ });
       }

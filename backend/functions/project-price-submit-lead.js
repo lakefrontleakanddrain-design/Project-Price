@@ -102,7 +102,7 @@ const loadOwnedProject = async (projectId, ownerId) => {
   const q = new URLSearchParams({
     id: `eq.${projectId}`,
     owner_id: `eq.${ownerId}`,
-    select: 'id,name,project_type,zip_code,description',
+    select: 'id,name,project_type,zip_code,description,photo_url,rendered_photo_url',
     limit: '1',
   });
   const rows = await supabaseRequest(`/rest/v1/projects?${q.toString()}`);
@@ -479,6 +479,8 @@ const dispatchFirstOffer = async (leadRequestId, lead) => {
           `Service: ${specialty}`,
           `ZIP: ${lead.zip_code}`,
           `Response window: ${CLAIM_WINDOW_MINUTES} minutes`,
+          ...(lead.projectPhotoUrl ? [`Original project photo: ${lead.projectPhotoUrl}`] : []),
+          ...(lead.renderedPhotoUrl ? [`Rendered selected-tier preview: ${lead.renderedPhotoUrl}`] : []),
         ],
         ctaLabel: 'Open contractor dashboard',
         ctaUrl: `${getAppBaseUrl()}/contractor-dashboard.html?leadRequestId=${encodeURIComponent(leadRequestId)}&professionalId=${encodeURIComponent(first.professional_id)}`,
@@ -583,12 +585,14 @@ exports.handler = async (event) => {
     });
 
     // 4. Reuse saved project when provided; otherwise create a fresh lead project.
+    let selectedProject = null;
     let projectId = String(requestedProjectId || '').trim();
     if (projectId) {
       const existingProject = await loadOwnedProject(projectId, userId);
       if (!existingProject?.id) {
         return jsonResponse(404, { error: 'Saved project not found for this homeowner.' });
       }
+      selectedProject = existingProject;
 
       const patchQ = new URLSearchParams({ id: `eq.${projectId}` });
       await supabaseRequest(`/rest/v1/projects?${patchQ.toString()}`, {
@@ -622,6 +626,7 @@ exports.handler = async (event) => {
       });
       projectId = projectRows?.[0]?.id;
       if (!projectId) throw new Error('Failed to create project.');
+      selectedProject = projectRows?.[0] || null;
     }
 
     // 5. Create lead request
@@ -676,11 +681,11 @@ exports.handler = async (event) => {
     // 6. Fetch project geolocation for radius-based matching
     const projQ = new URLSearchParams({
       id: `eq.${projectId}`,
-      select: 'id,latitude,longitude',
+      select: 'id,latitude,longitude,photo_url,rendered_photo_url',
       limit: '1',
     });
     const projRows = await supabaseRequest(`/rest/v1/projects?${projQ.toString()}`);
-    const project = projRows?.[0];
+    const project = projRows?.[0] || selectedProject || null;
 
     // 7. Auto-dispatch
     const dispatchResult = await dispatchFirstOffer(lead.id, {
@@ -690,6 +695,8 @@ exports.handler = async (event) => {
       description,
       latitude: geocodedProjectPoint?.latitude ?? project?.latitude ?? null,
       longitude: geocodedProjectPoint?.longitude ?? project?.longitude ?? null,
+      projectPhotoUrl: project?.photo_url || null,
+      renderedPhotoUrl: project?.rendered_photo_url || null,
     });
 
     const homeownerDashboardUrl = `${getAppBaseUrl()}/my-estimates.html`;

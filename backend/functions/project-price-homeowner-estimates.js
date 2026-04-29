@@ -57,7 +57,7 @@ const loadProjectsMap = async (projectIds) => {
 
   const q = new URLSearchParams({
     id: `in.(${ids.join(',')})`,
-    select: 'id,name,project_type,zip_code,description,estimated_cost_range,created_at,photo_url',
+    select: 'id,name,project_type,zip_code,description,estimated_cost_range,created_at,photo_url,rendered_photo_url',
   });
   const rows = await supabaseRequest(`/rest/v1/projects?${q.toString()}`);
   const list = Array.isArray(rows) ? rows : [];
@@ -178,6 +178,7 @@ exports.handler = async (event) => {
           estimatedCostRange: project.estimated_cost_range,
           createdAt: project.created_at,
           photoUrl: project.photo_url || null,
+          renderedPhotoUrl: project.rendered_photo_url || null,
         } : null,
       };
     });

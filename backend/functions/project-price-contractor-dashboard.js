@@ -111,7 +111,7 @@ exports.handler = async (event) => {
 
     const pq = new URLSearchParams({
       id: `eq.${lead.project_id}`,
-      select: 'id,name,project_type,zip_code,description,estimated_cost_range,photo_url',
+      select: 'id,name,project_type,zip_code,description,estimated_cost_range,photo_url,rendered_photo_url',
       limit: '1',
     });
     const projectRows = await supabaseRequest(`/rest/v1/projects?${pq.toString()}`);
@@ -143,6 +143,7 @@ exports.handler = async (event) => {
         description: project?.description || null,
         estimatedCostRange: project?.estimated_cost_range || null,
         photoUrl: project?.photo_url || null,
+        renderedPhotoUrl: project?.rendered_photo_url || null,
       },
       homeowner: {
         id: homeowner?.id || null,
