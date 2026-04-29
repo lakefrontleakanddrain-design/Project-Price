@@ -38,6 +38,21 @@ const topicHashtagRules = [
   { test: /hack|save|strategy/i, tag: '#LifeHacks' },
 ];
 
+const adHookTemplates = [
+  (title) => `Buyer warning: ${title} can blow up a deal fast.`,
+  (title) => `Before you buy: ${title} can wreck your budget quickly.`,
+  (title) => `Deal alert: ${title} is where buyers often overpay.`,
+  (title) => `Quick reality check: ${title} can cost more than expected.`,
+  (title) => `House-hunting tip: factor ${title} in before making your offer.`,
+];
+
+const pickHookTemplateIndex = (text) => {
+  const key = toSingleLine(text);
+  let hash = 0;
+  for (const ch of key) hash = (hash * 31 + ch.charCodeAt(0)) % 1000003;
+  return hash % adHookTemplates.length;
+};
+
 const buildHashtagSuffix = (text) => {
   const selected = [...coreHashtags];
   const sourceText = toSingleLine(text);
@@ -151,8 +166,10 @@ const formatDisplayDate = (iso) => {
 };
 
 const buildDefaultDescription = (title) => {
+  const cleanTitle = toSingleLine(title);
+  const hook = adHookTemplates[pickHookTemplateIndex(cleanTitle)](cleanTitle);
   const hashtagSuffix = buildHashtagSuffix(title);
-  const prefix = `Buyer warning: ${toSingleLine(title)}. Use Project Price to compare repair costs, negotiate smarter, and stop overpaying.`;
+  const prefix = `${hook} Use Project Price to compare repair costs, negotiate smarter, and stop overpaying.`;
   const reservedLength = hashtagSuffix.length + 1;
   const bodyMaxChars = Math.max(0, 300 - reservedLength);
   return `${truncateWithEllipsis(prefix, bodyMaxChars)} ${hashtagSuffix}`.trim();

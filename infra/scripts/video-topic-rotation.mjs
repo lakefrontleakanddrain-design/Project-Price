@@ -69,6 +69,21 @@ const TOPIC_HASHTAG_RULES = [
   { test: /hack|save|strategy/i, tag: '#LifeHacks' },
 ];
 
+const AD_HOOK_TEMPLATES = [
+  (repairFocus) => `Buyer warning: ${repairFocus} can blow up a deal fast.`,
+  (repairFocus) => `Before you buy: ${repairFocus} can wreck your budget quickly.`,
+  (repairFocus) => `Deal alert: ${repairFocus} is where buyers often overpay.`,
+  (repairFocus) => `Quick reality check: ${repairFocus} can cost more than expected.`,
+  (repairFocus) => `House-hunting tip: factor ${repairFocus} in before making your offer.`,
+];
+
+const pickHookTemplateIndex = (topic) => {
+  const key = [topic?.id, topic?.pivot, topic?.repairFocus].map(toSingleLine).join('|');
+  let hash = 0;
+  for (const ch of key) hash = (hash * 31 + ch.charCodeAt(0)) % 1000003;
+  return hash % AD_HOOK_TEMPLATES.length;
+};
+
 const buildHashtagSuffix = (topic) => {
   const sourceText = [
     topic?.pivot,
@@ -98,8 +113,10 @@ const buildTopicTitle = (topic) => {
 
 const buildTopicOutput = (topic, maxChars) => {
   const hashtagSuffix = buildHashtagSuffix(topic);
+  const repairFocus = toSingleLine(topic.repairFocus).toLowerCase();
+  const hook = AD_HOOK_TEMPLATES[pickHookTemplateIndex(topic)](repairFocus);
   const prefix = [
-    `Buyer warning: ${toSingleLine(topic.repairFocus)} can blow up a deal fast.`,
+    hook,
     `Use Project Price to compare repair costs, plan a ${toSingleLine(topic.decisionType).toLowerCase()}, and stop overpaying.`,
   ].join(' ');
   const reservedLength = hashtagSuffix.length + 1;
