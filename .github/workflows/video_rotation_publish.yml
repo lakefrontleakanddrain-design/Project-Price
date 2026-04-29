@@ -1,11 +1,13 @@
 name: Video Rotation Publish
 
 on:
+  schedule:
+    - cron: '0 14 * * *'
   workflow_dispatch:
     inputs:
       rebuild_only:
         description: "Rebuild pages/feeds only (no new video item)"
-        required: true
+        required: false
         default: false
         type: boolean
       source_video_url:
@@ -18,15 +20,19 @@ on:
         type: string
       site_base_url:
         description: "Public site base URL for feed links"
-        required: true
+        required: false
         default: "https://projectpriceapp.com"
         type: string
 
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   rotate-process-publish:
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.VIDEO_AUTORUN_ENABLED == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -40,6 +46,27 @@ jobs:
         with:
           node-version: 20
 
+      - name: Resolve run options
+        id: opts
+        run: |
+          REBUILD_ONLY_INPUT="${{ inputs.rebuild_only }}"
+          SOURCE_VIDEO_URL_INPUT="${{ inputs.source_video_url }}"
+          SOURCE_VIDEO_PATH_INPUT="${{ inputs.source_video_path }}"
+          SITE_BASE_URL_INPUT="${{ inputs.site_base_url }}"
+
+          if [ -z "$REBUILD_ONLY_INPUT" ]; then
+            REBUILD_ONLY_INPUT="false"
+          fi
+
+          if [ -z "$SITE_BASE_URL_INPUT" ]; then
+            SITE_BASE_URL_INPUT="https://projectpriceapp.com"
+          fi
+
+          echo "rebuild_only=$REBUILD_ONLY_INPUT" >> "$GITHUB_OUTPUT"
+          echo "source_video_url=$SOURCE_VIDEO_URL_INPUT" >> "$GITHUB_OUTPUT"
+          echo "source_video_path=$SOURCE_VIDEO_PATH_INPUT" >> "$GITHUB_OUTPUT"
+          echo "site_base_url=$SITE_BASE_URL_INPUT" >> "$GITHUB_OUTPUT"
+
       - name: Install ffmpeg
         run: |
           sudo apt-get update
@@ -49,48 +76,48 @@ jobs:
       - name: Select rotating topic
         id: topic
         run: |
-          if [ "${{ inputs.rebuild_only }}" = "true" ]; then
+          if [ "${{ steps.opts.outputs.rebuild_only }}" = "true" ]; then
             npm run video:next-topic -- --dry-run
           else
             npm run video:next-topic
           fi
 
       - name: Resolve source video
-        if: ${{ inputs.rebuild_only == false }}
+        if: ${{ steps.opts.outputs.rebuild_only == 'false' }}
         run: |
           FALLBACK_SOURCE_URL="https://filesamples.com/samples/video/mp4/sample_640x360.mp4"
           mkdir -p tmp
-          if [ -n "${{ inputs.source_video_url }}" ]; then
+          if [ -n "${{ steps.opts.outputs.source_video_url }}" ]; then
             echo "Using source_video_url input"
-            curl -L --fail "${{ inputs.source_video_url }}" -o tmp/input.mp4
-          elif [ -n "${{ inputs.source_video_path }}" ]; then
+            curl -L --fail "${{ steps.opts.outputs.source_video_url }}" -o tmp/input.mp4
+          elif [ -n "${{ steps.opts.outputs.source_video_path }}" ]; then
             echo "Using source_video_path input"
-            if [ ! -f "${{ inputs.source_video_path }}" ]; then
-              echo "source_video_path not found: ${{ inputs.source_video_path }}"
+            if [ ! -f "${{ steps.opts.outputs.source_video_path }}" ]; then
+              echo "source_video_path not found: ${{ steps.opts.outputs.source_video_path }}"
               exit 1
             fi
-            cp "${{ inputs.source_video_path }}" tmp/input.mp4
+            cp "${{ steps.opts.outputs.source_video_path }}" tmp/input.mp4
           else
             echo "No source input provided. Using fallback sample MP4 for test run."
             curl -L --fail "$FALLBACK_SOURCE_URL" -o tmp/input.mp4
           fi
 
       - name: Process platform video outputs
-        if: ${{ inputs.rebuild_only == false }}
+        if: ${{ steps.opts.outputs.rebuild_only == 'false' }}
         run: |
           npm run video:process-social -- --input=tmp/input.mp4
 
       - name: Publish new video item and rebuild feeds
-        if: ${{ inputs.rebuild_only == false }}
+        if: ${{ steps.opts.outputs.rebuild_only == 'false' }}
         run: |
           npm run video:publish -- \
             --source=infra/video/output/youtube-shorts-1080x1920.mp4 \
             --title="${{ steps.topic.outputs.topic_output }}" \
             --topic="${{ steps.topic.outputs.topic_output }}" \
-            --site-base-url="${{ inputs.site_base_url }}"
+            --site-base-url="${{ steps.opts.outputs.site_base_url }}"
 
       - name: Rebuild pages/feeds only
-        if: ${{ inputs.rebuild_only == true }}
+        if: ${{ steps.opts.outputs.rebuild_only == 'true' }}
         run: |
           npm run video:publish-rebuild
 
