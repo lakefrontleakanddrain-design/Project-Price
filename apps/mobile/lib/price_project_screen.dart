@@ -106,6 +106,19 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
     return bestIndex;
   }
 
+  List<_EstimateTier> _prioritizeSelectedTierFirst(List<_EstimateTier> tiers) {
+    if (tiers.length <= 1) return tiers;
+    final selectedIndex = _preferredPremiumIndex(tiers);
+    if (selectedIndex <= 0 || selectedIndex >= tiers.length) return tiers;
+    final selected = tiers[selectedIndex];
+    final others = <_EstimateTier>[];
+    for (var i = 0; i < tiers.length; i += 1) {
+      if (i == selectedIndex) continue;
+      others.add(tiers[i]);
+    }
+    return [selected, ...others];
+  }
+
   bool get _canGenerateEstimate {
     return !_isLoading &&
         _selectedImageBytes != null &&
@@ -235,11 +248,12 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
       if (mounted) {
         final parsedPreviews = _parseTierPreviewImages(rawPreviewImages);
         final parsedTiers = rawTiers.map(_EstimateTier.fromJson).toList();
+        final prioritizedTiers = _prioritizeSelectedTierFirst(parsedTiers);
         setState(() {
           _estimateSummary = decoded['summary'] as String?;
-          _tiers = parsedTiers;
+          _tiers = prioritizedTiers;
           _tierPreviewImages = parsedPreviews;
-          _selectedTierIndex = _preferredPremiumIndex(parsedTiers);
+          _selectedTierIndex = 0;
         });
       }
     } catch (error) {
