@@ -19,6 +19,21 @@ const generatedDir = path.join(liveVideoDir, 'generated');
 const indexPath = path.join(liveVideoDir, 'index.html');
 const rssPath = path.join(publicDir, 'live-video-feed.xml');
 const metricoolPath = path.join(publicDir, 'metricool-live-video.xml');
+const requiredHashtags = [
+  '#ProjectPrice',
+  '#AIEstimate',
+  '#HomeImprovement',
+  '#RealEstateTools',
+  '#ConstructionCost',
+  '#SmartHomeowner',
+  '#HouseHunting',
+  '#RemodelBudget',
+  '#PropTech',
+  '#StopOverpaying',
+  '#FirstTimeHomeBuyer',
+  '#HomeRepair',
+  '#LifeHacks',
+].join(' ');
 
 const source = readArg('source', null);
 const siteBaseUrl = String(readArg('site-base-url', 'https://projectpriceapp.com')).replace(/\/$/, '');
@@ -94,6 +109,19 @@ const createTimestampToken = (date) => {
   return `${y}${m}${d}${hh}${mm}${ss}`;
 };
 
+const looksLegacyTitle = (title) => toSingleLine(title).includes(' | ');
+
+const normalizeLegacyTitle = (title) => {
+  const clean = toSingleLine(title);
+  if (!looksLegacyTitle(clean)) return clean;
+  const [hookSegment, detailSegment] = clean.split('|').map((segment) => segment.trim());
+  const hook = hookSegment.replace(/\s+scenario$/i, '').trim();
+  if (!hook || !detailSegment) return clean;
+  return truncateWithEllipsis(`${hook}: ${detailSegment}`, 120);
+};
+
+const looksLegacyDescription = (description) => toSingleLine(description).startsWith('Project Price short-form video:');
+
 const formatDisplayDate = (iso) => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
@@ -107,10 +135,10 @@ const formatDisplayDate = (iso) => {
 };
 
 const buildDefaultDescription = (title) => {
-  return truncateWithEllipsis(
-    `Project Price short-form video: ${title}. Realtor-led buyer guidance with immediate estimate ranges and repair negotiation context.`,
-    280,
-  );
+  const prefix = `Buyer warning: ${toSingleLine(title)}. Use Project Price to compare repair costs, negotiate smarter, and stop overpaying.`;
+  const reservedLength = requiredHashtags.length + 1;
+  const bodyMaxChars = Math.max(0, 300 - reservedLength);
+  return `${truncateWithEllipsis(prefix, bodyMaxChars)} ${requiredHashtags}`.trim();
 };
 
 const buildVideoPage = (item) => {
@@ -487,7 +515,20 @@ const writeText = (filePath, content) => fs.writeFileSync(filePath, content, 'ut
 
 const loadManifest = () => {
   const data = readJson(manifestPath, { version: 1, items: [] });
-  const items = Array.isArray(data?.items) ? data.items : [];
+  const items = Array.isArray(data?.items)
+    ? data.items.map((item) => {
+      const normalizedTitle = normalizeLegacyTitle(item?.title || '');
+      const nextDescription = looksLegacyDescription(item?.description || '')
+        ? buildDefaultDescription(normalizedTitle)
+        : item?.description;
+
+      return {
+        ...item,
+        title: normalizedTitle || item?.title,
+        description: nextDescription || item?.description,
+      };
+    })
+    : [];
   return { version: 1, items };
 };
 

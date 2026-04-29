@@ -118,8 +118,9 @@ jobs:
         run: |
           npm run video:publish -- \
             --source=infra/video/output/youtube-shorts-1080x1920.mp4 \
-            --title="${{ steps.topic.outputs.topic_output }}" \
-            --topic="${{ steps.topic.outputs.topic_output }}" \
+            --title="${{ steps.topic.outputs.topic_title }}" \
+            --topic="${{ steps.topic.outputs.topic_title }}" \
+            --description="${{ steps.topic.outputs.topic_output }}" \
             --site-base-url="${{ steps.opts.outputs.site_base_url }}"
 
       - name: Commit and push changes

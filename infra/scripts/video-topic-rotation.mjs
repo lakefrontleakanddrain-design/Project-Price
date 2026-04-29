@@ -50,14 +50,38 @@ const truncateWithEllipsis = (text, maxChars) => {
   return `${clean.slice(0, maxChars - 3).trimEnd()}...`;
 };
 
-const buildTopicOutput = (topic, maxChars) => {
-  const base = [
-    `${toSingleLine(topic.pivot)} scenario`,
-    `${toSingleLine(topic.repairFocus).toLowerCase()} in a ${toSingleLine(topic.propertyType).toLowerCase()}`,
-    `${toSingleLine(topic.decisionType).toLowerCase()} with Project Price estimate ranges`,
-  ].join(' | ');
+const REQUIRED_HASHTAGS = [
+  '#ProjectPrice',
+  '#AIEstimate',
+  '#HomeImprovement',
+  '#RealEstateTools',
+  '#ConstructionCost',
+  '#SmartHomeowner',
+  '#HouseHunting',
+  '#RemodelBudget',
+  '#PropTech',
+  '#StopOverpaying',
+  '#FirstTimeHomeBuyer',
+  '#HomeRepair',
+  '#LifeHacks',
+].join(' ');
 
-  return truncateWithEllipsis(base, maxChars);
+const buildTopicTitle = (topic) => {
+  const hook = toSingleLine(topic.pivot);
+  const repairFocus = toSingleLine(topic.repairFocus).toLowerCase();
+  const propertyType = toSingleLine(topic.propertyType).toLowerCase();
+  return truncateWithEllipsis(`${hook}: ${repairFocus} in a ${propertyType}`, 120);
+};
+
+const buildTopicOutput = (topic, maxChars) => {
+  const prefix = [
+    `Buyer warning: ${toSingleLine(topic.repairFocus)} can blow up a deal fast.`,
+    `Use Project Price to compare repair costs, plan a ${toSingleLine(topic.decisionType).toLowerCase()}, and stop overpaying.`,
+  ].join(' ');
+  const reservedLength = REQUIRED_HASHTAGS.length + 1;
+  const bodyMaxChars = Math.max(0, maxChars - reservedLength);
+  const body = truncateWithEllipsis(prefix, bodyMaxChars);
+  return `${body} ${REQUIRED_HASHTAGS}`.trim();
 };
 
 const buildPrompt = (topic) => {
@@ -112,6 +136,7 @@ const result = {
   selectedIndex: normalizedIndex,
   totalTopics: topics.length,
   topic: selected,
+  topicTitle: buildTopicTitle(selected),
   topicOutput: buildTopicOutput(selected, topicMaxChars),
   topicOutputMaxChars: topicMaxChars,
   prompt: buildPrompt(selected),
@@ -124,6 +149,7 @@ if (process.env.GITHUB_OUTPUT) {
     `topic_id=${String(selected.id || '')}`,
     `topic_index=${normalizedIndex}`,
     `topic_total=${topics.length}`,
+    `topic_title=${result.topicTitle}`,
     `topic_output=${result.topicOutput}`,
     `topic_output_max_chars=${topicMaxChars}`,
     `topic_prompt=${JSON.stringify(result.prompt)}`,
