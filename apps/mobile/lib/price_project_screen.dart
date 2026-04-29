@@ -325,7 +325,9 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
 
     try {
       final endpoint = _functionEndpoint('project-price-save-project');
+      final premiumPreview = _tierPreviewImages['premium'];
       final selectedPreview = _previewForTierName(tier.name);
+      final renderToPersist = premiumPreview ?? selectedPreview;
       final payload = {
         'userId': _sessionHomeowner?.userId ?? _savedHomeowner?['userId'],
         'fullName': form.fullName,
@@ -340,9 +342,9 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
           'imageBase64': base64Encode(_selectedImageBytes!),
           'mimeType': _guessMimeType(_selectedImage!.path),
         },
-        if (selectedPreview != null) ...{
-          'renderedImageBase64': base64Encode(selectedPreview.imageBytes),
-          'renderedMimeType': selectedPreview.mimeType,
+        if (renderToPersist != null) ...{
+          'renderedImageBase64': base64Encode(renderToPersist.imageBytes),
+          'renderedMimeType': renderToPersist.mimeType,
         },
         'selectedTier': {
           'name': tier.name,
