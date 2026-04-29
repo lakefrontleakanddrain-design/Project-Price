@@ -12,18 +12,22 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate a video with Gemini/Veo and save as MP4.")
     parser.add_argument("--prompt", required=True, help="Prompt text for video generation")
     parser.add_argument("--output", required=True, help="Output MP4 path")
-    parser.add_argument("--model", default=os.environ.get("GEMINI_VIDEO_MODEL", "veo-3.1-generate-preview"))
-    parser.add_argument("--aspect-ratio", default=os.environ.get("GEMINI_VIDEO_ASPECT_RATIO", "9:16"))
-    parser.add_argument("--resolution", default=os.environ.get("GEMINI_VIDEO_RESOLUTION", "720p"))
+    parser.add_argument("--model", default=(os.environ.get("GEMINI_VIDEO_MODEL") or "veo-3.1-generate-preview"))
+    parser.add_argument("--aspect-ratio", default=(os.environ.get("GEMINI_VIDEO_ASPECT_RATIO") or "9:16"))
+    parser.add_argument("--resolution", default=(os.environ.get("GEMINI_VIDEO_RESOLUTION") or "720p"))
+    
+    duration_env = os.environ.get("GEMINI_VIDEO_DURATION_SECONDS", "").strip()
     parser.add_argument(
         "--duration-seconds",
         type=int,
-        default=int(os.environ.get("GEMINI_VIDEO_DURATION_SECONDS", "8")),
+        default=int(duration_env) if duration_env else 8,
     )
+    
+    timeout_env = os.environ.get("GEMINI_VIDEO_TIMEOUT_SECONDS", "").strip()
     parser.add_argument(
         "--timeout-seconds",
         type=int,
-        default=int(os.environ.get("GEMINI_VIDEO_TIMEOUT_SECONDS", "900")),
+        default=int(timeout_env) if timeout_env else 900,
     )
     return parser.parse_args()
 
