@@ -269,46 +269,106 @@ const buildIndexPage = (items) => {
 
 const buildRss = (items, channelTitle, channelPath) => {
   const channelLink = `${siteBaseUrl}${channelPath}`;
-  const now = new Date().toUTCString();
+  const now = new Date();
+  const pubDate = now.toUTCString();
 
-  const itemXml = items.map((item) => {
+  const itemXml = items.slice(0, 1).map((item) => {
     const link = `${siteBaseUrl}${item.pagePath}`;
-    const enclosure = `${siteBaseUrl}${item.videoPath}`;
-    return `    <item>\n      <title>${escapeXml(item.title)}</title>\n      <link>${escapeXml(link)}</link>\n      <guid isPermaLink="false">${escapeXml(item.guid)}</guid>\n      <pubDate>${new Date(item.publishedAt).toUTCString()}</pubDate>\n      <description><![CDATA[${item.description}]]></description>\n      <enclosure url="${escapeXml(enclosure)}" length="0" type="video/mp4" />\n    </item>`;
+    const videoUrl = `${siteBaseUrl}${item.videoPath}`;
+    const itemPubDate = new Date(item.publishedAt).toUTCString();
+    const contentHtml = `<p>${escapeXml(item.title)}</p><p>${escapeXml(item.description)}</p><p><a href="${escapeXml(link)}">Watch on Project Price</a></p><video controls preload="metadata" playsinline style="max-width:100%;height:auto;"><source src="${escapeXml(videoUrl)}" type="video/mp4"></video>`;
+    
+    return `    <item>
+    <title><![CDATA[${item.title}]]></title>
+    <link>${escapeXml(link)}</link>
+    <dc:creator><![CDATA[projectprice]]></dc:creator>
+    <guid isPermaLink="false">${escapeXml(item.guid)}</guid>
+    <pubDate>${itemPubDate}</pubDate>
+    <description><![CDATA[${item.description}]]></description>
+    <content:encoded><![CDATA[${contentHtml}]]></content:encoded>
+    <enclosure url="${escapeXml(videoUrl)}" length="0" type="video/mp4" />
+    <media:content url="${escapeXml(videoUrl)}" medium="video" type="video/mp4" />
+    <media:thumbnail url="${escapeXml(siteBaseUrl)}/logo.png" />
+    </item>`;
   }).join('\n\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0">
-  <channel>
-    <title>${escapeXml(channelTitle)}</title>
+<rss version="2.0"
+    xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+    xmlns:content="http://purl.org/rss/1.0/modules/content/"
+    xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:wp="http://wordpress.org/export/1.2/"
+    xmlns:media="http://search.yahoo.com/mrss/"
+>
+
+<channel>
+    <title>PROJECT PRICE LIVE VIDEO</title>
     <link>${escapeXml(channelLink)}</link>
-    <description>${escapeXml('Project Price rotating short-form video feed for realtor and buyer estimate strategy.')}</description>
-    <language>en-us</language>
-    <lastBuildDate>${now}</lastBuildDate>
+    <description>Realtor and Homebuyer Property Estimate Strategy Videos</description>
+    <language>en</language>
+    <pubDate>${pubDate}</pubDate>
+    <wp:wxr_version>1.2</wp:wxr_version>
+    <wp:base_site_url>${escapeXml(siteBaseUrl)}/</wp:base_site_url>
+    <wp:base_blog_url>${escapeXml(siteBaseUrl)}</wp:base_blog_url>
+
+    <generator>Project Price Video Automation</generator>
+
 ${itemXml}
-  </channel>
+
+</channel>
 </rss>
 `;
 };
 
 const buildMetricoolRss = (items) => {
-  const now = new Date().toUTCString();
+  const now = new Date();
+  const pubDate = now.toUTCString();
 
-  const itemXml = items.map((item) => {
+  const itemXml = items.slice(0, 1).map((item) => {
     const link = `${siteBaseUrl}${item.pagePath}`;
     const videoUrl = `${siteBaseUrl}${item.videoPath}`;
-    return `  <item>\n    <title>${escapeXml(item.title)}</title>\n    <link>${escapeXml(link)}</link>\n    <description>${escapeXml(item.description)}</description>\n    <pubDate>${new Date(item.publishedAt).toUTCString()}</pubDate>\n    <guid>${escapeXml(link)}</guid>\n    <enclosure url="${escapeXml(videoUrl)}" length="0" type="video/mp4" />\n  </item>`;
+    const itemPubDate = new Date(item.publishedAt).toUTCString();
+    const contentHtml = `<p>${escapeXml(item.title)}</p><p>${escapeXml(item.description)}</p><p><a href="${escapeXml(link)}">Watch on Project Price</a></p><video controls preload="metadata" playsinline style="max-width:100%;height:auto;"><source src="${escapeXml(videoUrl)}" type="video/mp4"></video>`;
+    
+    return `    <item>
+    <title><![CDATA[${item.title}]]></title>
+    <link>${escapeXml(link)}</link>
+    <dc:creator><![CDATA[projectprice]]></dc:creator>
+    <guid isPermaLink="false">projectprice.com/live-video/${item.publishedAt.replace(/\D/g, '').slice(0, 14)}</guid>
+    <pubDate>${itemPubDate}</pubDate>
+    <description><![CDATA[${item.description}]]></description>
+    <content:encoded><![CDATA[${contentHtml}]]></content:encoded>
+    <enclosure url="${escapeXml(videoUrl)}" length="0" type="video/mp4" />
+    <media:content url="${escapeXml(videoUrl)}" medium="video" type="video/mp4" />
+    <media:thumbnail url="${escapeXml(siteBaseUrl)}/logo.png" />
+    </item>`;
   }).join('\n\n');
 
   return `<?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0">
+<rss version="2.0"
+    xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+    xmlns:content="http://purl.org/rss/1.0/modules/content/"
+    xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:wp="http://wordpress.org/export/1.2/"
+    xmlns:media="http://search.yahoo.com/mrss/"
+>
+
 <channel>
-  <title>${escapeXml('ProjectPrice Live Video Feed')}</title>
-  <link>${escapeXml(siteBaseUrl)}</link>
-  <description>${escapeXml('Latest updates and insights')}</description>
-  <lastBuildDate>${now}</lastBuildDate>
+    <title>PROJECT PRICE LIVE VIDEO</title>
+    <link>${escapeXml(siteBaseUrl)}</link>
+    <description>Realtor and Homebuyer Property Estimate Strategy Videos</description>
+    <pubDate>${pubDate}</pubDate>
+    <language>en</language>
+    <wp:wxr_version>1.2</wp:wxr_version>
+    <wp:base_site_url>${escapeXml(siteBaseUrl)}/</wp:base_site_url>
+    <wp:base_blog_url>${escapeXml(siteBaseUrl)}</wp:base_blog_url>
+
+    <generator>Project Price Video Automation</generator>
 
 ${itemXml}
+
 </channel>
 </rss>
 `;

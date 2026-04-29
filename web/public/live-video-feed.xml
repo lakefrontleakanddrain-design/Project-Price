@@ -1,18 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0">
-  <channel>
-    <title>ProjectPrice Live Video Feed</title>
+<rss version="2.0"
+    xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+    xmlns:content="http://purl.org/rss/1.0/modules/content/"
+    xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:wp="http://wordpress.org/export/1.2/"
+    xmlns:media="http://search.yahoo.com/mrss/"
+>
+
+<channel>
+    <title>PROJECT PRICE LIVE VIDEO</title>
     <link>https://projectpriceapp.com/live-video/</link>
-    <description>Project Price rotating short-form video feed for realtor and buyer estimate strategy.</description>
-    <language>en-us</language>
-    <lastBuildDate>Wed, 29 Apr 2026 04:23:29 GMT</lastBuildDate>
+    <description>Realtor and Homebuyer Property Estimate Strategy Videos</description>
+    <language>en</language>
+    <pubDate>Wed, 29 Apr 2026 04:23:29 +0000</pubDate>
+    <wp:wxr_version>1.2</wp:wxr_version>
+    <wp:base_site_url>https://projectpriceapp.com/</wp:base_site_url>
+    <wp:base_blog_url>https://projectpriceapp.com</wp:base_blog_url>
+
+    <generator>Project Price Video Automation</generator>
+
     <item>
-      <title>Deal saver scenario | panel and wiring corrections in a recently flipped home | seller-completed repairs with Project Price estimate ranges</title>
-      <link>https://projectpriceapp.com/live-video/deal-saver-scenario-panel-and-wiring-corrections-in-a-recently-flipped-20260429042329.html</link>
-      <guid isPermaLink="false">projectprice-live-video-deal-saver-scenario-panel-and-wiring-corrections-in-a-recently-flipped-20260429042329</guid>
-      <pubDate>Wed, 29 Apr 2026 04:23:29 GMT</pubDate>
-      <description><![CDATA[Project Price short-form video: Deal saver scenario | panel and wiring corrections in a recently flipped home | seller-completed repairs with Project Price estimate ranges. Realtor-led buyer guidance with immediate estimate ranges and repair negotiation context.]]></description>
-      <enclosure url="https://projectpriceapp.com/live-video/generated/deal-saver-scenario-panel-and-wiring-corrections-in-a-recently-flipped-20260429042329.mp4" length="0" type="video/mp4" />
+    <title><![CDATA[Deal saver scenario | panel and wiring corrections in a recently flipped home | seller-completed repairs with Project Price estimate ranges]]></title>
+    <link>https://projectpriceapp.com/live-video/deal-saver-scenario-panel-and-wiring-corrections-in-a-recently-flipped-20260429042329.html</link>
+    <dc:creator><![CDATA[projectprice]]></dc:creator>
+    <guid isPermaLink="false">projectprice-live-video-deal-saver-scenario-panel-and-wiring-corrections-in-a-recently-flipped-20260429042329</guid>
+    <pubDate>Wed, 29 Apr 2026 04:23:29 GMT</pubDate>
+    <description><![CDATA[Project Price short-form video: Deal saver scenario | panel and wiring corrections in a recently flipped home | seller-completed repairs with Project Price estimate ranges. Realtor-led buyer guidance with immediate estimate ranges and repair negotiation context.]]></description>
+    <content:encoded><![CDATA[<p>Deal saver scenario | panel and wiring corrections in a recently flipped home | seller-completed repairs with Project Price estimate ranges</p><p>Realtor-led buyer guidance with immediate estimate ranges and repair negotiation context.</p><p><a href="https://projectpriceapp.com/live-video/deal-saver-scenario-panel-and-wiring-corrections-in-a-recently-flipped-20260429042329.html">Watch on Project Price</a></p><video controls preload="metadata" playsinline style="max-width:100%;height:auto;"><source src="https://projectpriceapp.com/live-video/generated/deal-saver-scenario-panel-and-wiring-corrections-in-a-recently-flipped-20260429042329.mp4" type="video/mp4"></video>]]></content:encoded>
+    <enclosure url="https://projectpriceapp.com/live-video/generated/deal-saver-scenario-panel-and-wiring-corrections-in-a-recently-flipped-20260429042329.mp4" length="0" type="video/mp4" />
+    <media:content url="https://projectpriceapp.com/live-video/generated/deal-saver-scenario-panel-and-wiring-corrections-in-a-recently-flipped-20260429042329.mp4" medium="video" type="video/mp4" />
+    <media:thumbnail url="https://projectpriceapp.com/logo.png" />
     </item>
-  </channel>
+
+</channel>
 </rss>
