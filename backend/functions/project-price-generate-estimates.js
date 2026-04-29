@@ -11,6 +11,207 @@ const jsonResponse = (statusCode, body) => ({
   body: JSON.stringify(body),
 });
 
+const env = () => ({
+  supabaseUrl: process.env.SUPABASE_URL || '',
+  serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+});
+
+const supabaseRequest = async (path, { method = 'GET', body, headers = {} } = {}) => {
+  const { supabaseUrl, serviceKey } = env();
+  if (!supabaseUrl || !serviceKey) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.');
+
+  const res = await fetch(`${supabaseUrl}${path}`, {
+    method,
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json',
+      ...headers,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Supabase error ${res.status}: ${text}`);
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+};
+
+const DEFAULT_MARKET_PROFILE = {
+  marketCode: 'national_default',
+  marketName: 'National baseline',
+  region: 'national',
+  laborCostIndex: 1.0,
+  materialCostIndex: 1.0,
+  permitComplexity: 3,
+  codeComplexity: 3,
+  accessComplexity: 3,
+  weatherComplexity: 3,
+  pricingNotes: 'Use balanced national planning assumptions for labor, materials, and permitting.',
+};
+
+const REGIONAL_MARKET_PROFILES = {
+  northeast: {
+    marketCode: 'regional_northeast',
+    marketName: 'Northeast regional market',
+    region: 'northeast',
+    laborCostIndex: 1.18,
+    materialCostIndex: 1.08,
+    permitComplexity: 4,
+    codeComplexity: 4,
+    accessComplexity: 3,
+    weatherComplexity: 4,
+    pricingNotes: 'Expect higher labor cost, stricter code enforcement, and weather-driven seasonality.',
+  },
+  southeast: {
+    marketCode: 'regional_southeast',
+    marketName: 'Southeast regional market',
+    region: 'southeast',
+    laborCostIndex: 0.98,
+    materialCostIndex: 0.97,
+    permitComplexity: 3,
+    codeComplexity: 3,
+    accessComplexity: 3,
+    weatherComplexity: 3,
+    pricingNotes: 'Use moderate labor and permit assumptions with heat and storm resilience where relevant.',
+  },
+  midwest: {
+    marketCode: 'regional_midwest',
+    marketName: 'Midwest regional market',
+    region: 'midwest',
+    laborCostIndex: 1.0,
+    materialCostIndex: 0.99,
+    permitComplexity: 3,
+    codeComplexity: 3,
+    accessComplexity: 2,
+    weatherComplexity: 4,
+    pricingNotes: 'Use balanced labor with weather and seasonal construction impacts.',
+  },
+  south_central: {
+    marketCode: 'regional_south_central',
+    marketName: 'South Central regional market',
+    region: 'south_central',
+    laborCostIndex: 0.96,
+    materialCostIndex: 0.98,
+    permitComplexity: 3,
+    codeComplexity: 3,
+    accessComplexity: 2,
+    weatherComplexity: 3,
+    pricingNotes: 'Use moderate pricing with localized weather, expansion, and suburban access assumptions.',
+  },
+  mountain: {
+    marketCode: 'regional_mountain',
+    marketName: 'Mountain regional market',
+    region: 'mountain',
+    laborCostIndex: 1.04,
+    materialCostIndex: 1.02,
+    permitComplexity: 3,
+    codeComplexity: 3,
+    accessComplexity: 4,
+    weatherComplexity: 4,
+    pricingNotes: 'Account for elevation, access, and weather effects on scheduling and delivery.',
+  },
+  southwest: {
+    marketCode: 'regional_southwest',
+    marketName: 'Southwest regional market',
+    region: 'southwest',
+    laborCostIndex: 1.03,
+    materialCostIndex: 1.01,
+    permitComplexity: 3,
+    codeComplexity: 3,
+    accessComplexity: 3,
+    weatherComplexity: 2,
+    pricingNotes: 'Use moderate-high labor assumptions with heat and utility upgrade considerations.',
+  },
+  west_coast: {
+    marketCode: 'regional_west_coast',
+    marketName: 'West Coast regional market',
+    region: 'west_coast',
+    laborCostIndex: 1.28,
+    materialCostIndex: 1.16,
+    permitComplexity: 5,
+    codeComplexity: 5,
+    accessComplexity: 4,
+    weatherComplexity: 2,
+    pricingNotes: 'Expect premium labor, stronger code requirements, and more expensive permitting in major coastal markets.',
+  },
+};
+
+const regionForZipCode = (zipCode) => {
+  const zip = String(zipCode || '').trim();
+  if (!/^\d{5}$/.test(zip)) return DEFAULT_MARKET_PROFILE.region;
+
+  const firstDigit = Number(zip[0]);
+  if (firstDigit <= 1) return 'northeast';
+  if (firstDigit <= 3) return 'southeast';
+  if (firstDigit <= 5) return 'midwest';
+  if (firstDigit === 6) return 'south_central';
+  if (firstDigit === 7) return 'mountain';
+  if (firstDigit === 8) return 'southwest';
+  return 'west_coast';
+};
+
+const normalizeMarketProfile = (profile, overrides = {}) => {
+  const source = profile || DEFAULT_MARKET_PROFILE;
+  return {
+    marketCode: String(overrides.marketCode || source.marketCode || DEFAULT_MARKET_PROFILE.marketCode),
+    marketName: String(overrides.marketName || source.marketName || DEFAULT_MARKET_PROFILE.marketName),
+    region: String(overrides.region || source.region || DEFAULT_MARKET_PROFILE.region),
+    city: overrides.city ? String(overrides.city) : null,
+    stateCode: overrides.stateCode ? String(overrides.stateCode) : null,
+    laborCostIndex: clamp(Number(source.laborCostIndex ?? source.labor_cost_index ?? 1), 0.75, 1.6),
+    materialCostIndex: clamp(Number(source.materialCostIndex ?? source.material_cost_index ?? 1), 0.8, 1.5),
+    permitComplexity: clamp(Number(source.permitComplexity ?? source.permit_complexity ?? 3), 1, 5),
+    codeComplexity: clamp(Number(source.codeComplexity ?? source.code_complexity ?? 3), 1, 5),
+    accessComplexity: clamp(Number(source.accessComplexity ?? source.access_complexity ?? 3), 1, 5),
+    weatherComplexity: clamp(Number(source.weatherComplexity ?? source.weather_complexity ?? 3), 1, 5),
+    pricingNotes: String(source.pricingNotes ?? source.pricing_notes ?? DEFAULT_MARKET_PROFILE.pricingNotes),
+  };
+};
+
+const buildRegionalFallbackProfile = (zipCode) => {
+  const region = regionForZipCode(zipCode);
+  return normalizeMarketProfile(REGIONAL_MARKET_PROFILES[region] || DEFAULT_MARKET_PROFILE);
+};
+
+const loadMarketContext = async (zipCode) => {
+  const zip = String(zipCode || '').trim();
+  const zipPrefix = /^\d{5}$/.test(zip) ? zip.slice(0, 3) : '';
+  const regionalFallback = buildRegionalFallbackProfile(zip);
+
+  if (!zipPrefix) return regionalFallback;
+
+  try {
+    const lookupRows = await supabaseRequest(`/rest/v1/zip_market_lookup?zip_prefix=eq.${zipPrefix}&select=zip_prefix,market_code,city,state_code&limit=1`);
+    const lookup = Array.isArray(lookupRows) ? lookupRows[0] : null;
+    if (!lookup?.market_code) return regionalFallback;
+
+    const profileRows = await supabaseRequest(`/rest/v1/pricing_market_profiles?market_code=eq.${encodeURIComponent(lookup.market_code)}&select=market_code,market_name,region,labor_cost_index,material_cost_index,permit_complexity,code_complexity,access_complexity,weather_complexity,pricing_notes&limit=1`);
+    const profile = Array.isArray(profileRows) ? profileRows[0] : null;
+    if (!profile) {
+      return normalizeMarketProfile(regionalFallback, {
+        marketCode: String(lookup.market_code),
+        marketName: String(lookup.city || regionalFallback.marketName),
+        city: lookup.city || null,
+        stateCode: lookup.state_code || null,
+      });
+    }
+
+    return normalizeMarketProfile(profile, {
+      marketCode: profile.market_code,
+      marketName: profile.market_name,
+      city: lookup.city || null,
+      stateCode: lookup.state_code || null,
+    });
+  } catch {
+    return regionalFallback;
+  }
+};
+
 const hashText = (text) => {
   let h = 0;
   for (let i = 0; i < text.length; i += 1) {
@@ -41,11 +242,25 @@ const zipCostFactor = (zipCode) => {
   return 0.88 + normalized * 0.28;
 };
 
-const buildFallbackEstimates = (description, zipCode) => {
+const marketCostFactor = (zipCode, marketContext) => {
+  const zipFactor = zipCostFactor(zipCode);
+  const labor = Number(marketContext?.laborCostIndex || 1);
+  const materials = Number(marketContext?.materialCostIndex || 1);
+  const complexityScore = (
+    Number(marketContext?.permitComplexity || 3)
+    + Number(marketContext?.codeComplexity || 3)
+    + Number(marketContext?.accessComplexity || 3)
+    + Number(marketContext?.weatherComplexity || 3)
+  ) / 4;
+  const complexityFactor = 0.9 + (clamp(complexityScore, 1, 5) - 1) * 0.06;
+  return clamp(zipFactor * ((labor + materials) / 2) * complexityFactor, 0.75, 1.85);
+};
+
+const buildFallbackEstimates = (description, zipCode, marketContext = DEFAULT_MARKET_PROFILE) => {
   const seed = hashText(`${String(description || '').trim().toLowerCase()}|${String(zipCode || '').trim()}`);
   const base = 850 + (seed % 1200);
   const spread = 320 + (seed % 550);
-  const locationFactor = zipCostFactor(zipCode);
+  const locationFactor = marketCostFactor(zipCode, marketContext);
 
   const mkRange = (multiplier, extraSpread) => {
     const low = Math.round(base * multiplier * locationFactor);
@@ -58,7 +273,7 @@ const buildFallbackEstimates = (description, zipCode) => {
   const premium = mkRange(2.05, 1.6);
 
   return {
-    summary: 'Estimated from project description and zip-code market context while AI image analysis is temporarily unavailable.',
+    summary: `Estimated from project description and ${marketContext.marketName} market context while AI image analysis is temporarily unavailable.`,
     tiers: [
       {
         name: 'Basic',
@@ -83,10 +298,13 @@ const buildFallbackEstimates = (description, zipCode) => {
   };
 };
 
-const estimationPrompt = (description, zipCode) => `You are a renovation and home-services estimator.
+const estimationPrompt = (description, zipCode, marketContext) => `You are a renovation and home-services estimator.
 
 Use the user description and the image (if provided) to produce three homeowner-facing cost tiers in USD.
-Use the zip code as local market context for labor/material pricing.
+Use the structured market profile below as the pricing anchor and the zip code as geographic context.
+- Do not browse or reference random public-web pricing sources.
+- Keep the estimate appropriate for the referenced market profile.
+- Explain why Basic, Standard, and Premium differ based on finish level, scope, and market conditions.
 - Return STRICT JSON only. No markdown.
 - Keep output grounded and realistic for U.S. metro pricing.
 - Include exactly three tiers named Basic, Standard, Premium.
@@ -102,6 +320,19 @@ Required JSON shape:
     {"name":"Premium","rangeLow":2800,"rangeHigh":4200,"rationale":"..."}
   ]
 }
+
+Market profile:
+- Market name: ${marketContext.marketName}
+- Region: ${marketContext.region}
+- City: ${marketContext.city || 'regional default'}
+- State: ${marketContext.stateCode || 'N/A'}
+- Labor cost index: ${marketContext.laborCostIndex}
+- Material cost index: ${marketContext.materialCostIndex}
+- Permit complexity (1-5): ${marketContext.permitComplexity}
+- Code complexity (1-5): ${marketContext.codeComplexity}
+- Access complexity (1-5): ${marketContext.accessComplexity}
+- Weather complexity (1-5): ${marketContext.weatherComplexity}
+- Pricing notes: ${marketContext.pricingNotes}
 
 Zip code:
 ${zipCode}
@@ -368,8 +599,8 @@ const buildTierPreviewImages = async ({ apiKey, description, zipCode, imageBase6
   };
 };
 
-const generateWithGemini = async ({ apiKey, description, zipCode, imageBase64, mimeType }) => {
-  const parts = [{ text: estimationPrompt(description, zipCode) }];
+const generateWithGemini = async ({ apiKey, description, zipCode, imageBase64, mimeType, marketContext }) => {
+  const parts = [{ text: estimationPrompt(description, zipCode, marketContext) }];
 
   if (imageBase64) {
     parts.push({
@@ -490,6 +721,7 @@ exports.handler = async (event) => {
   }
 
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+  const marketContext = await loadMarketContext(zipCode);
 
   // Generate text estimates and preview image independently so a text failure
   // does NOT trigger a second image API call in the catch block.
@@ -497,11 +729,11 @@ exports.handler = async (event) => {
   let estimateError = null;
   try {
     estimates = apiKey
-      ? await generateWithGemini({ apiKey, description, zipCode, imageBase64, mimeType })
-      : buildFallbackEstimates(description, zipCode);
+      ? await generateWithGemini({ apiKey, description, zipCode, imageBase64, mimeType, marketContext })
+      : buildFallbackEstimates(description, zipCode, marketContext);
   } catch (error) {
     estimateError = error;
-    estimates = buildFallbackEstimates(description, zipCode);
+    estimates = buildFallbackEstimates(description, zipCode, marketContext);
   }
 
   // Image generation runs exactly once regardless of whether text estimation succeeded.
@@ -528,6 +760,7 @@ exports.handler = async (event) => {
 
   return jsonResponse(200, {
     ...estimates,
+    marketContext,
     tierPreviewImages: previewResult.images,
     ...(estimateError ? { warning: estimateError instanceof Error ? estimateError.message : 'Estimate service fallback was used.' } : {}),
     ...(debugPreviews ? { previewDiagnostics: previewResult.diagnostics } : {}),
