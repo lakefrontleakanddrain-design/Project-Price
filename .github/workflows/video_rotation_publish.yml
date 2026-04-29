@@ -6,7 +6,7 @@ on:
       rebuild_only:
         description: "Rebuild pages/feeds only (no new video item)"
         required: true
-        default: true
+        default: false
         type: boolean
       source_video_url:
         description: "Public URL to source MP4 (optional when rebuild_only is false)"
