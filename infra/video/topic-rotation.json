@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "topics": [
+    {
+      "id": "inspection-surprise-roof-credit",
+      "pivot": "Inspection surprise",
+      "propertyType": "Older single-family home",
+      "repairFocus": "Roof leak risk",
+      "decisionType": "Seller credit",
+      "emotion": "Anxious",
+      "pov": "Split POV"
+    },
+    {
+      "id": "first-time-buyer-plumbing-offer",
+      "pivot": "First-time buyer coaching",
+      "propertyType": "Starter home",
+      "repairFocus": "Plumbing stack issues",
+      "decisionType": "Offer reduction",
+      "emotion": "Overwhelmed",
+      "pov": "Realtor POV"
+    },
+    {
+      "id": "budget-cap-kitchen-phased",
+      "pivot": "Budget reality check",
+      "propertyType": "Cosmetic fixer-upper",
+      "repairFocus": "Kitchen cabinet and counter refresh",
+      "decisionType": "Phased post-close plan",
+      "emotion": "Skeptical",
+      "pov": "Buyer POV"
+    },
+    {
+      "id": "hidden-defect-electrical-repairs",
+      "pivot": "Deal saver",
+      "propertyType": "Recently flipped home",
+      "repairFocus": "Panel and wiring corrections",
+      "decisionType": "Seller-completed repairs",
+      "emotion": "Strategic",
+      "pov": "Narrated case-study"
+    },
+    {
+      "id": "deadline-offer-hvac-cut",
+      "pivot": "Time-pressure decision",
+      "propertyType": "Move-in-ready listing",
+      "repairFocus": "HVAC replacement",
+      "decisionType": "Offer reduction",
+      "emotion": "Urgent",
+      "pov": "Split POV"
+    },
+    {
+      "id": "inspection-foundation-credit",
+      "pivot": "Inspection surprise",
+      "propertyType": "Older brick home",
+      "repairFocus": "Foundation settling",
+      "decisionType": "Seller credit",
+      "emotion": "Concerned",
+      "pov": "Realtor POV"
+    }
+  ]
+}

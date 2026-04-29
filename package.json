@@ -8,6 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "smoke:waterfall": "node infra/scripts/waterfall-smoke-test.mjs"
+    "smoke:waterfall": "node infra/scripts/waterfall-smoke-test.mjs",
+    "video:next-topic": "node infra/scripts/video-topic-rotation.mjs"
   }
 }
