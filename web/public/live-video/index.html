@@ -20,8 +20,23 @@
       padding: 24px;
     }
     .wrap { max-width: 1100px; margin: 0 auto; }
-    .brand { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-    .brand a { color:#4a6a8a; text-decoration:none; font-size:.85rem; font-weight:600; margin-left:14px; }
+    .brand-bar {
+      max-width: 1100px;
+      margin: 0 auto 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+    .brand-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .brand-nav { display: flex; gap: 16px; }
+    .brand-nav a {
+      color: #4a6a8a;
+      text-decoration: none;
+      font-size: .85rem;
+      font-weight: 600;
+    }
+    .brand-nav a:hover { color: var(--navy); }
     .hero {
       background: var(--paper);
       border: 1px solid var(--line);
@@ -43,21 +58,43 @@
     .item h3 { margin:0 0 8px; font-size:1rem; }
     .item h3 a { color:var(--navy); text-decoration:none; }
     .item p { margin:0 0 10px; color:#4a6a8a; font-size:.92rem; line-height:1.5; }
+    .video-link { margin: 10px 0 0; }
+    .video-link a { color: var(--navy); font-weight: 700; text-decoration: none; font-size: .88rem; }
+    .video-link a:hover { text-decoration: underline; }
     video { width:100%; border-radius:10px; border:1px solid var(--line); background:#000; }
     .meta { margin-top:8px; color:#6b87a5; font-size:.8rem; }
     .rss { margin-top: 12px; font-size: .88rem; color: #4a6a8a; }
     .rss code { background:#f5f9ff; border:1px solid #d8e6f8; padding:2px 6px; border-radius:8px; }
+    .footer {
+      margin-top: 40px;
+      padding: 20px 4px;
+      border-top: 1px solid #d3e2f5;
+      text-align: center;
+      font-size: .8rem;
+      color: #7a99b8;
+    }
+    .footer a {
+      color: #446684;
+      text-decoration: none;
+      font-weight: 700;
+      margin: 0 8px;
+    }
+    .footer a:hover { color: var(--navy); }
   </style>
 </head>
 <body>
+  <header class="brand-bar">
+    <a href="/" class="brand-logo">
+      <img src="/logo.jpg" alt="ProjectPrice" style="height:44px;width:auto;" />
+    </a>
+    <nav class="brand-nav">
+      <a href="/get-quotes.html">Request Estimate</a>
+      <a href="/my-estimates.html">My Saved Projects</a>
+      <a href="/contractor-signup.html">For Contractors</a>
+      <a href="/contractor-portal.html">Contractor Login</a>
+    </nav>
+  </header>
   <div class="wrap">
-    <div class="brand">
-      <a href="/"><img src="/logo.jpg" alt="Project Price" style="height:44px;width:auto;" /></a>
-      <nav>
-        <a href="/get-quotes.html">Request Estimate</a>
-        <a href="/my-estimates.html">My Saved Projects</a>
-      </nav>
-    </div>
     <section class="hero">
       <h1>ProjectPrice Live Video Feed</h1>
       <p>Realtor-led buyer guidance clips generated from rotating topics. Each item includes a webpage and RSS entry for social distribution workflows.</p>
@@ -68,21 +105,33 @@
       <h3><a href="/live-video/time-pressure-decision-scenario-hvac-replacement-in-a-move-in-ready-li-20260429044324.html">Time-pressure decision scenario | hvac replacement in a move-in-ready listing | offer reduction with Project Price estimate ranges</a></h3>
       <p>Project Price short-form video: Time-pressure decision scenario | hvac replacement in a move-in-ready listing | offer reduction with Project Price estimate ranges. Realtor-led buyer guidance with immediate estimate ranges and repair negotiation context.</p>
       <video controls playsinline preload="metadata" src="/live-video/generated/time-pressure-decision-scenario-hvac-replacement-in-a-move-in-ready-li-20260429044324.mp4"></video>
-      <div class="meta">Published Apr 29, 2026, 4:43 AM</div>
+      <p class="video-link"><a href="https://projectpriceapp.com/live-video/generated/time-pressure-decision-scenario-hvac-replacement-in-a-move-in-ready-li-20260429044324.mp4">Direct Video Link</a></p>
+      <div class="meta">Published Apr 29, 2026, 12:43 AM</div>
     </article>
 <article class="item">
       <h3><a href="/live-video/deal-saver-scenario-panel-and-wiring-corrections-in-a-recently-flipped-20260429042329.html">Deal saver scenario | panel and wiring corrections in a recently flipped home | seller-completed repairs with Project Price estimate ranges</a></h3>
       <p>Project Price short-form video: Deal saver scenario | panel and wiring corrections in a recently flipped home | seller-completed repairs with Project Price estimate ranges. Realtor-led buyer guidance with immediate estimate ranges and repair negotiation context.</p>
       <video controls playsinline preload="metadata" src="/live-video/generated/deal-saver-scenario-panel-and-wiring-corrections-in-a-recently-flipped-20260429042329.mp4"></video>
-      <div class="meta">Published Apr 29, 2026, 4:23 AM</div>
+      <p class="video-link"><a href="https://projectpriceapp.com/live-video/generated/deal-saver-scenario-panel-and-wiring-corrections-in-a-recently-flipped-20260429042329.mp4">Direct Video Link</a></p>
+      <div class="meta">Published Apr 29, 2026, 12:23 AM</div>
     </article>
 <article class="item">
       <h3><a href="/live-video/budget-reality-check-scenario-kitchen-cabinet-and-counter-refresh-in-a-20260429040554.html">Budget reality check scenario | kitchen cabinet and counter refresh in a cosmetic fixer-upper | phased post-close plan with Project Price estimate ranges</a></h3>
       <p>Project Price short-form video: Budget reality check scenario | kitchen cabinet and counter refresh in a cosmetic fixer-upper | phased post-close plan with Project Price estimate ranges. Realtor-led buyer guidance with immediate estimate ranges and repair negotiation context.</p>
       <video controls playsinline preload="metadata" src="/live-video/generated/budget-reality-check-scenario-kitchen-cabinet-and-counter-refresh-in-a-20260429040554.mp4"></video>
-      <div class="meta">Published Apr 29, 2026, 4:05 AM</div>
+      <p class="video-link"><a href="https://projectpriceapp.com/live-video/generated/budget-reality-check-scenario-kitchen-cabinet-and-counter-refresh-in-a-20260429040554.mp4">Direct Video Link</a></p>
+      <div class="meta">Published Apr 29, 2026, 12:05 AM</div>
     </article>
     </section>
+    <footer class="footer">
+      <p style="margin:0 0 6px;">
+        <a href="/privacy-policy.html">Privacy Policy</a>
+        <a href="/data-deletion.html">Data Deletion</a>
+        <a href="/admin.html">Admin</a>
+        <a href="/">Home</a>
+      </p>
+      <p style="margin:0;">&copy; 2026 ProjectPrice. All rights reserved.</p>
+    </footer>
   </div>
 </body>
 </html>

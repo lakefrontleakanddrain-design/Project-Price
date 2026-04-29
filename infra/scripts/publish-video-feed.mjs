@@ -108,6 +108,7 @@ const buildVideoPage = (item) => {
   const desc = escapeHtml(item.description);
   const videoSrc = escapeHtml(item.videoPath);
   const pageUrl = `${siteBaseUrl}${item.pagePath}`;
+  const directVideoUrl = `${siteBaseUrl}${item.videoPath}`;
   const ogImage = `${siteBaseUrl}/logo.jpg`;
 
   return `<!doctype html>
@@ -141,8 +142,23 @@ const buildVideoPage = (item) => {
       padding: 24px;
     }
     .wrap { max-width: 900px; margin: 0 auto; }
-    .brand { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-    .brand a { color:#4a6a8a; text-decoration:none; font-size:.85rem; font-weight:600; margin-left:14px; }
+    .brand-bar {
+      max-width: 900px;
+      margin: 0 auto 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+    .brand-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .brand-nav { display: flex; gap: 16px; }
+    .brand-nav a {
+      color: #4a6a8a;
+      text-decoration: none;
+      font-size: .85rem;
+      font-weight: 600;
+    }
+    .brand-nav a:hover { color: var(--navy); }
     .card {
       background: var(--paper);
       border: 1px solid var(--line);
@@ -154,23 +170,58 @@ const buildVideoPage = (item) => {
     p { color:#4a6a8a; line-height:1.55; }
     video { width:100%; border-radius:12px; border:1px solid var(--line); background:#000; }
     .meta { font-size:.82rem; color:#6b87a5; margin-top:10px; }
+    .links { margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .links a { color: var(--navy); font-weight: 700; text-decoration: none; font-size: .88rem; }
+    .links a:hover { text-decoration: underline; }
+    .footer {
+      margin-top: 40px;
+      padding: 20px 4px;
+      border-top: 1px solid #d3e2f5;
+      text-align: center;
+      font-size: .8rem;
+      color: #7a99b8;
+    }
+    .footer a {
+      color: #446684;
+      text-decoration: none;
+      font-weight: 700;
+      margin: 0 8px;
+    }
+    .footer a:hover { color: var(--navy); }
   </style>
 </head>
 <body>
+  <header class="brand-bar">
+    <a href="/" class="brand-logo">
+      <img src="/logo.jpg" alt="ProjectPrice" style="height:44px;width:auto;" />
+    </a>
+    <nav class="brand-nav">
+      <a href="/get-quotes.html">Request Estimate</a>
+      <a href="/my-estimates.html">My Saved Projects</a>
+      <a href="/contractor-signup.html">For Contractors</a>
+      <a href="/contractor-portal.html">Contractor Login</a>
+    </nav>
+  </header>
   <div class="wrap">
-    <div class="brand">
-      <a href="/"><img src="/logo.jpg" alt="Project Price" style="height:44px;width:auto;" /></a>
-      <nav>
-        <a href="/live-video/">Live Video</a>
-        <a href="/get-quotes.html">Request Estimate</a>
-      </nav>
-    </div>
     <div class="card">
       <h1>${title}</h1>
       <p>${desc}</p>
       <video controls playsinline preload="metadata" src="${videoSrc}"></video>
+      <div class="links">
+        <a href="${escapeHtml(directVideoUrl)}">Direct Video Link</a>
+        <a href="${escapeHtml(pageUrl)}">Share This Page</a>
+      </div>
       <p class="meta">Published ${escapeHtml(formatDisplayDate(item.publishedAt))}</p>
     </div>
+    <footer class="footer">
+      <p style="margin:0 0 6px;">
+        <a href="/privacy-policy.html">Privacy Policy</a>
+        <a href="/data-deletion.html">Data Deletion</a>
+        <a href="/admin.html">Admin</a>
+        <a href="/">Home</a>
+      </p>
+      <p style="margin:0;">&copy; 2026 ProjectPrice. All rights reserved.</p>
+    </footer>
   </div>
 </body>
 </html>
@@ -183,12 +234,14 @@ const buildIndexPage = (items) => {
     const desc = escapeHtml(item.description);
     const pageUrl = escapeHtml(item.pagePath);
     const videoPath = escapeHtml(item.videoPath);
+    const directVideoUrl = `${siteBaseUrl}${item.videoPath}`;
     const published = escapeHtml(formatDisplayDate(item.publishedAt));
 
     return `<article class="item">
       <h3><a href="${pageUrl}">${title}</a></h3>
       <p>${desc}</p>
       <video controls playsinline preload="metadata" src="${videoPath}"></video>
+      <p class="video-link"><a href="${escapeHtml(directVideoUrl)}">Direct Video Link</a></p>
       <div class="meta">Published ${published}</div>
     </article>`;
   }).join('\n');
@@ -215,8 +268,23 @@ const buildIndexPage = (items) => {
       padding: 24px;
     }
     .wrap { max-width: 1100px; margin: 0 auto; }
-    .brand { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-    .brand a { color:#4a6a8a; text-decoration:none; font-size:.85rem; font-weight:600; margin-left:14px; }
+    .brand-bar {
+      max-width: 1100px;
+      margin: 0 auto 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+    .brand-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .brand-nav { display: flex; gap: 16px; }
+    .brand-nav a {
+      color: #4a6a8a;
+      text-decoration: none;
+      font-size: .85rem;
+      font-weight: 600;
+    }
+    .brand-nav a:hover { color: var(--navy); }
     .hero {
       background: var(--paper);
       border: 1px solid var(--line);
@@ -238,21 +306,43 @@ const buildIndexPage = (items) => {
     .item h3 { margin:0 0 8px; font-size:1rem; }
     .item h3 a { color:var(--navy); text-decoration:none; }
     .item p { margin:0 0 10px; color:#4a6a8a; font-size:.92rem; line-height:1.5; }
+    .video-link { margin: 10px 0 0; }
+    .video-link a { color: var(--navy); font-weight: 700; text-decoration: none; font-size: .88rem; }
+    .video-link a:hover { text-decoration: underline; }
     video { width:100%; border-radius:10px; border:1px solid var(--line); background:#000; }
     .meta { margin-top:8px; color:#6b87a5; font-size:.8rem; }
     .rss { margin-top: 12px; font-size: .88rem; color: #4a6a8a; }
     .rss code { background:#f5f9ff; border:1px solid #d8e6f8; padding:2px 6px; border-radius:8px; }
+    .footer {
+      margin-top: 40px;
+      padding: 20px 4px;
+      border-top: 1px solid #d3e2f5;
+      text-align: center;
+      font-size: .8rem;
+      color: #7a99b8;
+    }
+    .footer a {
+      color: #446684;
+      text-decoration: none;
+      font-weight: 700;
+      margin: 0 8px;
+    }
+    .footer a:hover { color: var(--navy); }
   </style>
 </head>
 <body>
+  <header class="brand-bar">
+    <a href="/" class="brand-logo">
+      <img src="/logo.jpg" alt="ProjectPrice" style="height:44px;width:auto;" />
+    </a>
+    <nav class="brand-nav">
+      <a href="/get-quotes.html">Request Estimate</a>
+      <a href="/my-estimates.html">My Saved Projects</a>
+      <a href="/contractor-signup.html">For Contractors</a>
+      <a href="/contractor-portal.html">Contractor Login</a>
+    </nav>
+  </header>
   <div class="wrap">
-    <div class="brand">
-      <a href="/"><img src="/logo.jpg" alt="Project Price" style="height:44px;width:auto;" /></a>
-      <nav>
-        <a href="/get-quotes.html">Request Estimate</a>
-        <a href="/my-estimates.html">My Saved Projects</a>
-      </nav>
-    </div>
     <section class="hero">
       <h1>ProjectPrice Live Video Feed</h1>
       <p>Realtor-led buyer guidance clips generated from rotating topics. Each item includes a webpage and RSS entry for social distribution workflows.</p>
@@ -261,6 +351,15 @@ const buildIndexPage = (items) => {
     <section class="grid">
       ${cards || '<article class="item"><h3>No videos published yet</h3><p>Run the publish script after generating a new video to create feed entries.</p></article>'}
     </section>
+    <footer class="footer">
+      <p style="margin:0 0 6px;">
+        <a href="/privacy-policy.html">Privacy Policy</a>
+        <a href="/data-deletion.html">Data Deletion</a>
+        <a href="/admin.html">Admin</a>
+        <a href="/">Home</a>
+      </p>
+      <p style="margin:0;">&copy; 2026 ProjectPrice. All rights reserved.</p>
+    </footer>
   </div>
 </body>
 </html>
@@ -429,6 +528,11 @@ const rebuildOutputs = (manifest) => {
   ensureDir(path.dirname(manifestPath));
   ensureDir(liveVideoDir);
   ensureDir(generatedDir);
+
+  // Keep every generated item page in sync with current shared template updates.
+  manifest.items.forEach((item) => {
+    writeText(path.join(liveVideoDir, `${item.slug}.html`), buildVideoPage(item));
+  });
 
   writeText(indexPath, buildIndexPage(manifest.items));
 
