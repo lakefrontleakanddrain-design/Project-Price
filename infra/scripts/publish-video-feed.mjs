@@ -296,7 +296,8 @@ const buildMetricoolRss = (items) => {
 
   const itemXml = items.map((item) => {
     const link = `${siteBaseUrl}${item.pagePath}`;
-    return `  <item>\n    <title>${escapeXml(item.title)}</title>\n    <link>${escapeXml(link)}</link>\n    <description>${escapeXml(item.description)}</description>\n    <pubDate>${new Date(item.publishedAt).toUTCString()}</pubDate>\n    <guid>${escapeXml(link)}</guid>\n  </item>`;
+    const videoUrl = `${siteBaseUrl}${item.videoPath}`;
+    return `  <item>\n    <title>${escapeXml(item.title)}</title>\n    <link>${escapeXml(link)}</link>\n    <description>${escapeXml(item.description)}</description>\n    <pubDate>${new Date(item.publishedAt).toUTCString()}</pubDate>\n    <guid>${escapeXml(link)}</guid>\n    <enclosure url="${escapeXml(videoUrl)}" length="0" type="video/mp4" />\n  </item>`;
   }).join('\n\n');
 
   return `<?xml version="1.0" encoding="UTF-8" ?>
