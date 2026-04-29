@@ -497,17 +497,20 @@ const buildMetricoolRss = (items) => {
   const pubDate = now.toUTCString();
 
   const itemXml = items.map((item) => {
-    const link = `${siteBaseUrl}${item.videoPath}`;
-    const videoUrl = `${siteBaseUrl}${item.videoPath}`;
-    const videoSize = getVideoByteLength(item.videoPath);
-    const contentHtml = `<video controls><source src="${escapeXml(videoUrl)}" type="video/mp4" /></video>`;
+    const link = `${siteBaseUrl}${item.pagePath}`;
+    const itemPubDate = new Date(item.publishedAt).toUTCString();
+    const imageUrl = `${siteBaseUrl}/logo.jpg`;
+    const safeGuid = item.guid || `projectprice-live-video-${item.slug || createTimestampToken(now)}`;
+    const contentHtml = `<p><a href="${escapeXml(link)}">Watch on Project Price</a></p><p><img src="${escapeXml(imageUrl)}" alt="Project Price" /></p>`;
     
     return `    <item>
     <title>${escapeXml(item.title)}</title>
     <link>${escapeXml(link)}</link>
+    <guid isPermaLink="false">${escapeXml(safeGuid)}</guid>
+    <pubDate>${itemPubDate}</pubDate>
     <description>${escapeXml(item.description)}</description>
-    <enclosure url="${escapeXml(videoUrl)}" length="${videoSize}" type="video/mp4" />
-    <media:content url="${escapeXml(videoUrl)}" type="video/mp4" />
+    <enclosure url="${escapeXml(link)}" length="0" type="text/html" />
+    <media:thumbnail url="${escapeXml(imageUrl)}" />
     <content:encoded><![CDATA[${contentHtml}]]></content:encoded>
     </item>`;
   }).join('\n\n');

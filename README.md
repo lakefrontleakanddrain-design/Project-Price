@@ -52,5 +52,6 @@ Compatibility alias that currently serves the same XML:
 
 Notes:
 
-1. The primary Metricool feed points each item `link` directly to the MP4 URL.
-2. The feed intentionally omits `media:thumbnail` to avoid logo fallback behavior in Metricool.
+1. Each Metricool item includes required `pubDate` and `guid` fields.
+2. Each Metricool item `link` targets a ProjectPrice video page, not a direct MP4 URL.
+3. The Metricool feed includes `media:thumbnail` and HTML `enclosure` metadata for compatibility.
