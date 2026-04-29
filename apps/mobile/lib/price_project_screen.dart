@@ -88,11 +88,22 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
 
   int _preferredPremiumIndex(List<_EstimateTier> tiers) {
     if (tiers.isEmpty) return 0;
-    final premiumIndex = tiers.indexWhere(
-      (tier) => tier.name.trim().toLowerCase() == 'premium',
-    );
+    final premiumIndex = tiers.indexWhere((tier) {
+      final normalized = tier.name.trim().toLowerCase();
+      return normalized == 'premium' || normalized.contains('premium');
+    });
     if (premiumIndex >= 0) return premiumIndex;
-    return (tiers.length - 1).clamp(0, tiers.length - 1);
+
+    // Fallback: if names are unexpected, pick the highest-cost tier.
+    var bestIndex = 0;
+    var bestHigh = tiers[0].rangeHigh;
+    for (var i = 1; i < tiers.length; i += 1) {
+      if (tiers[i].rangeHigh > bestHigh) {
+        bestHigh = tiers[i].rangeHigh;
+        bestIndex = i;
+      }
+    }
+    return bestIndex;
   }
 
   bool get _canGenerateEstimate {
@@ -223,13 +234,12 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
 
       if (mounted) {
         final parsedPreviews = _parseTierPreviewImages(rawPreviewImages);
+        final parsedTiers = rawTiers.map(_EstimateTier.fromJson).toList();
         setState(() {
           _estimateSummary = decoded['summary'] as String?;
-          _tiers = rawTiers.map(_EstimateTier.fromJson).toList();
+          _tiers = parsedTiers;
           _tierPreviewImages = parsedPreviews;
-          _selectedTierIndex = _preferredPremiumIndex(
-            rawTiers.map(_EstimateTier.fromJson).toList(),
-          );
+          _selectedTierIndex = _preferredPremiumIndex(parsedTiers);
         });
       }
     } catch (error) {
