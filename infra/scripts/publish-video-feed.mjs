@@ -54,6 +54,16 @@ const writeJson = (filePath, value) => {
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 };
 
+const getVideoByteLength = (videoPath) => {
+  try {
+    const normalized = String(videoPath || '').replace(/^\/+/, '');
+    const absolutePath = path.join(publicDir, normalized);
+    return fs.statSync(absolutePath).size;
+  } catch {
+    return 0;
+  }
+};
+
 const escapeHtml = (value) => String(value || '')
   .replace(/&/g, '&amp;')
   .replace(/</g, '&lt;')
@@ -372,6 +382,7 @@ const buildRss = (items, channelTitle, channelPath) => {
   const itemXml = items.slice(0, 1).map((item) => {
     const link = `${siteBaseUrl}${item.pagePath}`;
     const videoUrl = `${siteBaseUrl}${item.videoPath}`;
+    const videoSize = getVideoByteLength(item.videoPath);
     const itemPubDate = new Date(item.publishedAt).toUTCString();
     const contentHtml = `<p>${escapeXml(item.title)}</p><p>${escapeXml(item.description)}</p><p><a href="${escapeXml(link)}">Watch on Project Price</a></p><video controls preload="metadata" playsinline style="max-width:100%;height:auto;"><source src="${escapeXml(videoUrl)}" type="video/mp4"></video>`;
     
@@ -383,8 +394,8 @@ const buildRss = (items, channelTitle, channelPath) => {
     <pubDate>${itemPubDate}</pubDate>
     <description><![CDATA[${item.description}]]></description>
     <content:encoded><![CDATA[${contentHtml}]]></content:encoded>
-    <enclosure url="${escapeXml(videoUrl)}" length="0" type="video/mp4" />
-    <media:content url="${escapeXml(videoUrl)}" medium="video" type="video/mp4" />
+    <enclosure url="${escapeXml(videoUrl)}" length="${videoSize}" type="video/mp4" />
+    <media:content url="${escapeXml(videoUrl)}" fileSize="${videoSize}" medium="video" type="video/mp4" />
     <media:thumbnail url="${escapeXml(siteBaseUrl)}/logo.png" />
     </item>`;
   }).join('\n\n');
@@ -425,6 +436,7 @@ const buildMetricoolRss = (items) => {
   const itemXml = items.slice(0, 1).map((item) => {
     const link = `${siteBaseUrl}${item.pagePath}`;
     const videoUrl = `${siteBaseUrl}${item.videoPath}`;
+    const videoSize = getVideoByteLength(item.videoPath);
     const itemPubDate = new Date(item.publishedAt).toUTCString();
     const contentHtml = `<p>${escapeXml(item.title)}</p><p>${escapeXml(item.description)}</p><p><a href="${escapeXml(link)}">Watch on Project Price</a></p><video controls preload="metadata" playsinline style="max-width:100%;height:auto;"><source src="${escapeXml(videoUrl)}" type="video/mp4"></video>`;
     
@@ -436,8 +448,8 @@ const buildMetricoolRss = (items) => {
     <pubDate>${itemPubDate}</pubDate>
     <description><![CDATA[${item.description}]]></description>
     <content:encoded><![CDATA[${contentHtml}]]></content:encoded>
-    <enclosure url="${escapeXml(videoUrl)}" length="0" type="video/mp4" />
-    <media:content url="${escapeXml(videoUrl)}" medium="video" type="video/mp4" />
+    <enclosure url="${escapeXml(videoUrl)}" length="${videoSize}" type="video/mp4" />
+    <media:content url="${escapeXml(videoUrl)}" fileSize="${videoSize}" medium="video" type="video/mp4" />
     <media:thumbnail url="${escapeXml(siteBaseUrl)}/logo.png" />
     </item>`;
   }).join('\n\n');
