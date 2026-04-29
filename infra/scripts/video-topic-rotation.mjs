@@ -17,6 +17,7 @@ const readArg = (name, fallback = null) => {
 const topicsPath = path.resolve(readArg('topics', defaultTopicsPath));
 const statePath = path.resolve(readArg('state', defaultStatePath));
 const dryRun = args.includes('--dry-run');
+const cliMaxTopicChars = Number.parseInt(readArg('max-topic-chars', ''), 10);
 
 const readJson = (filePath) => {
   const raw = fs.readFileSync(filePath, 'utf8');
@@ -38,6 +39,27 @@ const ensureState = (state) => {
   };
 };
 
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+const toSingleLine = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+
+const truncateWithEllipsis = (text, maxChars) => {
+  const clean = toSingleLine(text);
+  if (clean.length <= maxChars) return clean;
+  if (maxChars <= 3) return clean.slice(0, maxChars);
+  return `${clean.slice(0, maxChars - 3).trimEnd()}...`;
+};
+
+const buildTopicOutput = (topic, maxChars) => {
+  const base = [
+    `${toSingleLine(topic.pivot)} scenario`,
+    `${toSingleLine(topic.repairFocus).toLowerCase()} in a ${toSingleLine(topic.propertyType).toLowerCase()}`,
+    `${toSingleLine(topic.decisionType).toLowerCase()} with Project Price estimate ranges`,
+  ].join(' | ');
+
+  return truncateWithEllipsis(base, maxChars);
+};
+
 const buildPrompt = (topic) => {
   const parts = [
     'Create a realistic 8-second social video in a residential home-buying context.',
@@ -56,6 +78,12 @@ const buildPrompt = (topic) => {
 
 const topicsData = readJson(topicsPath);
 const topics = Array.isArray(topicsData?.topics) ? topicsData.topics : [];
+const configuredMaxChars = Number.parseInt(String(topicsData?.maxTopicChars || ''), 10);
+const topicMaxChars = clamp(
+  Number.isInteger(cliMaxTopicChars) ? cliMaxTopicChars : configuredMaxChars || 300,
+  40,
+  500,
+);
 
 if (topics.length === 0) {
   throw new Error(`No topics found in ${topicsPath}`);
@@ -84,6 +112,8 @@ const result = {
   selectedIndex: normalizedIndex,
   totalTopics: topics.length,
   topic: selected,
+  topicOutput: buildTopicOutput(selected, topicMaxChars),
+  topicOutputMaxChars: topicMaxChars,
   prompt: buildPrompt(selected),
   nextIndex,
   stateUpdated: !dryRun,
@@ -94,6 +124,8 @@ if (process.env.GITHUB_OUTPUT) {
     `topic_id=${String(selected.id || '')}`,
     `topic_index=${normalizedIndex}`,
     `topic_total=${topics.length}`,
+    `topic_output=${result.topicOutput}`,
+    `topic_output_max_chars=${topicMaxChars}`,
     `topic_prompt=${JSON.stringify(result.prompt)}`,
   ];
   fs.appendFileSync(process.env.GITHUB_OUTPUT, `${outLines.join('\n')}\n`, 'utf8');

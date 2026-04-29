@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "maxTopicChars": 300,
   "topics": [
     {
       "id": "inspection-surprise-roof-credit",

@@ -74,6 +74,7 @@ Behavior:
 
 - Reads nextIndex from state.
 - Selects that topic and outputs a ready prompt.
+- Emits topic_output capped at 300 characters (configurable by maxTopicChars).
 - Advances nextIndex by 1.
 - Wraps to 0 after the last topic.
 
@@ -82,3 +83,24 @@ Workflow integration note:
 - In GitHub Actions, run the selector before generation.
 - Use the emitted topic_prompt output as the generation prompt.
 - Commit the updated state file so the next scheduled run advances to the next topic.
+
+## Social size processing (Instagram/TikTok/YouTube)
+
+Use ffmpeg processing after generation to normalize platform-ready outputs:
+
+```bash
+npm run video:process-social -- --input=path/to/generated.mp4
+```
+
+Outputs are written to infra/video/output with these targets:
+
+- instagram-reels-1080x1920.mp4
+- tiktok-1080x1920.mp4
+- youtube-shorts-1080x1920.mp4
+
+Processing defaults:
+
+- Resolution: 1080x1920 (9:16)
+- FPS: 30
+- Max duration: 8 seconds (override with --max-seconds)
+- Codec: H.264 + AAC, faststart enabled

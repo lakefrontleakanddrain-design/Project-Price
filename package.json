@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "smoke:waterfall": "node infra/scripts/waterfall-smoke-test.mjs",
-    "video:next-topic": "node infra/scripts/video-topic-rotation.mjs"
+    "video:next-topic": "node infra/scripts/video-topic-rotation.mjs",
+    "video:process-social": "node infra/scripts/process-social-video.mjs"
   }
 }
