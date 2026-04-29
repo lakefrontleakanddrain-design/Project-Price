@@ -443,7 +443,7 @@ const buildRss = (items, channelTitle, channelPath) => {
   const now = new Date();
   const pubDate = now.toUTCString();
 
-  const itemXml = items.slice(0, 1).map((item) => {
+  const itemXml = items.map((item) => {
     const link = `${siteBaseUrl}${item.pagePath}`;
     const videoUrl = `${siteBaseUrl}${item.videoPath}`;
     const videoSize = getVideoByteLength(item.videoPath);
@@ -496,7 +496,7 @@ const buildMetricoolRss = (items) => {
   const now = new Date();
   const pubDate = now.toUTCString();
 
-  const itemXml = items.slice(0, 1).map((item) => {
+  const itemXml = items.map((item) => {
     const link = `${siteBaseUrl}${item.videoPath}`;
     const videoUrl = `${siteBaseUrl}${item.videoPath}`;
     const videoSize = getVideoByteLength(item.videoPath);
