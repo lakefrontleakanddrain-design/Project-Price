@@ -39,4 +39,18 @@ Project-Price/
 ## Deployment
 
 Netlify auto-deploys from `main`. Functions in `backend/functions/`, web assets in `web/public/`.
-Project Price 
+
+## Metricool Feed
+
+Use this as the primary Metricool RSS feed URL:
+
+1. https://projectpriceapp.com/metricool-live-video-test.xml
+
+Compatibility alias that currently serves the same XML:
+
+1. https://projectpriceapp.com/metricool-live-video.xml
+
+Notes:
+
+1. The primary Metricool feed points each item `link` directly to the MP4 URL.
+2. The feed intentionally omits `media:thumbnail` to avoid logo fallback behavior in Metricool.

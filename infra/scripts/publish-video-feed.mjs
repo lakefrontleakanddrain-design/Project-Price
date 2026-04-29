@@ -18,8 +18,8 @@ const liveVideoDir = path.join(publicDir, 'live-video');
 const generatedDir = path.join(liveVideoDir, 'generated');
 const indexPath = path.join(liveVideoDir, 'index.html');
 const rssPath = path.join(publicDir, 'live-video-feed.xml');
-const metricoolPath = path.join(publicDir, 'metricool-live-video.xml');
-const metricoolTestPath = path.join(publicDir, 'metricool-live-video-test.xml');
+const metricoolPath = path.join(publicDir, 'metricool-live-video-test.xml');
+const metricoolLegacyPath = path.join(publicDir, 'metricool-live-video.xml');
 const coreHashtags = [
   '#ProjectPrice',
   '#AIEstimate',
@@ -614,7 +614,7 @@ const rebuildOutputs = (manifest) => {
 
   const metricoolRss = buildMetricoolRss(manifest.items.slice(0, 20));
   writeText(metricoolPath, metricoolRss);
-  writeText(metricoolTestPath, metricoolRss);
+  writeText(metricoolLegacyPath, metricoolRss);
 };
 
 const manifest = loadManifest();
@@ -632,6 +632,6 @@ console.log(JSON.stringify({
   indexPath,
   rssPath,
   metricoolPath,
-  metricoolTestPath,
+  metricoolLegacyPath,
   siteBaseUrl,
 }, null, 2));
