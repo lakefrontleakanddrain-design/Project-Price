@@ -42,6 +42,11 @@ jobs:
         with:
           node-version: 22
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Resolve run options
         id: opts
         run: |
@@ -63,15 +68,26 @@ jobs:
           sudo apt-get install -y ffmpeg
           ffmpeg -version
 
+      - name: Install Gemini dependency
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install google-genai
+
       - name: Select rotating topic
         id: topic
         run: |
           npm run video:next-topic
 
       - name: Resolve source video
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_VIDEO_MODEL: ${{ vars.GEMINI_VIDEO_MODEL }}
+          GEMINI_VIDEO_ASPECT_RATIO: ${{ vars.GEMINI_VIDEO_ASPECT_RATIO }}
+          GEMINI_VIDEO_RESOLUTION: ${{ vars.GEMINI_VIDEO_RESOLUTION }}
+          GEMINI_VIDEO_DURATION_SECONDS: ${{ vars.GEMINI_VIDEO_DURATION_SECONDS }}
+          GEMINI_VIDEO_TIMEOUT_SECONDS: ${{ vars.GEMINI_VIDEO_TIMEOUT_SECONDS }}
         run: |
           set -euo pipefail
-          FALLBACK_SOURCE_URL="https://filesamples.com/samples/video/mp4/sample_640x360.mp4"
           mkdir -p tmp
           if [ -n "${{ steps.opts.outputs.source_video_url }}" ]; then
             echo "Using source_video_url input"
@@ -84,18 +100,14 @@ jobs:
             fi
             cp "${{ steps.opts.outputs.source_video_path }}" tmp/input.mp4
           else
-            echo "No source input provided. Attempting fallback URL, then local synthetic MP4."
-            if ! curl -L --fail --retry 3 --retry-delay 2 "$FALLBACK_SOURCE_URL" -o tmp/input.mp4; then
-              echo "Fallback URL unavailable. Generating local 8-second synthetic video for test run."
-              ffmpeg -y \
-                -f lavfi -i testsrc2=size=1080x1920:rate=30 \
-                -f lavfi -i sine=frequency=880:sample_rate=48000 \
-                -t 8 \
-                -c:v libx264 -pix_fmt yuv420p \
-                -c:a aac -b:a 128k -ar 48000 \
-                -shortest \
-                tmp/input.mp4
+            if [ -z "${GEMINI_API_KEY:-}" ]; then
+              echo "Missing secrets.GEMINI_API_KEY and no source_video_url/source_video_path provided."
+              exit 1
             fi
+            echo "No source input provided. Generating source video via Gemini/Veo."
+            python infra/scripts/generate_gemini_video.py \
+              --prompt "${{ steps.topic.outputs.topic_prompt }}" \
+              --output tmp/input.mp4
           fi
 
       - name: Process platform video outputs
