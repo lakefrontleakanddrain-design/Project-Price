@@ -86,6 +86,7 @@ jobs:
           GEMINI_VIDEO_RESOLUTION: ${{ vars.GEMINI_VIDEO_RESOLUTION }}
           GEMINI_VIDEO_DURATION_SECONDS: ${{ vars.GEMINI_VIDEO_DURATION_SECONDS }}
           GEMINI_VIDEO_TIMEOUT_SECONDS: ${{ vars.GEMINI_VIDEO_TIMEOUT_SECONDS }}
+          GEMINI_VIDEO_PROMPT: ${{ steps.topic.outputs.topic_prompt }}
         run: |
           set -euo pipefail
           mkdir -p tmp
@@ -106,7 +107,6 @@ jobs:
             fi
             echo "No source input provided. Generating source video via Gemini/Veo."
             python infra/scripts/generate_gemini_video.py \
-              --prompt "${{ steps.topic.outputs.topic_prompt }}" \
               --output tmp/input.mp4
           fi
 

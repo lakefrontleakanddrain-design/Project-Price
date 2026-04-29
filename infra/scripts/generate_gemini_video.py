@@ -10,7 +10,7 @@ from google.genai import types
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate a video with Gemini/Veo and save as MP4.")
-    parser.add_argument("--prompt", required=True, help="Prompt text for video generation")
+    parser.add_argument("--prompt", required=False, help="Prompt text for video generation (or set GEMINI_VIDEO_PROMPT env var)")
     parser.add_argument("--output", required=True, help="Output MP4 path")
     parser.add_argument("--model", default=(os.environ.get("GEMINI_VIDEO_MODEL") or "veo-3.1-generate-preview"))
     parser.add_argument("--aspect-ratio", default=(os.environ.get("GEMINI_VIDEO_ASPECT_RATIO") or "9:16"))
@@ -29,7 +29,17 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=int(timeout_env) if timeout_env else 900,
     )
-    return parser.parse_args()
+    
+    args = parser.parse_args()
+    
+    # If prompt not provided via CLI, try environment variable
+    if not args.prompt:
+        args.prompt = os.environ.get("GEMINI_VIDEO_PROMPT")
+    
+    if not args.prompt:
+        parser.error("--prompt is required or set GEMINI_VIDEO_PROMPT environment variable")
+    
+    return args
 
 
 def main() -> int:
