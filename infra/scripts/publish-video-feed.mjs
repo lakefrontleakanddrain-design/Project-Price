@@ -496,7 +496,7 @@ const buildMetricoolRss = (items) => {
   const pubDate = now.toUTCString();
 
   const itemXml = items.slice(0, 1).map((item) => {
-    const link = `${siteBaseUrl}${item.pagePath}`;
+    const link = `${siteBaseUrl}${item.videoPath}`;
     const videoUrl = `${siteBaseUrl}${item.videoPath}`;
     const videoSize = getVideoByteLength(item.videoPath);
     const contentHtml = `<video controls><source src="${escapeXml(videoUrl)}" type="video/mp4" /></video>`;
