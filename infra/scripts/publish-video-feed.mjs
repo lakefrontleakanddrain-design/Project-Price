@@ -181,7 +181,6 @@ const buildVideoPage = (item) => {
   const videoSrc = escapeHtml(item.videoPath);
   const pageUrl = `${siteBaseUrl}${item.pagePath}`;
   const directVideoUrl = `${siteBaseUrl}${item.videoPath}`;
-  const ogImage = `${siteBaseUrl}/logo.jpg`;
 
   return `<!doctype html>
 <html lang="en">
@@ -191,17 +190,21 @@ const buildVideoPage = (item) => {
   <link rel="icon" type="image/jpeg" href="/logo.jpg" />
   <link rel="shortcut icon" type="image/jpeg" href="/logo.jpg" />
   <link rel="apple-touch-icon" href="/logo.jpg" />
+  <link rel="canonical" href="${escapeHtml(pageUrl)}" />
   <title>${title} | ProjectPrice Video</title>
   <meta name="description" content="${desc}" />
-  <meta property="og:type" content="article" />
+  <meta property="og:type" content="video.other" />
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${desc}" />
   <meta property="og:url" content="${escapeHtml(pageUrl)}" />
-  <meta property="og:image" content="${escapeHtml(ogImage)}" />
-  <meta name="twitter:card" content="summary_large_image" />
+  <meta property="og:video" content="${escapeHtml(directVideoUrl)}" />
+  <meta property="og:video:secure_url" content="${escapeHtml(directVideoUrl)}" />
+  <meta property="og:video:type" content="video/mp4" />
+  <meta property="og:video:width" content="1080" />
+  <meta property="og:video:height" content="1920" />
+  <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="${title}" />
   <meta name="twitter:description" content="${desc}" />
-  <meta name="twitter:image" content="${escapeHtml(ogImage)}" />
   <style>
     :root { --navy:#0e3a78; --emerald:#16a36a; --line:#d3e2f5; --ink:#11365d; --paper:#fff; }
     * { box-sizing: border-box; }
@@ -264,9 +267,7 @@ const buildVideoPage = (item) => {
 </head>
 <body>
   <header class="brand-bar">
-    <a href="/" class="brand-logo">
-      <img src="/logo.jpg" alt="ProjectPrice" style="height:44px;width:auto;" />
-    </a>
+    <a href="/" class="brand-logo" style="font-weight:800;color:var(--navy);">ProjectPrice</a>
     <nav class="brand-nav">
       <a href="/get-quotes.html">Request Estimate</a>
       <a href="/my-estimates.html">My Saved Projects</a>
