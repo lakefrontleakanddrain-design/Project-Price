@@ -6,17 +6,12 @@ on:
     - cron: '0 13 * * *'
   workflow_dispatch:
     inputs:
-      rebuild_only:
-        description: "Rebuild pages/feeds only (no new video item)"
-        required: false
-        default: false
-        type: boolean
       source_video_url:
-        description: "Public URL to source MP4 (optional when rebuild_only is false)"
+        description: "Public URL to source MP4 (optional)"
         required: false
         type: string
       source_video_path:
-        description: "Repo-relative source MP4 path (optional when rebuild_only is false)"
+        description: "Repo-relative source MP4 path (optional)"
         required: false
         type: string
       site_base_url:
@@ -50,20 +45,14 @@ jobs:
       - name: Resolve run options
         id: opts
         run: |
-          REBUILD_ONLY_INPUT="${{ inputs.rebuild_only }}"
           SOURCE_VIDEO_URL_INPUT="${{ inputs.source_video_url }}"
           SOURCE_VIDEO_PATH_INPUT="${{ inputs.source_video_path }}"
           SITE_BASE_URL_INPUT="${{ inputs.site_base_url }}"
-
-          if [ -z "$REBUILD_ONLY_INPUT" ]; then
-            REBUILD_ONLY_INPUT="false"
-          fi
 
           if [ -z "$SITE_BASE_URL_INPUT" ]; then
             SITE_BASE_URL_INPUT="https://projectpriceapp.com"
           fi
 
-          echo "rebuild_only=$REBUILD_ONLY_INPUT" >> "$GITHUB_OUTPUT"
           echo "source_video_url=$SOURCE_VIDEO_URL_INPUT" >> "$GITHUB_OUTPUT"
           echo "source_video_path=$SOURCE_VIDEO_PATH_INPUT" >> "$GITHUB_OUTPUT"
           echo "site_base_url=$SITE_BASE_URL_INPUT" >> "$GITHUB_OUTPUT"
@@ -77,14 +66,9 @@ jobs:
       - name: Select rotating topic
         id: topic
         run: |
-          if [ "${{ steps.opts.outputs.rebuild_only }}" = "true" ]; then
-            npm run video:next-topic -- --dry-run
-          else
-            npm run video:next-topic
-          fi
+          npm run video:next-topic
 
       - name: Resolve source video
-        if: ${{ steps.opts.outputs.rebuild_only == 'false' }}
         run: |
           FALLBACK_SOURCE_URL="https://filesamples.com/samples/video/mp4/sample_640x360.mp4"
           mkdir -p tmp
@@ -104,23 +88,16 @@ jobs:
           fi
 
       - name: Process platform video outputs
-        if: ${{ steps.opts.outputs.rebuild_only == 'false' }}
         run: |
           npm run video:process-social -- --input=tmp/input.mp4
 
       - name: Publish new video item and rebuild feeds
-        if: ${{ steps.opts.outputs.rebuild_only == 'false' }}
         run: |
           npm run video:publish -- \
             --source=infra/video/output/youtube-shorts-1080x1920.mp4 \
             --title="${{ steps.topic.outputs.topic_output }}" \
             --topic="${{ steps.topic.outputs.topic_output }}" \
             --site-base-url="${{ steps.opts.outputs.site_base_url }}"
-
-      - name: Rebuild pages/feeds only
-        if: ${{ steps.opts.outputs.rebuild_only == 'true' }}
-        run: |
-          npm run video:publish-rebuild
 
       - name: Commit and push changes
         run: |
