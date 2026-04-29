@@ -33,14 +33,14 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Resolve run options
         id: opts
@@ -70,11 +70,12 @@ jobs:
 
       - name: Resolve source video
         run: |
+          set -euo pipefail
           FALLBACK_SOURCE_URL="https://filesamples.com/samples/video/mp4/sample_640x360.mp4"
           mkdir -p tmp
           if [ -n "${{ steps.opts.outputs.source_video_url }}" ]; then
             echo "Using source_video_url input"
-            curl -L --fail "${{ steps.opts.outputs.source_video_url }}" -o tmp/input.mp4
+            curl -L --fail --retry 3 --retry-delay 2 "${{ steps.opts.outputs.source_video_url }}" -o tmp/input.mp4
           elif [ -n "${{ steps.opts.outputs.source_video_path }}" ]; then
             echo "Using source_video_path input"
             if [ ! -f "${{ steps.opts.outputs.source_video_path }}" ]; then
@@ -83,8 +84,18 @@ jobs:
             fi
             cp "${{ steps.opts.outputs.source_video_path }}" tmp/input.mp4
           else
-            echo "No source input provided. Using fallback sample MP4 for test run."
-            curl -L --fail "$FALLBACK_SOURCE_URL" -o tmp/input.mp4
+            echo "No source input provided. Attempting fallback URL, then local synthetic MP4."
+            if ! curl -L --fail --retry 3 --retry-delay 2 "$FALLBACK_SOURCE_URL" -o tmp/input.mp4; then
+              echo "Fallback URL unavailable. Generating local 8-second synthetic video for test run."
+              ffmpeg -y \
+                -f lavfi -i testsrc2=size=1080x1920:rate=30 \
+                -f lavfi -i sine=frequency=880:sample_rate=48000 \
+                -t 8 \
+                -c:v libx264 -pix_fmt yuv420p \
+                -c:a aac -b:a 128k -ar 48000 \
+                -shortest \
+                tmp/input.mp4
+            fi
           fi
 
       - name: Process platform video outputs
