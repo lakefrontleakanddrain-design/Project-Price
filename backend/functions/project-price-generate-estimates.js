@@ -758,7 +758,7 @@ const buildTierPreviewImages = async ({ apiKey, description, zipCode, imageBase6
             tierName,
             imageBase64,
             mimeType,
-            timeoutMs: 20000,
+            timeoutMs: 12000,
           });
           return { status: 'fulfilled', value: [tierName.toLowerCase(), generated] };
         } catch (err) {
@@ -839,14 +839,29 @@ const generateWithGemini = async ({
 
   // Some accounts/projects do not have every model alias enabled. Try a few known-good options.
   for (const model of modelCandidates) {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      },
-    );
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    const timeoutHandle = controller
+      ? setTimeout(() => controller.abort(new Error(`Gemini text generation timed out for ${model}.`)), 20000)
+      : null;
+
+    let res;
+    try {
+      res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: controller?.signal,
+        },
+      );
+    } catch (error) {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+      lastError = error instanceof Error ? error : new Error(String(error));
+      continue;
+    }
+
+    if (timeoutHandle) clearTimeout(timeoutHandle);
 
     const raw = await res.text();
     if (!res.ok) {
@@ -932,6 +947,15 @@ exports.handler = async (event) => {
   const marketContext = await loadMarketContext(zipCode);
   const jobContext = detectJobContext(description);
 
+  // Start preview generation in parallel to reduce end-to-end latency.
+  const previewPromise = buildTierPreviewImages({
+    apiKey,
+    description,
+    zipCode,
+    imageBase64,
+    mimeType,
+  });
+
   // Generate text estimates and preview image independently so a text failure
   // does NOT trigger a second image API call in the catch block.
   let estimates;
@@ -954,13 +978,7 @@ exports.handler = async (event) => {
   }
 
   // Image generation runs exactly once regardless of whether text estimation succeeded.
-  const previewResult = await buildTierPreviewImages({
-    apiKey,
-    description,
-    zipCode,
-    imageBase64,
-    mimeType,
-  });
+  const previewResult = await previewPromise;
 
   const premiumDiagnostic = Array.isArray(previewResult.diagnostics)
     ? previewResult.diagnostics.find((d) => String(d?.tier || '').toLowerCase() === 'premium') || null

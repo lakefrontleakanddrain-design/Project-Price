@@ -220,7 +220,7 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
             headers: _apiHeaders,
             body: jsonEncode(payload),
           )
-          .timeout(const Duration(seconds: 45));
+          .timeout(const Duration(seconds: 70));
 
       final decoded = _tryDecodeJsonObject(response.body);
       if (response.statusCode >= 400) {
