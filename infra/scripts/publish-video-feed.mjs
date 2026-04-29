@@ -497,30 +497,24 @@ const buildMetricoolRss = (items) => {
   const itemXml = items.slice(0, 1).map((item) => {
     const link = `${siteBaseUrl}${item.pagePath}`;
     const videoUrl = `${siteBaseUrl}${item.videoPath}`;
+    const thumbnailUrl = `${siteBaseUrl}/logo.jpg`;
     const videoSize = getVideoByteLength(item.videoPath);
-    const itemPubDate = new Date(item.publishedAt).toUTCString();
-    const contentHtml = `<p>${escapeXml(item.title)}</p><p>${escapeXml(item.description)}</p><p><a href="${escapeXml(link)}">Watch on Project Price</a></p><video controls preload="metadata" playsinline style="max-width:100%;height:auto;"><source src="${escapeXml(videoUrl)}" type="video/mp4"></video>`;
+    const contentHtml = `<video controls><source src="${escapeXml(videoUrl)}" type="video/mp4"></video>`;
     
     return `    <item>
-    <title><![CDATA[${item.title}]]></title>
+    <title>${escapeXml(item.title)}</title>
     <link>${escapeXml(link)}</link>
-    <dc:creator><![CDATA[projectprice]]></dc:creator>
-    <guid isPermaLink="false">projectpriceapp.com/live-video/${item.publishedAt.replace(/\D/g, '').slice(0, 14)}</guid>
-    <pubDate>${itemPubDate}</pubDate>
-    <description><![CDATA[${item.description}]]></description>
-    <content:encoded><![CDATA[${contentHtml}]]></content:encoded>
+    <description>${escapeXml(item.description)}</description>
     <enclosure url="${escapeXml(videoUrl)}" length="${videoSize}" type="video/mp4" />
-    <media:content url="${escapeXml(videoUrl)}" fileSize="${videoSize}" medium="video" type="video/mp4" />
+    <media:content url="${escapeXml(videoUrl)}" type="video/mp4" />
+    <media:thumbnail url="${escapeXml(thumbnailUrl)}" />
+    <content:encoded><![CDATA[${contentHtml}]]></content:encoded>
     </item>`;
   }).join('\n\n');
 
   return `<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0"
-    xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
     xmlns:content="http://purl.org/rss/1.0/modules/content/"
-    xmlns:wfw="http://wellformedweb.org/CommentAPI/"
-    xmlns:dc="http://purl.org/dc/elements/1.1/"
-    xmlns:wp="http://wordpress.org/export/1.2/"
     xmlns:media="http://search.yahoo.com/mrss/"
 >
 
@@ -530,10 +524,6 @@ const buildMetricoolRss = (items) => {
     <description>Realtor and Homebuyer Property Estimate Strategy Videos</description>
     <pubDate>${pubDate}</pubDate>
     <language>en</language>
-    <wp:wxr_version>1.2</wp:wxr_version>
-    <wp:base_site_url>${escapeXml(siteBaseUrl)}/</wp:base_site_url>
-    <wp:base_blog_url>${escapeXml(siteBaseUrl)}</wp:base_blog_url>
-
     <generator>http://wordpress.com/</generator>
 
 ${itemXml}
