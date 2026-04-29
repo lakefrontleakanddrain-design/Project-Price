@@ -110,7 +110,7 @@ Processing defaults:
 After generation and social processing, publish one new item to the site page and feed:
 
 ```bash
-npm run video:publish -- --source=infra/video/output/youtube-shorts-1080x1920.mp4 --title="${TOPIC_OUTPUT}" --topic="${TOPIC_OUTPUT}" --site-base-url=https://project-price-app.netlify.app
+npm run video:publish -- --source=infra/video/output/youtube-shorts-1080x1920.mp4 --title="${TOPIC_OUTPUT}" --topic="${TOPIC_OUTPUT}" --site-base-url=https://projectpriceapp.com
 ```
 
 Outputs created/updated:
@@ -123,7 +123,7 @@ Outputs created/updated:
 
 Metricool RSS URL:
 
-- https://project-price-app.netlify.app/metricool-live-video.xml
+- https://projectpriceapp.com/metricool-live-video.xml
 
 Initial rebuild-only command (no new video item):
 

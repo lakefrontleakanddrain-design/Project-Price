@@ -21,7 +21,7 @@ const rssPath = path.join(publicDir, 'live-video-feed.xml');
 const metricoolPath = path.join(publicDir, 'metricool-live-video.xml');
 
 const source = readArg('source', null);
-const siteBaseUrl = String(readArg('site-base-url', 'https://project-price-app.netlify.app')).replace(/\/$/, '');
+const siteBaseUrl = String(readArg('site-base-url', 'https://projectpriceapp.com')).replace(/\/$/, '');
 const titleArg = readArg('title', null);
 const topicOutput = readArg('topic', null);
 const descriptionArg = readArg('description', null);

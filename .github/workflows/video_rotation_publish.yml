@@ -19,7 +19,7 @@ on:
       site_base_url:
         description: "Public site base URL for feed links"
         required: true
-        default: "https://project-price-app.netlify.app"
+        default: "https://projectpriceapp.com"
         type: string
 
 permissions:
