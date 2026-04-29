@@ -1,11 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0">
-  <channel>
-    <title>ProjectPrice Live Video Feed (Metricool)</title>
-    <link>https://project-price-app.netlify.app/live-video/</link>
-    <description>Project Price rotating short-form video feed for realtor and buyer estimate strategy.</description>
-    <language>en-us</language>
-    <lastBuildDate>Wed, 29 Apr 2026 03:31:27 GMT</lastBuildDate>
+<channel>
+  <title>ProjectPrice Live Video Feed</title>
+  <link>https://project-price-app.netlify.app</link>
+  <description>Latest updates and insights</description>
+  <lastBuildDate>Wed, 29 Apr 2026 03:33:01 GMT</lastBuildDate>
 
-  </channel>
+
+</channel>
 </rss>

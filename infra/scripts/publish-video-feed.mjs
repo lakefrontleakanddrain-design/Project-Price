@@ -107,6 +107,8 @@ const buildVideoPage = (item) => {
   const title = escapeHtml(item.title);
   const desc = escapeHtml(item.description);
   const videoSrc = escapeHtml(item.videoPath);
+  const pageUrl = `${siteBaseUrl}${item.pagePath}`;
+  const ogImage = `${siteBaseUrl}/logo.jpg`;
 
   return `<!doctype html>
 <html lang="en">
@@ -118,6 +120,15 @@ const buildVideoPage = (item) => {
   <link rel="apple-touch-icon" href="/logo.jpg" />
   <title>${title} | ProjectPrice Video</title>
   <meta name="description" content="${desc}" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="${title}" />
+  <meta property="og:description" content="${desc}" />
+  <meta property="og:url" content="${escapeHtml(pageUrl)}" />
+  <meta property="og:image" content="${escapeHtml(ogImage)}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${title}" />
+  <meta name="twitter:description" content="${desc}" />
+  <meta name="twitter:image" content="${escapeHtml(ogImage)}" />
   <style>
     :root { --navy:#0e3a78; --emerald:#16a36a; --line:#d3e2f5; --ink:#11365d; --paper:#fff; }
     * { box-sizing: border-box; }
@@ -245,7 +256,7 @@ const buildIndexPage = (items) => {
     <section class="hero">
       <h1>ProjectPrice Live Video Feed</h1>
       <p>Realtor-led buyer guidance clips generated from rotating topics. Each item includes a webpage and RSS entry for social distribution workflows.</p>
-      <p class="rss">RSS for Metricool: <code>/live-video-feed.xml</code></p>
+      <p class="rss">RSS for Metricool: <code>/metricool-live-video.xml</code></p>
     </section>
     <section class="grid">
       ${cards || '<article class="item"><h3>No videos published yet</h3><p>Run the publish script after generating a new video to create feed entries.</p></article>'}
@@ -276,6 +287,28 @@ const buildRss = (items, channelTitle, channelPath) => {
     <lastBuildDate>${now}</lastBuildDate>
 ${itemXml}
   </channel>
+</rss>
+`;
+};
+
+const buildMetricoolRss = (items) => {
+  const now = new Date().toUTCString();
+
+  const itemXml = items.map((item) => {
+    const link = `${siteBaseUrl}${item.pagePath}`;
+    return `  <item>\n    <title>${escapeXml(item.title)}</title>\n    <link>${escapeXml(link)}</link>\n    <description>${escapeXml(item.description)}</description>\n    <pubDate>${new Date(item.publishedAt).toUTCString()}</pubDate>\n    <guid>${escapeXml(link)}</guid>\n  </item>`;
+  }).join('\n\n');
+
+  return `<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+<channel>
+  <title>${escapeXml('ProjectPrice Live Video Feed')}</title>
+  <link>${escapeXml(siteBaseUrl)}</link>
+  <description>${escapeXml('Latest updates and insights')}</description>
+  <lastBuildDate>${now}</lastBuildDate>
+
+${itemXml}
+</channel>
 </rss>
 `;
 };
@@ -341,7 +374,7 @@ const rebuildOutputs = (manifest) => {
   const fullRss = buildRss(manifest.items, 'ProjectPrice Live Video Feed', '/live-video/');
   writeText(rssPath, fullRss);
 
-  const metricoolRss = buildRss(manifest.items.slice(0, 20), 'ProjectPrice Live Video Feed (Metricool)', '/live-video/');
+  const metricoolRss = buildMetricoolRss(manifest.items.slice(0, 20));
   writeText(metricoolPath, metricoolRss);
 };
 
