@@ -497,7 +497,6 @@ const buildMetricoolRss = (items) => {
   const itemXml = items.slice(0, 1).map((item) => {
     const link = `${siteBaseUrl}${item.pagePath}`;
     const videoUrl = `${siteBaseUrl}${item.videoPath}`;
-    const thumbnailUrl = `${siteBaseUrl}/logo.jpg`;
     const videoSize = getVideoByteLength(item.videoPath);
     const contentHtml = `<video controls><source src="${escapeXml(videoUrl)}" type="video/mp4" /></video>`;
     
@@ -507,7 +506,6 @@ const buildMetricoolRss = (items) => {
     <description>${escapeXml(item.description)}</description>
     <enclosure url="${escapeXml(videoUrl)}" length="${videoSize}" type="video/mp4" />
     <media:content url="${escapeXml(videoUrl)}" type="video/mp4" />
-    <media:thumbnail url="${escapeXml(thumbnailUrl)}"/>
     <content:encoded><![CDATA[${contentHtml}]]></content:encoded>
     </item>`;
   }).join('\n\n');
