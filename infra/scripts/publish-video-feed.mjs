@@ -458,7 +458,6 @@ const buildRss = (items, channelTitle, channelPath) => {
     <content:encoded><![CDATA[${contentHtml}]]></content:encoded>
     <enclosure url="${escapeXml(videoUrl)}" length="${videoSize}" type="video/mp4" />
     <media:content url="${escapeXml(videoUrl)}" fileSize="${videoSize}" medium="video" type="video/mp4" />
-    <media:thumbnail url="${escapeXml(siteBaseUrl)}/logo.png" />
     </item>`;
   }).join('\n\n');
 
@@ -482,7 +481,7 @@ const buildRss = (items, channelTitle, channelPath) => {
     <wp:base_site_url>${escapeXml(siteBaseUrl)}/</wp:base_site_url>
     <wp:base_blog_url>${escapeXml(siteBaseUrl)}</wp:base_blog_url>
 
-    <generator>Project Price Video Automation</generator>
+    <generator>http://wordpress.com/</generator>
 
 ${itemXml}
 
@@ -512,7 +511,6 @@ const buildMetricoolRss = (items) => {
     <content:encoded><![CDATA[${contentHtml}]]></content:encoded>
     <enclosure url="${escapeXml(videoUrl)}" length="${videoSize}" type="video/mp4" />
     <media:content url="${escapeXml(videoUrl)}" fileSize="${videoSize}" medium="video" type="video/mp4" />
-    <media:thumbnail url="${escapeXml(siteBaseUrl)}/logo.png" />
     </item>`;
   }).join('\n\n');
 
@@ -536,7 +534,7 @@ const buildMetricoolRss = (items) => {
     <wp:base_site_url>${escapeXml(siteBaseUrl)}/</wp:base_site_url>
     <wp:base_blog_url>${escapeXml(siteBaseUrl)}</wp:base_blog_url>
 
-    <generator>Project Price Video Automation</generator>
+    <generator>http://wordpress.com/</generator>
 
 ${itemXml}
 
