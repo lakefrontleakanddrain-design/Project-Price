@@ -499,7 +499,7 @@ const buildMetricoolRss = (items) => {
     const videoUrl = `${siteBaseUrl}${item.videoPath}`;
     const thumbnailUrl = `${siteBaseUrl}/logo.jpg`;
     const videoSize = getVideoByteLength(item.videoPath);
-    const contentHtml = `<video controls><source src="${escapeXml(videoUrl)}" type="video/mp4"></video>`;
+    const contentHtml = `<video controls><source src="${escapeXml(videoUrl)}" type="video/mp4" /></video>`;
     
     return `    <item>
     <title>${escapeXml(item.title)}</title>
@@ -507,12 +507,12 @@ const buildMetricoolRss = (items) => {
     <description>${escapeXml(item.description)}</description>
     <enclosure url="${escapeXml(videoUrl)}" length="${videoSize}" type="video/mp4" />
     <media:content url="${escapeXml(videoUrl)}" type="video/mp4" />
-    <media:thumbnail url="${escapeXml(thumbnailUrl)}" />
+    <media:thumbnail url="${escapeXml(thumbnailUrl)}"/>
     <content:encoded><![CDATA[${contentHtml}]]></content:encoded>
     </item>`;
   }).join('\n\n');
 
-  return `<?xml version="1.0" encoding="UTF-8" ?>
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"
     xmlns:content="http://purl.org/rss/1.0/modules/content/"
     xmlns:media="http://search.yahoo.com/mrss/"
