@@ -141,6 +141,139 @@ const REGIONAL_MARKET_PROFILES = {
   },
 };
 
+const DEFAULT_JOB_PROFILE = {
+  code: 'general_home_repair',
+  label: 'General home repair',
+  family: 'general',
+  baseMultiplier: 1.0,
+  spreadMultiplier: 1.0,
+  complexityWeight: 3,
+  rationaleHint: 'Assume moderate labor intensity and standard materials unless the scope clearly indicates a larger remodel.',
+};
+
+const JOB_TYPE_PROFILES = [
+  {
+    code: 'plumbing_repair',
+    label: 'Plumbing repair',
+    family: 'plumbing',
+    keywords: ['pipe leak', 'leak', 'faucet', 'toilet', 'shower valve', 'dripping', 'plumber', 'garbage disposal'],
+    baseMultiplier: 0.95,
+    spreadMultiplier: 0.9,
+    complexityWeight: 2,
+    rationaleHint: 'Focus on targeted repair scope, diagnostics, and fixture/material grade differences.',
+  },
+  {
+    code: 'sewer_and_drain',
+    label: 'Sewer and drain',
+    family: 'plumbing',
+    keywords: ['sewer', 'drain line', 'main line', 'clog', 'hydro jet', 'camera inspection', 'root intrusion'],
+    baseMultiplier: 1.35,
+    spreadMultiplier: 1.2,
+    complexityWeight: 4,
+    rationaleHint: 'Include access uncertainty, diagnostics, excavation risk, and restoration contingencies.',
+  },
+  {
+    code: 'water_heater',
+    label: 'Water heater replacement',
+    family: 'plumbing',
+    keywords: ['water heater', 'tankless', 'hot water', 'heater replacement'],
+    baseMultiplier: 1.2,
+    spreadMultiplier: 1.05,
+    complexityWeight: 3,
+    rationaleHint: 'Include appliance size, venting/electrical updates, and code/permit considerations.',
+  },
+  {
+    code: 'electrical_upgrade',
+    label: 'Electrical upgrade',
+    family: 'electrical',
+    keywords: ['electrical panel', 'rewire', 'service upgrade', 'breaker', 'subpanel', 'outlet', 'ev charger'],
+    baseMultiplier: 1.45,
+    spreadMultiplier: 1.15,
+    complexityWeight: 4,
+    rationaleHint: 'Account for service capacity, panel condition, and permit-driven labor/code scope.',
+  },
+  {
+    code: 'hvac',
+    label: 'HVAC install/replace',
+    family: 'hvac',
+    keywords: ['furnace', 'ac unit', 'air conditioner', 'mini split', 'heat pump', 'hvac', 'ductwork'],
+    baseMultiplier: 1.7,
+    spreadMultiplier: 1.2,
+    complexityWeight: 4,
+    rationaleHint: 'Include equipment tier, load-sizing, duct/access constraints, and code requirements.',
+  },
+  {
+    code: 'roofing',
+    label: 'Roofing replacement/repair',
+    family: 'roofing',
+    keywords: ['roof', 'shingle', 'flat roof', 'leak in attic', 'flashing', 'roof replacement'],
+    baseMultiplier: 1.8,
+    spreadMultiplier: 1.35,
+    complexityWeight: 4,
+    rationaleHint: 'Include tear-off/deck condition risk, disposal, and safety/setup logistics.',
+  },
+  {
+    code: 'bathroom_remodel',
+    label: 'Bathroom remodel',
+    family: 'remodel',
+    keywords: ['bathroom remodel', 'bath remodel', 'walk-in shower', 'vanity replacement', 'tile shower'],
+    baseMultiplier: 2.1,
+    spreadMultiplier: 1.4,
+    complexityWeight: 4,
+    rationaleHint: 'Price for demolition, plumbing/electrical coordination, tile/waterproofing, and finish tier upgrades.',
+  },
+  {
+    code: 'kitchen_remodel',
+    label: 'Kitchen remodel',
+    family: 'remodel',
+    keywords: ['kitchen remodel', 'kitchen renovation', 'cabinet', 'countertop', 'backsplash', 'appliance install'],
+    baseMultiplier: 2.45,
+    spreadMultiplier: 1.55,
+    complexityWeight: 5,
+    rationaleHint: 'Account for cabinetry/appliance packages, layout complexity, and coordinated trades.',
+  },
+  {
+    code: 'foundation_structural',
+    label: 'Foundation/structural',
+    family: 'structural',
+    keywords: ['foundation', 'structural', 'crack', 'sagging floor', 'settlement', 'piering', 'beam'],
+    baseMultiplier: 2.6,
+    spreadMultiplier: 1.6,
+    complexityWeight: 5,
+    rationaleHint: 'Include structural engineering uncertainty, access constraints, and high contingency ranges.',
+  },
+  {
+    code: 'flooring',
+    label: 'Flooring install/replace',
+    family: 'interior_finish',
+    keywords: ['flooring', 'hardwood', 'laminate', 'lvp', 'tile floor', 'refinish floor'],
+    baseMultiplier: 1.35,
+    spreadMultiplier: 1.05,
+    complexityWeight: 3,
+    rationaleHint: 'Account for material grade, prep/subfloor needs, transitions, and demo/disposal.',
+  },
+  {
+    code: 'painting',
+    label: 'Painting',
+    family: 'interior_finish',
+    keywords: ['paint', 'painting', 'interior paint', 'exterior paint', 'repaint'],
+    baseMultiplier: 1.05,
+    spreadMultiplier: 0.95,
+    complexityWeight: 2,
+    rationaleHint: 'Scope by prep requirements, surface condition, coats needed, and product quality.',
+  },
+  {
+    code: 'windows_doors',
+    label: 'Window/door replacement',
+    family: 'exterior_envelope',
+    keywords: ['window replacement', 'door replacement', 'sliding door', 'patio door', 'entry door'],
+    baseMultiplier: 1.55,
+    spreadMultiplier: 1.15,
+    complexityWeight: 3,
+    rationaleHint: 'Include unit quality, flashing/trim updates, and potential framing or weatherproofing adjustments.',
+  },
+];
+
 const regionForZipCode = (zipCode) => {
   const zip = String(zipCode || '').trim();
   if (!/^\d{5}$/.test(zip)) return DEFAULT_MARKET_PROFILE.region;
@@ -222,6 +355,56 @@ const hashText = (text) => {
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
+const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const countKeywordHits = (text, keyword) => {
+  const pattern = `\\b${escapeRegex(keyword).replace(/\s+/g, '\\s+')}\\b`;
+  const match = text.match(new RegExp(pattern, 'g'));
+  return Array.isArray(match) ? match.length : 0;
+};
+
+const detectJobContext = (description) => {
+  const text = String(description || '').trim().toLowerCase();
+  if (!text) {
+    return {
+      ...DEFAULT_JOB_PROFILE,
+      confidence: 0,
+      matchedKeywords: [],
+      matchScore: 0,
+    };
+  }
+
+  let bestProfile = DEFAULT_JOB_PROFILE;
+  let bestScore = 0;
+  let bestMatches = [];
+
+  for (const profile of JOB_TYPE_PROFILES) {
+    const matches = [];
+    let score = 0;
+    for (const keyword of profile.keywords || []) {
+      const hits = countKeywordHits(text, keyword);
+      if (hits > 0) {
+        matches.push(keyword);
+        score += hits;
+      }
+    }
+
+    if (score > bestScore) {
+      bestProfile = profile;
+      bestScore = score;
+      bestMatches = matches;
+    }
+  }
+
+  const confidence = clamp(bestScore / 3, 0, 1);
+  return {
+    ...bestProfile,
+    confidence,
+    matchedKeywords: bestMatches,
+    matchScore: bestScore,
+  };
+};
+
 const uniqueValues = (values) => {
   const seen = new Set();
   return values.filter((value) => {
@@ -256,10 +439,17 @@ const marketCostFactor = (zipCode, marketContext) => {
   return clamp(zipFactor * ((labor + materials) / 2) * complexityFactor, 0.75, 1.85);
 };
 
-const buildFallbackEstimates = (description, zipCode, marketContext = DEFAULT_MARKET_PROFILE) => {
+const buildFallbackEstimates = (
+  description,
+  zipCode,
+  marketContext = DEFAULT_MARKET_PROFILE,
+  jobContext = DEFAULT_JOB_PROFILE,
+) => {
   const seed = hashText(`${String(description || '').trim().toLowerCase()}|${String(zipCode || '').trim()}`);
-  const base = 850 + (seed % 1200);
-  const spread = 320 + (seed % 550);
+  const jobMultiplier = clamp(Number(jobContext?.baseMultiplier || 1), 0.7, 3.5);
+  const spreadMultiplier = clamp(Number(jobContext?.spreadMultiplier || 1), 0.75, 1.9);
+  const base = (850 + (seed % 1200)) * jobMultiplier;
+  const spread = (320 + (seed % 550)) * spreadMultiplier;
   const locationFactor = marketCostFactor(zipCode, marketContext);
 
   const mkRange = (multiplier, extraSpread) => {
@@ -273,13 +463,13 @@ const buildFallbackEstimates = (description, zipCode, marketContext = DEFAULT_MA
   const premium = mkRange(2.05, 1.6);
 
   return {
-    summary: `Estimated from project description and ${marketContext.marketName} market context while AI image analysis is temporarily unavailable.`,
+    summary: `Estimated from project description, ${jobContext.label.toLowerCase()} scope, and ${marketContext.marketName} market context while AI image analysis is temporarily unavailable.`,
     tiers: [
       {
         name: 'Basic',
         rangeLow: basic.low,
         rangeHigh: basic.high,
-        rationale: 'Budget-first scope with essential materials and standard labor.',
+        rationale: `Budget-first scope with essential materials and standard labor. ${jobContext.rationaleHint}`,
       },
       {
         name: 'Standard',
@@ -298,10 +488,11 @@ const buildFallbackEstimates = (description, zipCode, marketContext = DEFAULT_MA
   };
 };
 
-const estimationPrompt = (description, zipCode, marketContext) => `You are a renovation and home-services estimator.
+const estimationPrompt = (description, zipCode, marketContext, jobContext) => `You are a renovation and home-services estimator.
 
 Use the user description and the image (if provided) to produce three homeowner-facing cost tiers in USD.
 Use the structured market profile below as the pricing anchor and the zip code as geographic context.
+Use the job-type classification as a strong scope prior unless the image and text clearly indicate a different category.
 - Do not browse or reference random public-web pricing sources.
 - Keep the estimate appropriate for the referenced market profile.
 - Explain why Basic, Standard, and Premium differ based on finish level, scope, and market conditions.
@@ -333,6 +524,15 @@ Market profile:
 - Access complexity (1-5): ${marketContext.accessComplexity}
 - Weather complexity (1-5): ${marketContext.weatherComplexity}
 - Pricing notes: ${marketContext.pricingNotes}
+
+Job-type classification:
+- Job code: ${jobContext.code}
+- Label: ${jobContext.label}
+- Family: ${jobContext.family}
+- Complexity weight (1-5): ${jobContext.complexityWeight}
+- Matched keywords: ${jobContext.matchedKeywords?.length ? jobContext.matchedKeywords.join(', ') : 'none'}
+- Classification confidence (0-1): ${Number(jobContext.confidence || 0).toFixed(2)}
+- Scope guidance: ${jobContext.rationaleHint}
 
 Zip code:
 ${zipCode}
@@ -599,8 +799,16 @@ const buildTierPreviewImages = async ({ apiKey, description, zipCode, imageBase6
   };
 };
 
-const generateWithGemini = async ({ apiKey, description, zipCode, imageBase64, mimeType, marketContext }) => {
-  const parts = [{ text: estimationPrompt(description, zipCode, marketContext) }];
+const generateWithGemini = async ({
+  apiKey,
+  description,
+  zipCode,
+  imageBase64,
+  mimeType,
+  marketContext,
+  jobContext,
+}) => {
+  const parts = [{ text: estimationPrompt(description, zipCode, marketContext, jobContext) }];
 
   if (imageBase64) {
     parts.push({
@@ -722,6 +930,7 @@ exports.handler = async (event) => {
 
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
   const marketContext = await loadMarketContext(zipCode);
+  const jobContext = detectJobContext(description);
 
   // Generate text estimates and preview image independently so a text failure
   // does NOT trigger a second image API call in the catch block.
@@ -729,11 +938,19 @@ exports.handler = async (event) => {
   let estimateError = null;
   try {
     estimates = apiKey
-      ? await generateWithGemini({ apiKey, description, zipCode, imageBase64, mimeType, marketContext })
-      : buildFallbackEstimates(description, zipCode, marketContext);
+      ? await generateWithGemini({
+          apiKey,
+          description,
+          zipCode,
+          imageBase64,
+          mimeType,
+          marketContext,
+          jobContext,
+        })
+      : buildFallbackEstimates(description, zipCode, marketContext, jobContext);
   } catch (error) {
     estimateError = error;
-    estimates = buildFallbackEstimates(description, zipCode, marketContext);
+    estimates = buildFallbackEstimates(description, zipCode, marketContext, jobContext);
   }
 
   // Image generation runs exactly once regardless of whether text estimation succeeded.
@@ -761,6 +978,13 @@ exports.handler = async (event) => {
   return jsonResponse(200, {
     ...estimates,
     marketContext,
+    jobContext: {
+      code: jobContext.code,
+      label: jobContext.label,
+      family: jobContext.family,
+      confidence: Number(jobContext.confidence || 0),
+      matchedKeywords: Array.isArray(jobContext.matchedKeywords) ? jobContext.matchedKeywords : [],
+    },
     tierPreviewImages: previewResult.images,
     ...(estimateError ? { warning: estimateError instanceof Error ? estimateError.message : 'Estimate service fallback was used.' } : {}),
     ...(debugPreviews ? { previewDiagnostics: previewResult.diagnostics } : {}),
