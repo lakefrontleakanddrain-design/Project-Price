@@ -91,7 +91,7 @@ exports.handler = async (event) => {
     return jsonResponse(200, {
       message: 'Deletion request received.',
       requestId,
-      supportEmail: 'Projectpriceapp@gmail.com',
+      supportEmail: 'support@projectprice.app',
     });
   } catch (error) {
     return jsonResponse(500, { error: error instanceof Error ? error.message : 'Unexpected error.' });

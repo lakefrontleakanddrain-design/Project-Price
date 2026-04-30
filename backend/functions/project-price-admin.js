@@ -51,7 +51,7 @@ const env = () => ({
   siteUrl: process.env.SITE_URL || process.env.URL || '',
   resendApiKey: process.env.RESEND_API_KEY || '',
   notificationsFromEmail: process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectpriceapp.com',
-  notificationsReplyToEmail: process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'Projectpriceapp@gmail.com',
+  notificationsReplyToEmail: process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'support@projectprice.app',
 });
 
 const supabaseRequest = async (path, { method = 'GET', body, headers = {} } = {}) => {

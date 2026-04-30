@@ -61,7 +61,7 @@ const env = () => ({
   appBaseUrl: process.env.APP_BASE_URL || 'https://project-price-app.netlify.app',
   resendApiKey: process.env.RESEND_API_KEY || '',
   notificationsFromEmail: process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectpriceapp.com',
-  notificationsReplyToEmail: process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'Projectpriceapp@gmail.com',
+  notificationsReplyToEmail: process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'support@projectprice.app',
 });
 
 const getInternalNotificationEmails = () => {

@@ -9,7 +9,7 @@ const env = () => ({
   serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   resendApiKey: process.env.RESEND_API_KEY || '',
   notificationsFromEmail: process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectpriceapp.com',
-  notificationsReplyToEmail: process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'Projectpriceapp@gmail.com',
+  notificationsReplyToEmail: process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'support@projectprice.app',
   complianceFromEmail: process.env.COMPLIANCE_FROM_EMAIL || 'compliance@projectprice.app',
   appBaseUrl: process.env.APP_BASE_URL || 'https://project-price-app.netlify.app',
   complianceRunKey: process.env.COMPLIANCE_RUN_KEY || '',
