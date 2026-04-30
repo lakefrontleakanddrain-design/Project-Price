@@ -892,4 +892,67 @@ For brokerages and property management companies:
 
 ---
 
+### 20.7 The Realtor Pitch: The "Deal-Saver" Toolkit
+
+#### The Problem: The Inspection Gap
+
+The biggest threat to a commission is the 10-day inspection period. When an inspector finds a "scary" issue, buyers panic and sellers get defensive. Deals stall while everyone waits 3–5 days for a contractor to provide a quote. Project Price closes that gap in 30 seconds.
+
+---
+
+#### Real-World Scenarios
+
+**Scenario A — The Buyer's Negotiation**
+
+> *The Issue:* During a walkthrough, your buyer sees a water stain on the ceiling and wants to walk away, fearing a $10,000 roof leak.
+>
+> *The Project Price Fix:* Snap a photo. The Ghost Overlay visualizes the fix, and the Bronze/Silver/Gold tiers show a fair market cost of $800–$1,200.
+>
+> *Result:* You keep the buyer calm, write a data-backed repair credit request immediately, and keep the deal moving.
+
+**Scenario B — The "As-Is" Listing**
+
+> *The Issue:* You are listing a fixer-upper and every buyer is lowballing because they "estimate" repairs will cost $100k.
+>
+> *The Project Price Fix:* Run the estimates yourself for the key issues and leave the printed Project Price report on the kitchen counter.
+>
+> *Result:* You anchor buyers to real-world costs (e.g., $40k in repairs) based on 35 years of industry logic — protecting your seller's equity.
+
+**Scenario C — Post-Inspection Triage**
+
+> *The Issue:* The inspection report comes back with 15 minor electrical and plumbing items.
+>
+> *The Project Price Fix:* Use the Contractor Waterfall to request a vetted Pro.
+>
+> *Result:* Instead of calling 10 contractors, you tap one button. The system finds a verified, licensed Pro in that specific zip code who is ready to bid — saving hours of phone tag.
+
+---
+
+#### The Membership Advantage (Currently Free for Realtors)
+
+Project Price is provided to the realtor community as a **free professional resource** during launch.
+
+| Feature | What It Means for Realtors |
+|---------|---------------------------|
+| **No Spam Guarantee** | We never sell your client's data. The project goes to one exclusive Pro at a time — not a blast to 20 contractors. |
+| **Privacy First** | Your contact info and your client's info stay hidden until you choose to move forward with a Pro. |
+| **Regional Accuracy** | The AI uses a Regional Market Pricing Index specific to your metro (e.g., Midwest/Cleveland) — not a national average that means nothing locally. |
+| **30-Day Project History** | Save and track every project across your entire active portfolio in one place. |
+
+---
+
+#### The Ambassador Script (Pitching Other Realtors)
+
+> *"I started using Project Price because I was tired of losing deals during the inspection period. It lets me snap a photo of any repair and get an instant AI visualization and three pricing tiers based on 35 years of construction data.*
+>
+> *It's free for us, it makes us look like experts on every walkthrough, and most importantly — it keeps buyers from spiraling over 'guess-timates.' You can save all your projects for 30 days to track your whole portfolio in one spot. It's a total game-changer for my listing presentations."*
+
+---
+
+#### Future Monetization Note (Early Adopter Framing)
+
+While free at launch, emphasize to realtors that early adopters are gaining first-mover advantage. As the platform grows and a professional tier is introduced, **Charter Realtors** will likely have their status and saved project history grandfathered in — making early adoption a low-risk, high-upside decision.
+
+---
+
 *Document version: April 30, 2026. Based on deployed codebase at commit 702fc7a.*
