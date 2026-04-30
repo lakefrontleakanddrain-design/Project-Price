@@ -45,7 +45,7 @@ const milesToKm = (miles) => Number(miles) * 1.60934;
 
 const getGoogleMapsApiKey = () => String(process.env.GOOGLE_MAPS_API_KEY || '').trim();
 
-const CONTRACTOR_TERMS_VERSION = 'contractor-digital-signup-v1.0';
+const CONTRACTOR_TERMS_VERSION = 'charter-member-professional-v1.0-2026-04-30';
 
 const getRequestIp = (event) => {
   const headers = event?.headers || {};
