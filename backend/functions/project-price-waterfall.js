@@ -60,7 +60,7 @@ const env = () => ({
   salesNotificationEmail: process.env.SALES_NOTIFICATION_EMAIL || '',
   appBaseUrl: process.env.APP_BASE_URL || 'https://project-price-app.netlify.app',
   resendApiKey: process.env.RESEND_API_KEY || '',
-  notificationsFromEmail: process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectpriceapp.com',
+  notificationsFromEmail: process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectprice.app',
   notificationsReplyToEmail: process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'support@projectprice.app',
 });
 

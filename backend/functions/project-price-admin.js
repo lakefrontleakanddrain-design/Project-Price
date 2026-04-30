@@ -50,7 +50,7 @@ const env = () => ({
   adminKey: process.env.ADMIN_DASHBOARD_KEY || '',
   siteUrl: process.env.SITE_URL || process.env.URL || '',
   resendApiKey: process.env.RESEND_API_KEY || '',
-  notificationsFromEmail: process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectpriceapp.com',
+  notificationsFromEmail: process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectprice.app',
   notificationsReplyToEmail: process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'support@projectprice.app',
 });
 

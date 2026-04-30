@@ -115,7 +115,7 @@ const getAdminNotificationEmail = () => String(process.env.ADMIN_NOTIFICATION_EM
 const getSalesNotificationEmail = () => String(process.env.SALES_NOTIFICATION_EMAIL || '').trim().toLowerCase();
 const getGoogleMapsApiKey = () => String(process.env.GOOGLE_MAPS_API_KEY || '').trim();
 const getResendApiKey = () => String(process.env.RESEND_API_KEY || '').trim();
-const getNotificationsFromEmail = () => String(process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectpriceapp.com').trim();
+const getNotificationsFromEmail = () => String(process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectprice.app').trim();
 const getNotificationsReplyToEmail = () => String(process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'support@projectprice.app').trim();
 const getInternalNotificationEmails = () => Array.from(new Set([
   getAdminNotificationEmail(),
