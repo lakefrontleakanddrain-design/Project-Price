@@ -1,7 +1,7 @@
 # Project Price — Full Product Overview
 
 **Version:** 0.1.1  
-**Platform:** Android (iOS in development), Web  
+**Platform:** Android (Google Play — in review), iOS (App Store — live), Web  
 **Live URL:** https://projectpriceapp.com  
 **Play Store:** com.projectpriceapp.mobile  
 **Company:** Project Price / Lakefront Leak & Drain  
@@ -33,6 +33,7 @@
 14. [Market Opportunity](#14-market-opportunity)
 15. [Revenue Model](#15-revenue-model)
 16. [Branding & Design](#16-branding--design)
+17. [Active Marketing Programs](#17-active-marketing-programs)
 
 ---
 
@@ -541,4 +542,144 @@ Project Price supports multiple revenue streams:
 
 ---
 
-*Document version: April 30, 2026. Based on deployed codebase at commit e01c44d.*
+## 17. Active Marketing Programs
+
+As of April 2026, Project Price has a fully operational, multi-channel marketing infrastructure running concurrently with the product launch. Marketing is not planned — it is live.
+
+---
+
+### 17.1 Live Web Presence
+
+**URL:** https://projectpriceapp.com (live, Netlify CDN, auto-deploys from GitHub `main`)
+
+The public-facing website serves as the primary conversion and credibility anchor for all marketing channels. It includes:
+
+| Page | Purpose |
+|------|---------|
+| `index.html` | Main landing page — product overview, value proposition, app download CTA |
+| `get-quotes.html` | Homeowner-facing estimate request page — direct conversion entry point |
+| `my-estimates.html` | Authenticated homeowner estimate history and project tracking |
+| `contractor-signup.html` | Contractor onboarding and account registration |
+| `contractor-portal.html` | Contractor sign-in and lead management portal |
+| `contractor-dashboard.html` | Active contractor dashboard — lead status, project details, contact info |
+| `admin.html` | Internal admin dashboard — contractor approvals, activity log, compliance |
+| `privacy-policy.html` | GDPR/CCPA-compliant privacy policy (required for app store listings) |
+| `data-deletion.html` | User data deletion request portal |
+| `update-password.html` | Homeowner password recovery flow |
+| `contact/` | Contact and inquiry routing |
+
+**SEO & Discoverability:** All pages are served from Netlify's global CDN with automatic HTTPS. The web presence is the destination for all social, email, and app store traffic.
+
+---
+
+### 17.2 iOS App — Live on the Apple App Store
+
+The Project Price iOS app is **currently live on the Apple App Store**.
+
+- **Platform:** iOS (Flutter, cross-platform build)
+- **Status:** Published and available for download
+- **Package:** com.projectpriceapp.mobile
+- **Features:** Full homeowner experience — photo upload, AI estimates, project history, contractor request
+- **Authentication:** Supabase email/password auth with secure on-device credential storage
+
+The iOS app is the primary acquisition channel for Apple device users. All social media and email marketing campaigns link directly to the App Store listing in addition to the web portal.
+
+---
+
+### 17.3 Android App — Pending Google Play Approval
+
+The Project Price Android app is **currently in review on Google Play** (submitted April 29, 2026).
+
+- **Package:** com.projectpriceapp.mobile
+- **Version:** 0.1.0 (version code 28)
+- **Status:** In review — expected approval within 1–7 days
+- **Release type:** Full production rollout
+- **Build system:** Flutter release AAB signed and submitted
+
+Once approved, Android adds the largest mobile user base segment to Project Price's reach. Android holds approximately 70% of US mobile market share in the home services demographic.
+
+---
+
+### 17.4 B2B Email Drip Campaign — Cleveland Realtor Market (Apollo.ai)
+
+Project Price is actively running a targeted B2B outreach campaign through **Apollo.ai** aimed at the real estate professional segment.
+
+**Campaign Details:**
+
+| Parameter | Value |
+|-----------|-------|
+| **Platform** | Apollo.ai (automated email sequencing) |
+| **Target audience** | Licensed real estate agents and realtors |
+| **Geographic focus** | Cleveland, Ohio metro market |
+| **List size** | ~2,000 active realtors |
+| **Campaign type** | Multi-step email drip sequence |
+| **Status** | Currently running |
+
+**Why Realtors First:**
+Realtors are a high-leverage entry point into the Project Price ecosystem. A single realtor who adopts Project Price as part of their listing or buyer-rep workflow will expose the platform to dozens of homeowner clients per year. Cleveland was selected as the launch market due to existing business relationships, high concentration of pre-1980 housing stock (high repair demand), and manageable market size for initial validation.
+
+**Campaign Objective:** Drive realtor sign-ups on the contractor/professional portal, generate referral traffic to the homeowner estimate tool, and establish Project Price as the go-to pricing reference tool in the Cleveland real estate community.
+
+---
+
+### 17.5 Social Media — Automated Twice-Daily Publishing via Metricool
+
+Project Price publishes content to **9 social platforms twice per day**, fully automated through **Metricool** using a scheduled RSS video feed.
+
+**Publishing Schedule:**
+- **Morning post:** 2:00 AM UTC (late evening prior day US Eastern)
+- **Afternoon post:** 1:00 PM UTC (mid-morning US Eastern)
+- **Frequency:** Every day, automated — no manual posting required
+
+**Platforms Published To:**
+
+| Platform | Audience | Content Format |
+|----------|----------|----------------|
+| **Facebook** | Homeowners, local community groups, age 35–65 demo | Video post + caption |
+| **Instagram** | Visual-first homeowner and design audience | Reel / video post |
+| **TikTok** | Younger homeowners, DIY and home content consumers | Short video |
+| **YouTube** | Long-tail search — repair and remodel how-to audience | Video upload |
+| **LinkedIn** | Realtors, contractors, property managers, investors | Professional video post |
+| **Threads** | Meta ecosystem spillover, emerging home content audience | Video + text |
+| **Bluesky** | Tech-forward and professional early adopters | Video + text |
+| **Pinterest** | Home improvement planners, overwhelmingly female 25–54 | Video pin |
+| **X (Twitter)** | Real estate professionals, general consumer audience | Video post |
+
+**Content Pipeline:**
+
+Videos are generated by the **Gemini Veo AI video generation pipeline** (`infra/scripts/generate_gemini_video.py`) using a rotating topic list (`infra/video/topic-rotation.json`). Each video is a short-form educational or demonstration clip relevant to home repair, remodel, and cost estimation — positioning Project Price as the authority in project pricing.
+
+The Metricool RSS feed that powers the automation is live at:
+- **Primary feed:** https://projectpriceapp.com/metricool-live-video-test.xml
+- **Alias feed:** https://projectpriceapp.com/metricool-live-video.xml
+- **Items in current feed:** 6 active videos
+- **Video hosting:** Direct MP4 URLs served via Netlify CDN
+
+**Why This Matters for Investors:**
+This is not a marketing plan — it is a running marketing machine. At 2 posts per day across 9 platforms, Project Price is generating **14 content touchpoints per week** across every major social distribution channel without incremental labor cost. As the video library grows, the automation compounds — older videos continue to recirculate while new content is added on a scheduled rotation.
+
+---
+
+### 17.6 Marketing Summary
+
+| Channel | Status | Reach |
+|---------|--------|-------|
+| Web portal (projectpriceapp.com) | Live | Global |
+| iOS App Store | Live | Global (iOS users) |
+| Android Google Play | In review | Global (Android users, pending) |
+| Apollo.ai realtor email drip | Running | ~2,000 Cleveland realtors |
+| Facebook | Posting 2x/day | Facebook audience |
+| Instagram | Posting 2x/day | Instagram audience |
+| TikTok | Posting 2x/day | TikTok audience |
+| YouTube | Posting 2x/day | YouTube search + subscribers |
+| LinkedIn | Posting 2x/day | Professional network |
+| Threads | Posting 2x/day | Threads audience |
+| Bluesky | Posting 2x/day | Bluesky audience |
+| Pinterest | Posting 2x/day | Pinterest audience |
+| X (Twitter) | Posting 2x/day | Twitter/X audience |
+
+**All channels are active simultaneously.** Project Price entered the market with a full-stack marketing presence operational at launch — not as a post-funding objective.
+
+---
+
+*Document version: April 30, 2026. Based on deployed codebase at commit 78c5c3a.*
