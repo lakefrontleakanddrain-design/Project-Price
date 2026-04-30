@@ -24,8 +24,6 @@
    - [Insurance Adjusters & Appraisers](#66-insurance-adjusters--appraisers)
    - [Investors & House Flippers](#67-real-estate-investors--house-flippers)
 7. [Technology Stack](#7-technology-stack)
-17. [Active Marketing Programs](#17-active-marketing-programs)
-18. [Image & Media Assets](#18-image--media-assets)
 8. [AI & Estimating Engine](#8-ai--estimating-engine)
 9. [Contractor Matching System (Waterfall)](#9-contractor-matching-system-waterfall)
 10. [Admin & Compliance Infrastructure](#10-admin--compliance-infrastructure)
@@ -36,6 +34,9 @@
 15. [Revenue Model](#15-revenue-model)
 16. [Branding & Design](#16-branding--design)
 17. [Active Marketing Programs](#17-active-marketing-programs)
+18. [Image & Media Assets](#18-image--media-assets)
+19. [Pro Membership & Monetization Model](#19-pro-membership--monetization-model)
+20. [Sales Manifesto & Contractor Pitch Guide](#20-sales-manifesto--contractor-pitch-guide)
 
 ---
 
@@ -752,4 +753,143 @@ Eight tablet screenshots submitted to the Play Console 10-inch tablet section. A
 
 ---
 
-*Document version: April 30, 2026. Based on deployed codebase at commit 6969ffd.*
+---
+
+## 19. Pro Membership & Monetization Model
+
+Project Price has deliberately moved away from the per-lead fee model that dominates legacy platforms (Angi, HomeAdvisor, Thumbtack). The revenue strategy is built on **predictable, recurring SaaS revenue** — contractors pay for access, authority, and automation, not for individual phone numbers.
+
+---
+
+### 19.1 Why Not Per-Lead?
+
+The per-lead model creates a broken incentive: the platform profits from volume, not from quality. Contractors are forced onto a "lead-buying treadmill" competing against 4–5 other companies for the same homeowner. Project Price removes that dynamic entirely.
+
+- Homeowners are **pre-qualified by AI** before any contractor is contacted
+- The **Waterfall Engine** offers the project exclusively to the best-matched Pro first — no bidding wars
+- Budget expectations are set upfront via the 3-tier pricing display (Bronze / Silver / Gold)
+- The result: contractors receive **fewer, higher-quality, pre-educated leads** — not a flood of tire-kickers
+
+---
+
+### 19.2 The 5-Step Value Loop
+
+| Step | What Happens | Value Delivered to Pro |
+|------|-------------|------------------------|
+| **1. AI Filtering** | User uploads photos; AI generates a "Ghost Overlay" fix visualization | Homeowner is committed to the idea before talking to anyone |
+| **2. Budget Anchoring** | 3-tier (Bronze/Silver/Gold) price ranges shown based on 7-region index | Lead arrives "budget-aware" — no sticker shock conversation |
+| **3. Exclusive Sequential Match** | Waterfall offers project to the closest, best-qualified verified Pro first | One-on-one connection — no competition |
+| **4. License Verification** | Regulated trades (HVAC, Plumbing, Electrical) must pass license check | Only best Pros in the pool; protects platform reputation |
+| **5. Project Tracking** | Pro and homeowner both track progress through the app | Ongoing relationship; repeat business opportunity |
+
+---
+
+### 19.3 Revenue Streams
+
+| Stream | Description | Model |
+|--------|-------------|-------|
+| **Pro Subscription** | Contractors pay monthly or annual membership to be in the Verified network and receive unlimited lead transfers from the Waterfall | Recurring SaaS |
+| **SaaS / Enterprise Licensing** | White-label or API access for real estate brokerages and property management firms to use the estimating engine for their entire portfolio | B2B recurring |
+| **Premium Homeowner Tier** | Subscription for power users (investors/flippers) — unlimited saved projects, priority access to top-rated Pros | Consumer SaaS |
+| **Admin Compliance Suite** | Portal-based management of insurance, licensing, and compliance documentation — keeps contractors "Active" in the system | Add-on SaaS |
+
+---
+
+### 19.4 Contractor Membership Tiers (Proposed)
+
+| Tier | Features | Positioning |
+|------|----------|-------------|
+| **Free / Unverified** | Listed in directory; no Waterfall access | Discovery layer |
+| **Verified Pro** | License/insurance checked; Waterfall access; unlimited lead transfers; contractor dashboard | Core paid tier |
+| **Charter Member** | Early adopter rate locked in; first right of refusal on all projects in claimed zip codes | Founder close |
+| **Enterprise / White-label** | API access; custom branding; portfolio-level estimating | B2B expansion |
+
+---
+
+## 20. Sales Manifesto & Contractor Pitch Guide
+
+> **Core message:** We don't charge you for every phone call. You pay a flat membership to be our exclusive Pro for your territory. Every project we filter in your area comes straight to you — period.
+
+---
+
+### 20.1 The Problem We're Solving for Contractors
+
+The home services industry is exhausted by "pay-to-play" lead platforms. The standard complaint:
+
+- "I paid $80 for that lead and three other guys called them too"
+- "The homeowner had no idea what it would cost — they hung up when I said the number"
+- "I'm spending more time chasing bad leads than doing actual work"
+
+Project Price is the answer to every one of those objections before the contractor even asks.
+
+---
+
+### 20.2 The Pitch — Four Core Angles
+
+#### "Own the Territory, Not the Lead"
+> "You're not buying leads one at a time. You're buying the rights to your zip codes. Every homeowner project we process in your territory gets routed to you — exclusively. No auction. No competition."
+
+#### "We Do the Awkward Conversation For You"
+> "We back your quotes with 35 years of industry pricing data across 7 regional markets. When you show up, the homeowner has already seen our Bronze/Silver/Gold ranges. The price conversation is over before you arrive."
+
+#### "Privacy and Exclusivity — For Both Sides"
+> "The homeowner's project goes to one Pro at a time. They're not getting spammed by a dozen contractors. You're not competing with 10 other guys for the same $500 repair. It's a handshake, not an auction."
+
+#### "Look Like the Most Tech-Forward Company in Town"
+> "Show your customers the Ghost Overlay — before and after visualization of their exact repair, generated by AI from their own photo. No other contractor in your market can do that. It's your competitive edge."
+
+---
+
+### 20.3 Target Sales Profile
+
+Focus on the **top 5%** of contractors in each trade — licensed, insured, established, and actively frustrated with legacy lead platforms.
+
+**Ideal prospect signals:**
+- Active Angi/HomeAdvisor subscriber who complains about lead quality
+- Licensed in a regulated trade (HVAC, Plumbing, Electrical, Roofing)
+- Has a Google Business profile and existing reviews
+- Running a 2–10 person operation (not a solo handyman, not a national franchise)
+- Operates in a defined geographic territory (specific zip codes or suburbs)
+
+**Avoid:**
+- Unlicensed or uninsured operators
+- Contractors who primarily work on commercial-only projects
+- One-person operations with no capacity for additional volume
+
+---
+
+### 20.4 Objection Handling
+
+| Objection | Response |
+|-----------|----------|
+| "I already pay Angi / HomeAdvisor" | "How many of those leads actually close? We don't send you a name — we send you a pre-educated homeowner who has already accepted fair market pricing and requested a Pro specifically for their project." |
+| "What if leads are slow at first?" | "Charter Members lock in the Founder rate and get first-refusal rights on their zip codes permanently. You're not paying per lead — you're investing in your territory before someone else claims it." |
+| "How do I know the homeowner is serious?" | "They uploaded photos, reviewed AI-generated estimates, saw all three price tiers, and then still clicked 'Request a Pro.' That's three commitment steps before your name ever appears." |
+| "I don't want my info shared publicly" | "Your contact details are never shown to the homeowner until you accept the match. The connection is made through the platform — you control when and how you engage." |
+
+---
+
+### 20.5 The Charter Member Close
+
+The highest-conversion close for early adopters:
+
+1. **Anchor to territory:** "Which zip codes do you primarily serve?"
+2. **Show the map:** Demonstrate that no verified Pro is currently claiming those zip codes
+3. **Create urgency:** "Charter Membership locks your Founder rate and gives you first-refusal on every project in those zips — permanently. Once another Pro claims them, this offer is gone."
+4. **Remove lead-fee objection:** "You'll never pay a per-lead fee. Ever. Flat membership, unlimited projects."
+5. **Close on the tech demo:** Show the Ghost Overlay feature — end with the visual, not the price.
+
+---
+
+### 20.6 Enterprise / B2B Angle (Realtors & Property Managers)
+
+For brokerages and property management companies:
+
+- **The pitch:** "Give every agent in your office instant, AI-backed repair estimates on any listing or rental property — without calling a contractor first."
+- **The value:** Faster repair disclosures, better negotiation data, reduced liability on as-is sales
+- **The product:** White-label or API-licensed version of the Project Price estimating engine embedded in their existing workflow
+- **The target:** Residential brokerages with 10+ agents; property management firms with 50+ units
+
+---
+
+*Document version: April 30, 2026. Based on deployed codebase at commit 702fc7a.*
