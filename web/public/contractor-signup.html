@@ -83,6 +83,30 @@
     }
     .result.success { background: #e6f7ef; color: #0d5c35; border: 1px solid #a3dfc0; }
     .result.error { background: #fdecea; color: #7a1a14; border: 1px solid #f5b7b1; }
+    .terms-wrap {
+      margin-top: 14px;
+      border: 1px solid #bfd2ee;
+      border-radius: 10px;
+      background: #f9fcff;
+      padding: 12px;
+      max-height: 220px;
+      overflow: auto;
+      font-size: .84rem;
+      line-height: 1.45;
+      color: #35577a;
+    }
+    .consent-row {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      font-size: .86rem;
+      color: #27496b;
+    }
+    .consent-row input[type=checkbox] {
+      width: auto;
+      margin-top: 2px;
+    }
     .divider { border: none; border-top: 1px solid #e0eaf8; margin: 20px 0; }
     .brand-bar {
       max-width: 560px;
@@ -180,6 +204,27 @@
       <input id="password" type="password" placeholder="Minimum 8 characters" required minlength="8" />
       <p class="hint">Use this same password to log in to your Contractor Portal after approval.</p>
 
+      <hr class="divider" />
+
+      <label>Digital Sign-up Terms (Contractors v1.0)</label>
+      <div class="terms-wrap">
+        <p><strong>12-Month Pro Membership Term.</strong> By enrolling, you agree to a 12-month membership term.</p>
+        <p><strong>Acceleration of Fees.</strong> If you attempt early cancellation by card dispute, chargeback, or payment method termination before the end of the term, all remaining fees for the 12-month term become immediately due and payable as a debt obligation.</p>
+        <p><strong>24-Hour Payment Rule.</strong> If any scheduled payment fails and is not resolved within 24 hours, Project Price may pause lead delivery and account access until payment is brought current.</p>
+        <p><strong>No Lead-Buying Model.</strong> Membership is for access to the platform and verified network tools; this is not a per-lead purchase model.</p>
+        <p><strong>Consent Record.</strong> You agree that your acceptance may be recorded with timestamp and IP address as your legally binding digital consent.</p>
+      </div>
+
+      <label class="consent-row">
+        <input id="termsAgree" type="checkbox" />
+        <span>I have read and agree to the Digital Sign-up Terms (Contractors v1.0), including the 12-month term and acceleration of fees clause.</span>
+      </label>
+
+      <label class="consent-row">
+        <input id="rule24Agree" type="checkbox" />
+        <span>I understand lead flow may pause if a failed payment is not resolved within 24 hours.</span>
+      </label>
+
       <button type="submit" id="btn">Create Account</button>
     </form>
 
@@ -187,11 +232,31 @@
   </div>
 
   <script>
-    document.getElementById('form').addEventListener('submit', async (e) => {
+    const termsVersion = 'contractor-digital-signup-v1.0';
+    const form = document.getElementById('form');
+    const btn = document.getElementById('btn');
+    const termsAgree = document.getElementById('termsAgree');
+    const rule24Agree = document.getElementById('rule24Agree');
+
+    const refreshSubmitState = () => {
+      btn.disabled = !(termsAgree.checked && rule24Agree.checked);
+    };
+
+    termsAgree.addEventListener('change', refreshSubmitState);
+    rule24Agree.addEventListener('change', refreshSubmitState);
+    refreshSubmitState();
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const btn = document.getElementById('btn');
       const result = document.getElementById('result');
       result.style.display = 'none';
+
+      if (!termsAgree.checked || !rule24Agree.checked) {
+        result.className = 'result error';
+        result.textContent = 'You must accept the Digital Sign-up Terms before creating an account.';
+        result.style.display = 'block';
+        return;
+      }
 
       const specialties = Array.from(
         document.querySelectorAll('.specialties-grid input[type=checkbox]:checked')
@@ -213,6 +278,10 @@
         specialties,
         serviceZipCode: document.getElementById('serviceZip').value.trim(),
         serviceRadiusMiles: document.getElementById('radius').value,
+        termsAccepted: true,
+        accelerationClauseAccepted: true,
+        twentyFourHourRuleAccepted: true,
+        termsVersion,
       };
 
       btn.disabled = true;

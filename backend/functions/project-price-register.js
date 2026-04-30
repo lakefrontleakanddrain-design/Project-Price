@@ -45,6 +45,21 @@ const milesToKm = (miles) => Number(miles) * 1.60934;
 
 const getGoogleMapsApiKey = () => String(process.env.GOOGLE_MAPS_API_KEY || '').trim();
 
+const CONTRACTOR_TERMS_VERSION = 'contractor-digital-signup-v1.0';
+
+const getRequestIp = (event) => {
+  const headers = event?.headers || {};
+  const forwarded = String(
+    headers['x-forwarded-for']
+    || headers['X-Forwarded-For']
+    || headers['x-nf-client-connection-ip']
+    || headers['X-Nf-Client-Connection-Ip']
+    || ''
+  ).trim();
+  if (!forwarded) return null;
+  return forwarded.split(',')[0].trim() || null;
+};
+
 const geocodeUsZipCode = async (zipCode) => {
   const key = getGoogleMapsApiKey();
   const zip = String(zipCode || '').trim();
@@ -108,6 +123,10 @@ exports.handler = async (event) => {
     serviceZipCodes,
     serviceRadiusMiles,
     serviceRadiusKm,
+    termsAccepted,
+    accelerationClauseAccepted,
+    twentyFourHourRuleAccepted,
+    termsVersion,
   } = payload;
 
   if (!email || !password || !fullName || !companyName || !phone) {
@@ -116,6 +135,18 @@ exports.handler = async (event) => {
 
   if (String(password).length < 8) {
     return jsonResponse(400, { error: 'Password must be at least 8 characters.' });
+  }
+
+  if (termsAccepted !== true || accelerationClauseAccepted !== true || twentyFourHourRuleAccepted !== true) {
+    return jsonResponse(400, {
+      error: 'You must accept the contractor digital terms, acceleration clause, and 24-hour payment rule.',
+    });
+  }
+
+  if (String(termsVersion || '').trim() !== CONTRACTOR_TERMS_VERSION) {
+    return jsonResponse(400, {
+      error: `Unsupported terms version. Expected ${CONTRACTOR_TERMS_VERSION}.`,
+    });
   }
 
   const normalizedPhone = normalizePhone(String(phone));
@@ -138,6 +169,8 @@ exports.handler = async (event) => {
 
   try {
     const centerPoint = await geocodeUsZipCode(centerZip);
+    const acceptedAt = new Date().toISOString();
+    const acceptedIp = getRequestIp(event);
 
     // 1. Create auth user via Supabase Admin API
     const authData = await supabaseRequest('/auth/v1/admin/users', {
@@ -187,6 +220,11 @@ exports.handler = async (event) => {
           service_center_lng: centerPoint.longitude,
         }),
         is_verified: false,
+        contractor_terms_version: CONTRACTOR_TERMS_VERSION,
+        contractor_terms_accepted_at: acceptedAt,
+        contractor_terms_accepted_ip: acceptedIp,
+        contractor_terms_acceleration_acknowledged: true,
+        contractor_terms_24h_rule_acknowledged: true,
       },
       headers: { Prefer: 'return=minimal' },
     });
