@@ -24,6 +24,8 @@
    - [Insurance Adjusters & Appraisers](#66-insurance-adjusters--appraisers)
    - [Investors & House Flippers](#67-real-estate-investors--house-flippers)
 7. [Technology Stack](#7-technology-stack)
+17. [Active Marketing Programs](#17-active-marketing-programs)
+18. [Image & Media Assets](#18-image--media-assets)
 8. [AI & Estimating Engine](#8-ai--estimating-engine)
 9. [Contractor Matching System (Waterfall)](#9-contractor-matching-system-waterfall)
 10. [Admin & Compliance Infrastructure](#10-admin--compliance-infrastructure)
@@ -682,4 +684,72 @@ This is not a marketing plan — it is a running marketing machine. At 2 posts p
 
 ---
 
-*Document version: April 30, 2026. Based on deployed codebase at commit 78c5c3a.*
+---
+
+## 18. Image & Media Assets
+
+All images listed below are publicly accessible via the Netlify CDN at **https://projectpriceapp.com**. These are the canonical assets used across the app, Play Console, App Store, web portal, and marketing materials.
+
+---
+
+### 18.1 Brand Logos & App Icons
+
+| Asset | Description | Dimensions | Public URL |
+|-------|-------------|------------|------------|
+| Primary brand logo / app icon (wide) | Main brand image, used on web and as OG image | 1408×768 | [logo.jpg](https://projectpriceapp.com/logo.jpg) |
+| App icon base (square crop) | Source icon used across all platforms | 1408×768 | [img/app_icon_base.jpg](https://projectpriceapp.com/img/app_icon_base.jpg) |
+| App launcher icon (PNG, square) | Flutter launcher icon — source for all platform icons | 1024×1024 | [img/app_icon_launcher.png](https://projectpriceapp.com/img/app_icon_launcher.png) |
+
+---
+
+### 18.2 Google Play Console Assets
+
+These are the production assets submitted to the Google Play Store for the Project Price Android app (version 0.1.0, version code 28).
+
+| Asset | Description | Dimensions | Public URL |
+|-------|-------------|------------|------------|
+| App icon (Play Console — 1024px) | High-resolution icon for Play Store listing | 1024×1024 | [img/icon_android_1024_play_v2.png](https://projectpriceapp.com/img/icon_android_1024_play_v2.png) |
+| App icon (Play Console — 512px) | Standard Play Store app icon upload | 512×512 | [img/icon_android_512_play_v2.png](https://projectpriceapp.com/img/icon_android_512_play_v2.png) |
+| Feature graphic | Play Store feature banner — displayed at top of store listing | 1024×500 | [img/feature_graphic_1024x500_play_v2.jpg](https://projectpriceapp.com/img/feature_graphic_1024x500_play_v2.jpg) |
+
+---
+
+### 18.3 Google Play Console — 10-Inch Tablet Screenshots
+
+Eight tablet screenshots submitted to the Play Console 10-inch tablet section. All 16:9, 1920×1080, JPEG. Feature real kitchen remodel project photos with Project Price branding overlay.
+
+| Asset | Scene / Caption | Public URL |
+|-------|-----------------|------------|
+| Tablet feature graphic | Hero shot — kitchen remodel with Project Price branding | [img/tablet_10inch/tablet_10in_feature_1920x1080.jpg](https://projectpriceapp.com/img/tablet_10inch/tablet_10in_feature_1920x1080.jpg) |
+| Screenshot 01 | "Snap Your Space" — photo upload entry point | [img/tablet_10inch/tablet_10in_screenshot_01_1920x1080.jpg](https://projectpriceapp.com/img/tablet_10inch/tablet_10in_screenshot_01_1920x1080.jpg) |
+| Screenshot 02 | "Smart Cost Ranges" — estimate tier display | [img/tablet_10inch/tablet_10in_screenshot_02_1920x1080.jpg](https://projectpriceapp.com/img/tablet_10inch/tablet_10in_screenshot_02_1920x1080.jpg) |
+| Screenshot 03 | "Compare Pros Fast" — contractor comparison | [img/tablet_10inch/tablet_10in_screenshot_03_1920x1080.jpg](https://projectpriceapp.com/img/tablet_10inch/tablet_10in_screenshot_03_1920x1080.jpg) |
+| Screenshot 04 | "Track Every Step" — project progress | [img/tablet_10inch/tablet_10in_screenshot_04_1920x1080.jpg](https://projectpriceapp.com/img/tablet_10inch/tablet_10in_screenshot_04_1920x1080.jpg) |
+| Screenshot 05 | "Save Project History" — saved projects view | [img/tablet_10inch/tablet_10in_screenshot_05_1920x1080.jpg](https://projectpriceapp.com/img/tablet_10inch/tablet_10in_screenshot_05_1920x1080.jpg) |
+| Screenshot 06 | "Move From Idea To Build" — full workflow | [img/tablet_10inch/tablet_10in_screenshot_06_1920x1080.jpg](https://projectpriceapp.com/img/tablet_10inch/tablet_10in_screenshot_06_1920x1080.jpg) |
+| Screenshot 07 | "Snap Your Space" (alt view) | [img/tablet_10inch/tablet_10in_screenshot_07_1920x1080.jpg](https://projectpriceapp.com/img/tablet_10inch/tablet_10in_screenshot_07_1920x1080.jpg) |
+| Screenshot 08 | "Smart Cost Ranges" (alt view) | [img/tablet_10inch/tablet_10in_screenshot_08_1920x1080.jpg](https://projectpriceapp.com/img/tablet_10inch/tablet_10in_screenshot_08_1920x1080.jpg) |
+
+---
+
+### 18.4 QR Codes
+
+| Asset | Description | Public URL |
+|-------|-------------|------------|
+| App Store QR code | Links to the Project Price App Store / Play Store listing | [img/projectprice-appstore-qr.png](https://projectpriceapp.com/img/projectprice-appstore-qr.png) |
+| App Store QR code (social variant) | Social-media formatted QR code with branding | [img/projectprice-appstore-qr-social.png](https://projectpriceapp.com/img/projectprice-appstore-qr-social.png) |
+
+---
+
+### 18.5 Video Assets
+
+| Asset | Description | Location |
+|-------|-------------|----------|
+| App Store promo video (8 sec) | Kitchen remodel slideshow — 4 photos, branded overlay, 1920×1080 MP4 | `apps/mobile/assets/images/promo_video_8sec.mp4` (upload to YouTube for Play Console) |
+| Live social media videos (6 active) | AI-generated Gemini Veo short-form videos, auto-published via Metricool | Served via https://projectpriceapp.com/live-video/ |
+| Video RSS feed (primary) | Metricool automation feed — 6 items | [metricool-live-video-test.xml](https://projectpriceapp.com/metricool-live-video-test.xml) |
+| Video RSS feed (alias) | Legacy compatibility alias | [metricool-live-video.xml](https://projectpriceapp.com/metricool-live-video.xml) |
+
+---
+
+*Document version: April 30, 2026. Based on deployed codebase at commit 6969ffd.*
