@@ -13,7 +13,9 @@
  * Handled events:
  *   checkout.session.completed  → activate contractor, store stripe IDs
  *   invoice.paid                → ensure contractor is active (renewals)
+ *   invoice.payment_succeeded   → ensure contractor is active (renewals, alt event name)
  *   invoice.payment_failed      → pause contractor
+ *   customer.subscription.created → sync initial subscription id/status
  *   customer.subscription.deleted → pause + cancel contractor
  *   customer.subscription.updated → pause/cancel when status transitions
  */
@@ -262,6 +264,34 @@ const handleSubscriptionDeleted = async (subscription) => {
 };
 
 /**
+ * customer.subscription.created — store initial subscription id/status.
+ */
+const handleSubscriptionCreated = async (subscription) => {
+  const customerId = subscription.customer;
+  const status = String(subscription.status || '').toLowerCase();
+  if (!customerId) return;
+
+  const pro = await getProfessionalByStripeCustomer(customerId);
+  if (!pro) { console.warn(`subscription.created: no professional found for customer ${customerId}`); return; }
+
+  const patch = { stripe_subscription_id: subscription.id || null };
+  if (status === 'active' || status === 'trialing') {
+    patch.subscription_status = 'active';
+    patch.is_verified = true;
+    patch.is_paused_by_contractor = false;
+  } else if (status === 'past_due' || status === 'unpaid' || status === 'incomplete_expired') {
+    patch.subscription_status = 'past_due';
+    patch.is_verified = false;
+  } else if (status === 'canceled') {
+    patch.subscription_status = 'canceled';
+    patch.is_verified = false;
+  }
+
+  await updateProfessional(pro.id, patch);
+  console.log(`subscription.created: synced professional ${pro.id} status=${status || 'unknown'}`);
+};
+
+/**
  * customer.subscription.updated — fallback for Stripe accounts where deleted event
  * isn't available in event destination UI.
  */
@@ -337,10 +367,14 @@ exports.handler = async (event) => {
         await handleCheckoutCompleted(stripeEvent.data.object);
         break;
       case 'invoice.paid':
+      case 'invoice.payment_succeeded':
         await handleInvoicePaid(stripeEvent.data.object);
         break;
       case 'invoice.payment_failed':
         await handlePaymentFailed(stripeEvent.data.object);
+        break;
+      case 'customer.subscription.created':
+        await handleSubscriptionCreated(stripeEvent.data.object);
         break;
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(stripeEvent.data.object);
