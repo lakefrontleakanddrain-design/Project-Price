@@ -588,11 +588,20 @@
         const data = await res.json();
 
         if (res.ok) {
-          result.className = 'result success';
-          result.textContent = data.message;
-          document.getElementById('form').reset();
-          document.getElementById('complianceCards').innerHTML = '';
-          document.getElementById('complianceSection').style.display = 'none';
+          if (data.checkoutUrl) {
+            result.className = 'result success';
+            result.textContent = 'Account created! Redirecting to payment...';
+            result.style.display = 'block';
+            setTimeout(() => { window.location.href = data.checkoutUrl; }, 1200);
+            return; // don't re-enable the button
+          } else {
+            // Stripe not configured or error — show message and don't redirect
+            result.className = 'result success';
+            result.textContent = data.message || 'Account created. Please contact support to activate.';
+            document.getElementById('form').reset();
+            document.getElementById('complianceCards').innerHTML = '';
+            document.getElementById('complianceSection').style.display = 'none';
+          }
         } else {
           result.className = 'result error';
           result.textContent = data.error || 'Something went wrong. Please try again.';

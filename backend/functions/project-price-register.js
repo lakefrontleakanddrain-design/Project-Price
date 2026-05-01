@@ -51,6 +51,43 @@ const LICENSE_REQUIRED_SERVICES = new Set([
   'general contractor', 'roofing', 'plumbing', 'hvac', 'electrical',
   'painting', 'flooring', 'windows and doors', 'siding', 'landscaping',
 ]);
+const getStripeSecretKey = () => String(process.env.STRIPE_SECRET_KEY || '').trim();
+const getStripePriceId = () => String(process.env.STRIPE_PRICE_ID || '').trim();
+
+const createStripeCheckoutSession = async ({ professionalId, email, companyName, appBaseUrl }) => {
+  const secretKey = getStripeSecretKey();
+  const priceId = getStripePriceId();
+  if (!secretKey || !priceId) throw new Error('Stripe is not configured (missing STRIPE_SECRET_KEY or STRIPE_PRICE_ID).');
+
+  const params = new URLSearchParams({
+    'mode': 'subscription',
+    'payment_method_types[0]': 'card',
+    'line_items[0][price]': priceId,
+    'line_items[0][quantity]': '1',
+    'client_reference_id': professionalId,
+    'customer_email': email,
+    'success_url': `${appBaseUrl}/checkout-success.html?session_id={CHECKOUT_SESSION_ID}`,
+    'cancel_url': `${appBaseUrl}/checkout-cancel.html`,
+    'subscription_data[metadata][professionalId]': professionalId,
+    'subscription_data[metadata][companyName]': companyName,
+  });
+
+  const auth = Buffer.from(`${secretKey}:`).toString('base64');
+  const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: params.toString(),
+  });
+
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Stripe error ${res.status}: ${text}`);
+  const session = JSON.parse(text);
+  return session.url;
+};
+
 const getNotificationsFromEmail = () => String(process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectprice.app').trim();
 const getNotificationsReplyToEmail = () => String(process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'support@projectprice.app').trim();
 const getAdminPhone = () => normalizePhone(String(process.env.ADMIN_PHONE_NUMBER || '').trim());
@@ -512,9 +549,30 @@ exports.handler = async (event) => {
       specialtiesList,
     });
 
+    const appBaseUrl = getAppBaseUrl();
+    let checkoutUrl = null;
+    try {
+      checkoutUrl = await createStripeCheckoutSession({
+        professionalId,
+        email: String(email).trim().toLowerCase(),
+        companyName,
+        appBaseUrl,
+      });
+    } catch (stripeErr) {
+      console.error('Stripe checkout creation failed:', stripeErr.message);
+      // Non-fatal: account was created. Return error so user knows to contact support.
+      return jsonResponse(201, {
+        message: 'Account created but payment setup failed. Please contact support@projectprice.app to activate your subscription.',
+        userId,
+        stripeError: stripeErr.message,
+        notifications: notificationStatus,
+      });
+    }
+
     return jsonResponse(201, {
-      message: 'Registration submitted. Your account is pending verification. Once approved, sign in at https://projectpriceapp.com/contractor-portal.html to view accepted leads.',
+      message: 'Account created. Redirecting to payment...',
       userId,
+      checkoutUrl,
       notifications: notificationStatus,
     });
   } catch (err) {
