@@ -61,6 +61,12 @@
       font-weight: 700;
     }
     .side-nav a:hover { border-color: #0e3a78; color: #0e3a78; }
+    .side-nav a.active {
+      border-color: #0e3a78;
+      color: #0e3a78;
+      background: #eef5ff;
+      box-shadow: inset 0 0 0 1px rgba(14,58,120,.08);
+    }
     .sidebar-links {
       display: grid;
       gap: 6px;
@@ -278,6 +284,32 @@
       border-radius: 10px;
       background: #fff;
       overflow: auto;
+    }
+    .monetization-gap {
+      margin-top: 10px;
+      border: 1px solid #dbe7f8;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+      padding: 10px 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      align-items: center;
+    }
+    .monetization-gap strong {
+      color: #0e3a78;
+      font-size: 1rem;
+    }
+    .preset-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .preset-row button {
+      padding: 7px 10px;
+      font-size: .76rem;
+      border-radius: 999px;
     }
     .state-revenue-toolbar {
       display: flex;
@@ -675,6 +707,11 @@
         <button id="deleteSavedViewBtn" type="button">Delete Saved View</button>
         <button id="loadRoleViewBtn" type="button">Load Role Defaults</button>
       </div>
+      <div class="preset-row">
+        <button id="presetSalesBtn" class="secondary" type="button">Sales Preset</button>
+        <button id="presetComplianceBtn" class="secondary" type="button">Compliance Preset</button>
+        <button id="presetOpsTriageBtn" class="secondary" type="button">Ops Triage Preset</button>
+      </div>
       </div>
     </details>
 
@@ -780,6 +817,7 @@
 
     <section id="statsSection">
       <div class="stats" id="stats"></div>
+      <div id="monetizationGap" class="monetization-gap"></div>
       <div class="state-revenue-toolbar">
         <p class="meta" id="stateRevenueLabel">Revenue by state based on active memberships.</p>
         <div class="segmented-controls" aria-label="State revenue mode">
@@ -887,10 +925,15 @@
     const createBypassPaymentInput = document.getElementById('createBypassPayment');
     const createContractorBtn = document.getElementById('createContractorBtn');
     const statsEl = document.getElementById('stats');
+    const monetizationGapEl = document.getElementById('monetizationGap');
     const stateRevenueBreakoutEl = document.getElementById('stateRevenueBreakout');
     const stateRevenueLabelEl = document.getElementById('stateRevenueLabel');
     const stateRevenueActiveBtn = document.getElementById('stateRevenueActiveBtn');
     const stateRevenuePotentialBtn = document.getElementById('stateRevenuePotentialBtn');
+    const presetSalesBtn = document.getElementById('presetSalesBtn');
+    const presetComplianceBtn = document.getElementById('presetComplianceBtn');
+    const presetOpsTriageBtn = document.getElementById('presetOpsTriageBtn');
+    const sideNavLinks = Array.from(document.querySelectorAll('.side-nav a[href^="#"]'));
     const signupCityWeeklyEl = document.getElementById('signupCityWeekly');
     const homeownerSignupWeeklyEl = document.getElementById('homeownerSignupWeekly');
     const projectRequestWeeklyEl = document.getElementById('projectRequestWeekly');
@@ -1159,6 +1202,54 @@
       }
     };
 
+    const PRESET_VIEWS = {
+      sales: {
+        role: 'contractor_success',
+        region: 'all',
+        state: 'all',
+        contractorFilter: 'paused',
+        accountSearch: '',
+        contractorSearch: '',
+        homeownerSearch: '',
+        leadSearch: '',
+        activitySearch: '',
+        queueLeadSearch: '',
+        queueContractorSearch: '',
+        queueComplianceSearch: '',
+        activeQueue: 'pendingPros',
+      },
+      compliance: {
+        role: 'risk_compliance',
+        region: 'all',
+        state: 'all',
+        contractorFilter: 'denied',
+        accountSearch: '',
+        contractorSearch: '',
+        homeownerSearch: '',
+        leadSearch: '',
+        activitySearch: '',
+        queueLeadSearch: '',
+        queueContractorSearch: '',
+        queueComplianceSearch: '',
+        activeQueue: 'noMatchLeads',
+      },
+      opsTriage: {
+        role: 'ops',
+        region: 'all',
+        state: 'all',
+        contractorFilter: 'all',
+        accountSearch: '',
+        contractorSearch: '',
+        homeownerSearch: '',
+        leadSearch: '',
+        activitySearch: '',
+        queueLeadSearch: '',
+        queueContractorSearch: '',
+        queueComplianceSearch: '',
+        activeQueue: 'pendingLeads',
+      },
+    };
+
     const applyViewPayload = (view) => {
       if (!view || typeof view !== 'object') return;
       adminRoleInput.value = view.role || adminRoleInput.value || 'ops';
@@ -1189,6 +1280,10 @@
       }
     };
 
+    const setActiveSidebarLink = (hash) => {
+      sideNavLinks.forEach((link) => link.classList.toggle('active', link.getAttribute('href') === hash));
+    };
+
     const loadSavedView = () => {
       const key = String(savedViewSelectInput.value || '').trim();
       if (!key) return showMessage('Select a saved view first.', 'error');
@@ -1198,6 +1293,14 @@
       savedViewNameInput.value = key;
       applyViewPayload(view);
       showMessage(`Loaded saved view '${key}'.`, 'success');
+    };
+
+    const loadPresetView = (presetKey) => {
+      const view = PRESET_VIEWS[presetKey];
+      if (!view) return;
+      applyViewPayload(view);
+      const label = presetKey === 'sales' ? 'Sales' : presetKey === 'compliance' ? 'Compliance' : 'Ops Triage';
+      showMessage(`Loaded ${label} preset.`, 'success');
     };
 
     const deleteSavedView = () => {
@@ -1225,6 +1328,38 @@
       }
       renderAll();
       showMessage(`Loaded role defaults for ${role}.`, 'success');
+    };
+
+    const initSidebarSectionTracking = () => {
+      const sections = sideNavLinks
+        .map((link) => ({ link, section: document.querySelector(link.getAttribute('href')) }))
+        .filter((entry) => entry.section);
+      if (!sections.length) return;
+
+      sideNavLinks.forEach((link) => {
+        link.addEventListener('click', () => setActiveSidebarLink(link.getAttribute('href')));
+      });
+
+      if (!('IntersectionObserver' in window)) {
+        setActiveSidebarLink(sideNavLinks[0]?.getAttribute('href') || '#statsSection');
+        return;
+      }
+
+      const observer = new IntersectionObserver((entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (!visible) return;
+        const match = sections.find((entry) => entry.section === visible.target);
+        if (match) setActiveSidebarLink(match.link.getAttribute('href'));
+      }, {
+        root: null,
+        rootMargin: '-18% 0px -58% 0px',
+        threshold: [0.2, 0.45, 0.7],
+      });
+
+      sections.forEach((entry) => observer.observe(entry.section));
+      setActiveSidebarLink(sideNavLinks[0]?.getAttribute('href') || '#statsSection');
     };
 
     const selectedLeadIds = () => Array.from(document.querySelectorAll('.lead-select:checked')).map((el) => el.value);
@@ -1332,6 +1467,8 @@
       const signedMemberships = contractors.length;
       const activeMrr = activeMemberships * MEMBERSHIP_MRR;
       const potentialMrr = signedMemberships * MEMBERSHIP_MRR;
+      const monetizationGap = Math.max(0, potentialMrr - activeMrr);
+      const inactiveSigned = Math.max(0, signedMemberships - activeMemberships);
 
       const trendBadge = (curr, prev) => {
         const delta = curr - prev;
@@ -1357,6 +1494,14 @@
           ${trend || ''}
         </div>
       `).join('');
+
+      if (monetizationGapEl) {
+        monetizationGapEl.innerHTML = `
+          <span class="meta">Monetization Gap</span>
+          <strong>$${monetizationGap.toLocaleString()}/mo</strong>
+          <span class="meta">if ${inactiveSigned} signed memberships activate</span>
+        `;
+      }
 
       const byState = {};
       contractors.forEach((pro) => {
@@ -3052,6 +3197,9 @@
     loadSavedViewBtn.addEventListener('click', loadSavedView);
     deleteSavedViewBtn.addEventListener('click', deleteSavedView);
     loadRoleViewBtn.addEventListener('click', applyRoleDefaults);
+    presetSalesBtn?.addEventListener('click', () => loadPresetView('sales'));
+    presetComplianceBtn?.addEventListener('click', () => loadPresetView('compliance'));
+    presetOpsTriageBtn?.addEventListener('click', () => loadPresetView('opsTriage'));
     bulkAssignLeadsBtn.addEventListener('click', bulkAssignLeads);
     bulkRemoveLeadsBtn.addEventListener('click', bulkRemoveLeads);
     bulkApproveContractorsBtn.addEventListener('click', () => bulkContractorState(true));
@@ -3061,6 +3209,7 @@
 
     restoreSession();
     populateSavedViews();
+    initSidebarSectionTracking();
     loadData();
   </script>
 
