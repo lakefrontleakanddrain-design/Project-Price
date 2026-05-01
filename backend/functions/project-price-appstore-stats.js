@@ -178,27 +178,32 @@ exports.handler = async (event) => {
     const weeklyData = {};
     const errors = [];
 
-    for (const monday of mondays) {
-      try {
-        const tsv = await fetchWeeklyReport(jwt, vendorNumber, monday);
-        if (!tsv) continue;
+    // Fetch all weeks in parallel to stay well within the 10-second function timeout
+    const results = await Promise.allSettled(
+      mondays.map((monday) => fetchWeeklyReport(jwt, vendorNumber, monday).then((tsv) => ({ monday, tsv })))
+    );
 
-        const rows = parseTSV(tsv);
-        rows.forEach((row) => {
-          const productType = row.product_type_identifier || row.product_type || '';
-          if (!DOWNLOAD_TYPES.has(productType) && productType !== '1') return;
-
-          const units = parseInt(row.units || '0', 10);
-          if (!Number.isFinite(units) || units <= 0) return;
-
-          const country = row.country_code || 'XX';
-          if (!weeklyData[monday]) weeklyData[monday] = {};
-          weeklyData[monday][country] = (weeklyData[monday][country] || 0) + units;
-        });
-      } catch (err) {
-        errors.push({ week: monday, error: err.message });
-        console.error(`[appstore-stats] Failed for week ${monday}:`, err.message);
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        errors.push({ error: result.reason?.message || 'Unknown error' });
+        console.error('[appstore-stats] Week fetch failed:', result.reason?.message);
+        continue;
       }
+      const { monday, tsv } = result.value;
+      if (!tsv) continue;
+
+      const rows = parseTSV(tsv);
+      rows.forEach((row) => {
+        const productType = row.product_type_identifier || row.product_type || '';
+        if (!DOWNLOAD_TYPES.has(productType) && productType !== '1') return;
+
+        const units = parseInt(row.units || '0', 10);
+        if (!Number.isFinite(units) || units <= 0) return;
+
+        const country = row.country_code || 'XX';
+        if (!weeklyData[monday]) weeklyData[monday] = {};
+        weeklyData[monday][country] = (weeklyData[monday][country] || 0) + units;
+      });
     }
 
     // Aggregate totals by country across all weeks

@@ -3093,13 +3093,18 @@
     };
 
     const loadAppStoreStats = async () => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 18000); // 18s safety net
       try {
-        const res = await fetch('/.netlify/functions/project-price-appstore-stats', { headers: getHeaders() });
+        const res = await fetch('/.netlify/functions/project-price-appstore-stats', { headers: getHeaders(), signal: controller.signal });
+        clearTimeout(timeout);
         const data = await res.json();
         renderAppStoreStats(data);
       } catch (err) {
-        if (appStoreStatsEl) appStoreStatsEl.innerHTML = `<p class="meta" style="color:#ef4444;">Failed to load App Store data: ${escapeHtml(err.message)}</p>`;
-        if (appDownloadsWeeklyEl) appDownloadsWeeklyEl.innerHTML = '<p class="meta" style="color:#ef4444;">Failed to load.</p>';
+        clearTimeout(timeout);
+        const msg = err.name === 'AbortError' ? 'Timed out.' : escapeHtml(err.message);
+        if (appStoreStatsEl) appStoreStatsEl.innerHTML = `<p class="meta" style="color:#ef4444;">Failed to load App Store data: ${msg}</p>`;
+        if (appDownloadsWeeklyEl) appDownloadsWeeklyEl.innerHTML = `<p class="meta" style="color:#ef4444;">Failed to load.</p>`;
       }
     };
 
