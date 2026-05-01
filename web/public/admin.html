@@ -8,7 +8,23 @@
   <link rel="apple-touch-icon" href="/logo.jpg" />
   <title>ProjectPrice™ - Admin Console</title>
   <style>
-    :root { --navy: #0e3a78; --emerald: #16a36a; --bg: #f3f8ff; }
+    :root {
+      --navy: #0e3a78;
+      --emerald: #16a36a;
+      --bg: #f3f8ff;
+      --tone-positive-bg: #e6f7ef;
+      --tone-positive-fg: #0d5c35;
+      --tone-positive-border: #a3dfc0;
+      --tone-warning-bg: #fff7e8;
+      --tone-warning-fg: #8a5800;
+      --tone-warning-border: #ffd591;
+      --tone-danger-bg: #fdecea;
+      --tone-danger-fg: #7a1a14;
+      --tone-danger-border: #f5b7b1;
+      --tone-neutral-bg: #eef5ff;
+      --tone-neutral-fg: #446684;
+      --tone-neutral-border: #d5e3f8;
+    }
     * { box-sizing: border-box; }
     body {
       margin: 0;
@@ -219,12 +235,16 @@
       font-weight: 700;
       padding: 2px 7px;
       border-radius: 999px;
-      border: 1px solid #d5e3f8;
+      border: 1px solid var(--tone-neutral-border);
       background: #fff;
     }
-    .stat .trend.up { color: #0d5c35; border-color: #a3dfc0; background: #e6f7ef; }
-    .stat .trend.down { color: #7a1a14; border-color: #f5b7b1; background: #fdecea; }
-    .stat .trend.flat { color: #446684; border-color: #d5e3f8; background: #eef5ff; }
+    .stat .trend.positive,
+    .stat .trend.up { color: var(--tone-positive-fg); border-color: var(--tone-positive-border); background: var(--tone-positive-bg); }
+    .stat .trend.warning { color: var(--tone-warning-fg); border-color: var(--tone-warning-border); background: var(--tone-warning-bg); }
+    .stat .trend.danger,
+    .stat .trend.down { color: var(--tone-danger-fg); border-color: var(--tone-danger-border); background: var(--tone-danger-bg); }
+    .stat .trend.neutral,
+    .stat .trend.flat { color: var(--tone-neutral-fg); border-color: var(--tone-neutral-border); background: var(--tone-neutral-bg); }
     .stat .sparkline {
       display: block;
       width: 100%;
@@ -598,10 +618,18 @@
       text-transform: uppercase;
       letter-spacing: .2px;
     }
-    .tag.approved, .tag.claimed { background: #e6f7ef; color: #0d5c35; border: 1px solid #a3dfc0; }
-    .tag.pending { background: #fff7e8; color: #8a5800; border: 1px solid #ffd591; }
-    .tag.expired { background: #f5f5f5; color: #666; border: 1px solid #d9d9d9; }
-    .tag.expiring { background: #fff7e8; color: #8a5800; border: 1px solid #ffd591; }
+    .tag.positive,
+    .tag.approved,
+    .tag.claimed { background: var(--tone-positive-bg); color: var(--tone-positive-fg); border: 1px solid var(--tone-positive-border); }
+    .tag.warning,
+    .tag.pending,
+    .tag.expiring,
+    .tag.warn { background: var(--tone-warning-bg); color: var(--tone-warning-fg); border: 1px solid var(--tone-warning-border); }
+    .tag.danger,
+    .tag.denied,
+    .tag.breach { background: var(--tone-danger-bg); color: var(--tone-danger-fg); border: 1px solid var(--tone-danger-border); }
+    .tag.neutral,
+    .tag.expired { background: var(--tone-neutral-bg); color: var(--tone-neutral-fg); border: 1px solid var(--tone-neutral-border); }
     .compliance-doc-row { border: 1px solid #e0eaf8; border-radius: 8px; padding: 10px; margin-bottom: 8px; background: #f8fbff; font-size: .83rem; }
     .compliance-doc-row.expired-row { border-color: #f5b7b1; background: #fff5f5; }
     .compliance-doc-row.expiring-row { border-color: #ffd591; background: #fffbf0; }
@@ -609,9 +637,6 @@
     .compliance-doc-row h4 { margin: 0 0 6px; font-size: .88rem; color: #0e3a78; }
     .compliance-doc-row p { margin: 0 0 3px; color: #4a6a8a; }
     .compliance-panel { display: none; margin-top: 10px; border-top: 1px solid #e0eaf8; padding-top: 10px; }
-    .tag.denied { background: #fdecea; color: #7a1a14; border: 1px solid #f5b7b1; }
-    .tag.warn { background: #fff7e8; color: #8a5800; border: 1px solid #ffd591; }
-    .tag.breach { background: #fdecea; color: #7a1a14; border: 1px solid #f5b7b1; }
     .meta { margin: 0; color: #4a6a8a; font-size: .82rem; }
     .list-summary {
       position: sticky;
@@ -703,10 +728,29 @@
       color: #0e3a78;
       margin-bottom: 4px;
     }
-    .queue-card.active {
-      border-color: #0e3a78;
-      box-shadow: 0 0 0 2px rgba(14, 58, 120, 0.08);
-      background: #f6faff;
+    .queue-card[data-tone="neutral"] strong { color: var(--tone-neutral-fg); }
+    .queue-card[data-tone="warning"] strong { color: var(--tone-warning-fg); }
+    .queue-card[data-tone="danger"] strong { color: var(--tone-danger-fg); }
+    .queue-card[data-tone="positive"] strong { color: var(--tone-positive-fg); }
+    .queue-card.active[data-tone="neutral"] {
+      border-color: var(--tone-neutral-border);
+      box-shadow: 0 0 0 2px rgba(68, 102, 132, 0.12);
+      background: var(--tone-neutral-bg);
+    }
+    .queue-card.active[data-tone="warning"] {
+      border-color: var(--tone-warning-border);
+      box-shadow: 0 0 0 2px rgba(255, 213, 145, 0.28);
+      background: var(--tone-warning-bg);
+    }
+    .queue-card.active[data-tone="danger"] {
+      border-color: var(--tone-danger-border);
+      box-shadow: 0 0 0 2px rgba(245, 183, 177, 0.28);
+      background: var(--tone-danger-bg);
+    }
+    .queue-card.active[data-tone="positive"] {
+      border-color: var(--tone-positive-border);
+      box-shadow: 0 0 0 2px rgba(163, 223, 192, 0.28);
+      background: var(--tone-positive-bg);
     }
     .queue-grid {
       display: grid;
@@ -1354,7 +1398,9 @@
       </section>
     `;
 
-    const miniTag = (text) => `<span class="tag pending mini-tag">${escapeHtml(text)}</span>`;
+    const renderTag = (label, tone = 'neutral') => `<span class="tag ${tone}">${escapeHtml(label)}</span>`;
+    const renderTrend = (label, tone = 'neutral') => `<span class="trend ${tone}">${escapeHtml(label)}</span>`;
+    const miniTag = (text, tone = 'neutral') => `<span class="tag ${tone} mini-tag">${escapeHtml(text)}</span>`;
 
     const buildContractorDrawer = (contractor) => {
       const specialties = Array.isArray(contractor.specialties) ? contractor.specialties : [];
@@ -1647,14 +1693,14 @@
 
     const leadSlaTag = (lead) => {
       const createdTs = new Date(lead.createdAt || lead.created_at || 0).getTime();
-      if (!Number.isFinite(createdTs)) return '<span class="tag expired">SLA Unknown</span>';
+      if (!Number.isFinite(createdTs)) return renderTag('SLA Unknown', 'neutral');
       const mins = Math.max(0, Math.round((Date.now() - createdTs) / 60000));
       const status = String(lead.status || '').toLowerCase();
-      if (status === 'claimed') return `<span class="tag approved">Claimed ${mins}m</span>`;
-      if (status === 'expired') return `<span class="tag expired">Expired ${mins}m</span>`;
-      if (mins <= 10) return `<span class="tag approved">On Time ${mins}m</span>`;
-      if (mins <= 30) return `<span class="tag warn">Watch ${mins}m</span>`;
-      return `<span class="tag breach">Breach ${mins}m</span>`;
+      if (status === 'claimed') return renderTag(`Claimed ${mins}m`, 'positive');
+      if (status === 'expired') return renderTag(`Expired ${mins}m`, 'danger');
+      if (mins <= 10) return renderTag(`On Time ${mins}m`, 'positive');
+      if (mins <= 30) return renderTag(`Watch ${mins}m`, 'warning');
+      return renderTag(`Breach ${mins}m`, 'danger');
     };
 
     const saveCurrentView = () => {
@@ -1990,17 +2036,17 @@
 
       const trendBadge = (curr, prev) => {
         const delta = curr - prev;
-        if (delta > 0) return `<span class="trend up">+${delta} vs prev 7d</span>`;
-        if (delta < 0) return `<span class="trend down">${delta} vs prev 7d</span>`;
-        return '<span class="trend flat">No change vs prev 7d</span>';
+        if (delta > 0) return renderTrend(`+${delta} vs prev 7d`, 'positive');
+        if (delta < 0) return renderTrend(`${delta} vs prev 7d`, 'danger');
+        return renderTrend('No change vs prev 7d', 'neutral');
       };
 
       const cards = [
         ['New Leads (7d)', leadCurr, trendBadge(leadCurr, leadPrev), leadSeries],
         ['New Customers (7d)', homeownerCurr, trendBadge(homeownerCurr, homeownerPrev), homeownerSeries],
         ['New Pros (7d)', contractorCurr, trendBadge(contractorCurr, contractorPrev), contractorSeries],
-        ['Expected Active MRR', `$${activeMrr.toLocaleString()}`, `<span class="trend flat">${activeMemberships} active memberships</span>`, activeMrrSeries],
-        ['Potential Signed MRR', `$${potentialMrr.toLocaleString()}`, `<span class="trend flat">${signedMemberships} signed memberships</span>`, potentialMrrSeries],
+        ['Expected Active MRR', `$${activeMrr.toLocaleString()}`, renderTrend(`${activeMemberships} active memberships`, 'neutral'), activeMrrSeries],
+        ['Potential Signed MRR', `$${potentialMrr.toLocaleString()}`, renderTrend(`${signedMemberships} signed memberships`, 'neutral'), potentialMrrSeries],
         ['Active Contractors', c.activeContractors || 0, '', contractorSeries],
         ['Pending Leads', c.pendingLeads || 0, '', pendingLeadSeries],
         ['Claimed Leads', c.claimedLeads || 0, '', claimedLeadSeries],
@@ -2208,9 +2254,9 @@
 
     const contractorStatusTag = (contractor) => {
       const state = contractorState(contractor);
-      if (state === 'active') return '<span class="tag approved">Active</span>';
-      if (state === 'denied') return '<span class="tag denied">Denied</span>';
-      return '<span class="tag pending">Paused</span>';
+      if (state === 'active') return renderTag('Active', 'positive');
+      if (state === 'denied') return renderTag('Denied', 'danger');
+      return renderTag('Paused', 'neutral');
     };
 
     const queueCounts = () => {
@@ -2243,6 +2289,12 @@
       };
     };
 
+    const queueCardTone = (key) => {
+      if (key === 'staleLeads' || key === 'noMatchLeads') return 'danger';
+      if (key === 'pendingLeads' || key === 'pendingPros' || key === 'incompletePros') return 'warning';
+      return 'neutral';
+    };
+
     const renderQueueCards = () => {
       const counts = queueCounts();
       const cards = [
@@ -2255,7 +2307,7 @@
       ];
 
       queueCardsEl.innerHTML = cards.map((card) => `
-        <button class="queue-card ${activeQueue === card.key ? 'active' : ''}" type="button" data-queue="${card.key}">
+        <button class="queue-card ${activeQueue === card.key ? 'active' : ''}" type="button" data-queue="${card.key}" data-tone="${queueCardTone(card.key)}">
           <strong>${card.value}</strong>
           <span>${card.label}</span>
         </button>
@@ -2275,8 +2327,8 @@
 
     const leadStatusTag = (status) => {
       const s = String(status || 'pending').toLowerCase();
-      const cls = s === 'claimed' ? 'claimed' : (s === 'expired' ? 'expired' : 'pending');
-      return `<span class="tag ${cls}">${s}</span>`;
+      const tone = s === 'claimed' ? 'positive' : (s === 'expired' ? 'danger' : 'warning');
+      return renderTag(s, tone);
     };
 
     const denyReasonOptions = [
@@ -2701,7 +2753,7 @@
 
       const logsHtml = logsFiltered.map((log) => `
         <article class="item">
-          <h3><span>${displayValue(log.action)}</span><span class="tag pending">${fmtDate(log.created_at)}</span></h3>
+          <h3><span>${displayValue(log.action)}</span>${renderTag(fmtDate(log.created_at), 'neutral')}</h3>
           <p class="meta">${displayValue(log.message)}</p>
         </article>
       `).join('');
@@ -2889,7 +2941,7 @@
           <article class="activity-item">
             <h3>
               <span>${action}</span>
-              <span class="tag pending">${when}</span>
+              ${renderTag(when, 'neutral')}
             </h3>
             <p class="meta"><strong>Actor:</strong> ${actor}</p>
             <p class="meta"><strong>Target:</strong> ${targetType} ${targetId}</p>
