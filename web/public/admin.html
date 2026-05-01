@@ -234,6 +234,13 @@
       color: #173a62;
       font-weight: 700;
     }
+    .sortable-th {
+      cursor: pointer;
+      user-select: none;
+    }
+    .sortable-th:hover {
+      background: #e9f1ff;
+    }
     .directory-table tbody tr:nth-child(even) {
       background: #fbfdff;
     }
@@ -265,6 +272,13 @@
     .row-actions > summary::-webkit-details-marker { display: none; }
     .row-actions[open] > summary { margin-bottom: 6px; }
     .row-actions .actions { margin-top: 4px; }
+    .state-revenue-wrap {
+      margin-top: 10px;
+      border: 1px solid #d5e3f8;
+      border-radius: 10px;
+      background: #fff;
+      overflow: auto;
+    }
     .grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -738,6 +752,7 @@
 
     <section id="statsSection">
       <div class="stats" id="stats"></div>
+      <div id="stateRevenueBreakout" class="state-revenue-wrap"></div>
     </section>
 
     <!-- ===== MARKET PULSE ===== -->
@@ -837,6 +852,7 @@
     const createBypassPaymentInput = document.getElementById('createBypassPayment');
     const createContractorBtn = document.getElementById('createContractorBtn');
     const statsEl = document.getElementById('stats');
+    const stateRevenueBreakoutEl = document.getElementById('stateRevenueBreakout');
     const signupCityWeeklyEl = document.getElementById('signupCityWeekly');
     const homeownerSignupWeeklyEl = document.getElementById('homeownerSignupWeekly');
     const projectRequestWeeklyEl = document.getElementById('projectRequestWeekly');
@@ -875,8 +891,14 @@
 
     let state = { contractors: [], homeowners: [], leads: [], activityLogs: [], signupCityWeekly: [], homeownerSignupWeekly: [], projectRequestWeekly: [], counts: {} };
     let activeQueue = 'all';
+    const MEMBERSHIP_MRR = 399;
     const PAGE_SIZE = 8;
     const paginationState = { contractors: 1, homeowners: 1, leads: 1 };
+    const sortState = {
+      contractors: { field: 'created', dir: 'desc' },
+      homeowners: { field: 'created', dir: 'desc' },
+      leads: { field: 'created', dir: 'desc' },
+    };
     const ADMIN_SESSION_KEY = 'projectprice_admin_session';
     const ADMIN_VIEWS_KEY = 'projectprice_admin_saved_views_v1';
 
@@ -969,6 +991,40 @@
           <button type="button" class="secondary" ${page >= totalPages ? 'disabled' : ''} onclick="${renderFnName}ChangePage(1)">Next</button>
         </div>
       `;
+    };
+
+    const sortIndicator = (table, field) => {
+      const current = sortState[table];
+      if (!current || current.field !== field) return '';
+      return current.dir === 'asc' ? ' ↑' : ' ↓';
+    };
+
+    const sortRows = (rows, table, accessors) => {
+      const current = sortState[table] || {};
+      const accessor = accessors[current.field];
+      if (!accessor) return rows;
+      const dir = current.dir === 'asc' ? 1 : -1;
+      return [...rows].sort((a, b) => {
+        const av = accessor(a);
+        const bv = accessor(b);
+        if (typeof av === 'number' || typeof bv === 'number') {
+          const na = Number(av) || 0;
+          const nb = Number(bv) || 0;
+          return (na - nb) * dir;
+        }
+        return String(av || '').localeCompare(String(bv || '')) * dir;
+      });
+    };
+
+    window.toggleTableSort = (table, field) => {
+      const current = sortState[table] || { field: 'created', dir: 'desc' };
+      sortState[table] = current.field === field
+        ? { field, dir: current.dir === 'asc' ? 'desc' : 'asc' }
+        : { field, dir: 'asc' };
+      resetPage(table);
+      if (table === 'contractors') renderContractors();
+      if (table === 'homeowners') renderHomeowners();
+      if (table === 'leads') renderLeads();
     };
 
     const zipToRegion = (zip) => {
@@ -1233,6 +1289,11 @@
       const contractorCurr = contractors.filter(inCurr7).length;
       const contractorPrev = contractors.filter(inPrev7).length;
 
+      const activeMemberships = contractors.filter((pro) => contractorState(pro) === 'active').length;
+      const signedMemberships = contractors.length;
+      const activeMrr = activeMemberships * MEMBERSHIP_MRR;
+      const potentialMrr = signedMemberships * MEMBERSHIP_MRR;
+
       const trendBadge = (curr, prev) => {
         const delta = curr - prev;
         if (delta > 0) return `<span class="trend up">+${delta} vs prev 7d</span>`;
@@ -1244,6 +1305,8 @@
         ['New Leads (7d)', leadCurr, trendBadge(leadCurr, leadPrev)],
         ['New Customers (7d)', homeownerCurr, trendBadge(homeownerCurr, homeownerPrev)],
         ['New Pros (7d)', contractorCurr, trendBadge(contractorCurr, contractorPrev)],
+        ['Expected Active MRR', `$${activeMrr.toLocaleString()}`, `<span class="trend flat">${activeMemberships} active memberships</span>`],
+        ['Potential Signed MRR', `$${potentialMrr.toLocaleString()}`, `<span class="trend flat">${signedMemberships} signed memberships</span>`],
         ['Active Contractors', c.activeContractors || 0, ''],
         ['Pending Leads', c.pendingLeads || 0, ''],
         ['Claimed Leads', c.claimedLeads || 0, ''],
@@ -1255,6 +1318,42 @@
           ${trend || ''}
         </div>
       `).join('');
+
+      const byState = {};
+      contractors.forEach((pro) => {
+        if (contractorState(pro) !== 'active') return;
+        const stateCode = detectStateCode(pro.state, pro.service_state) || 'Unknown';
+        byState[stateCode] = (byState[stateCode] || 0) + 1;
+      });
+      const rows = Object.entries(byState)
+        .map(([stateCode, count]) => ({ stateCode, count, mrr: count * MEMBERSHIP_MRR }))
+        .sort((a, b) => b.mrr - a.mrr)
+        .slice(0, 12);
+
+      if (!rows.length) {
+        stateRevenueBreakoutEl.innerHTML = '<p class="meta" style="padding:10px;">No active memberships yet for state breakout.</p>';
+      } else {
+        stateRevenueBreakoutEl.innerHTML = `
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>State</th>
+                <th>Active Memberships</th>
+                <th>Expected MRR</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map((r) => `
+                <tr>
+                  <td>${escapeHtml(r.stateCode)}</td>
+                  <td>${r.count}</td>
+                  <td><strong>$${r.mrr.toLocaleString()}</strong></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
     };
 
     // ---- Shared weekly-breakout renderer -----------------------------------------------
@@ -1468,7 +1567,14 @@
         return;
       }
 
-      const pageInfo = paginateRows(filteredContractors, 'contractors');
+      const sortedContractors = sortRows(filteredContractors, 'contractors', {
+        name: (c) => String(c.company_name || ''),
+        status: (c) => String(contractorState(c) || ''),
+        zip: (c) => String((c.service_zip_codes || [])[0] || ''),
+        created: (c) => new Date(c.created_at || 0).getTime() || 0,
+      });
+
+      const pageInfo = paginateRows(sortedContractors, 'contractors');
 
       contractorsListEl.innerHTML = `
         <div class="list-summary">Showing ${pageInfo.startIndex}-${pageInfo.endIndex} of ${pageInfo.total} contractors</div>
@@ -1477,11 +1583,12 @@
             <thead>
               <tr>
                 <th>Sel</th>
-                <th>Company</th>
-                <th>Status</th>
+                <th class="sortable-th" onclick="toggleTableSort('contractors','name')">Company${sortIndicator('contractors', 'name')}</th>
+                <th class="sortable-th" onclick="toggleTableSort('contractors','status')">Status${sortIndicator('contractors', 'status')}</th>
                 <th>Contact</th>
-                <th>Service</th>
+                <th class="sortable-th" onclick="toggleTableSort('contractors','zip')">Service${sortIndicator('contractors', 'zip')}</th>
                 <th>Deny Reason</th>
+                <th class="sortable-th" onclick="toggleTableSort('contractors','created')">Created${sortIndicator('contractors', 'created')}</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -1504,6 +1611,7 @@
                     <div class="cell-wrap">Radius: ${displayValue(kmToMiles(c.service_radius_km))} mi</div>
                   </td>
                   <td><div class="cell-wrap">${displayValue(c.denied_reason)}</div></td>
+                  <td><div class="cell-wrap">${fmtDate(c.created_at)}</div></td>
                   <td>
                     <details class="row-actions">
                       <summary title="Row actions">⋯</summary>
@@ -1574,7 +1682,13 @@
         return;
       }
 
-      const pageInfo = paginateRows(filteredHomeowners, 'homeowners');
+      const sortedHomeowners = sortRows(filteredHomeowners, 'homeowners', {
+        name: (h) => String(h.full_name || ''),
+        zip: (h) => String(h.zip_code || ''),
+        created: (h) => new Date(h.created_at || 0).getTime() || 0,
+      });
+
+      const pageInfo = paginateRows(sortedHomeowners, 'homeowners');
 
       homeownersListEl.innerHTML = `
         <div class="list-summary">Showing ${pageInfo.startIndex}-${pageInfo.endIndex} of ${pageInfo.total} homeowners</div>
@@ -1582,11 +1696,11 @@
           <table class="directory-table">
             <thead>
               <tr>
-                <th>Name</th>
+                <th class="sortable-th" onclick="toggleTableSort('homeowners','name')">Name${sortIndicator('homeowners', 'name')}</th>
                 <th>Contact</th>
-                <th>ZIP</th>
+                <th class="sortable-th" onclick="toggleTableSort('homeowners','zip')">ZIP${sortIndicator('homeowners', 'zip')}</th>
                 <th>Project / Lead</th>
-                <th>Latest Activity</th>
+                <th class="sortable-th" onclick="toggleTableSort('homeowners','created')">Created${sortIndicator('homeowners', 'created')}</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -1607,7 +1721,7 @@
                     <div class="cell-wrap">Leads: ${displayValue(homeowner.leadCount, '0')}</div>
                     <div class="cell-wrap">${displayValue(homeowner.latestProjectName)}${homeowner.latestProjectType ? ` (${displayValue(homeowner.latestProjectType)})` : ''}</div>
                   </td>
-                  <td><div class="cell-wrap">${fmtDate(homeowner.latestProjectAt || homeowner.latestLeadAt || homeowner.created_at)}</div></td>
+                  <td><div class="cell-wrap">${fmtDate(homeowner.created_at)}</div></td>
                   <td>
                     <details class="row-actions">
                       <summary title="Row actions">⋯</summary>
@@ -1826,7 +1940,14 @@
         return;
       }
 
-      const pageInfo = paginateRows(filteredLeads, 'leads');
+      const sortedLeads = sortRows(filteredLeads, 'leads', {
+        name: (l) => String(l.homeowner?.full_name || l.specialty || ''),
+        status: (l) => String(l.status || ''),
+        zip: (l) => String(l.zipCode || ''),
+        created: (l) => new Date(l.createdAt || l.created_at || 0).getTime() || 0,
+      });
+
+      const pageInfo = paginateRows(sortedLeads, 'leads');
 
       const options = contractorOptions();
 
@@ -1837,11 +1958,12 @@
             <thead>
               <tr>
                 <th>Sel</th>
-                <th>Lead</th>
-                <th>Status</th>
+                <th class="sortable-th" onclick="toggleTableSort('leads','name')">Lead${sortIndicator('leads', 'name')}</th>
+                <th class="sortable-th" onclick="toggleTableSort('leads','status')">Status${sortIndicator('leads', 'status')}</th>
                 <th>Homeowner</th>
-                <th>Project</th>
+                <th class="sortable-th" onclick="toggleTableSort('leads','zip')">ZIP / Project${sortIndicator('leads', 'zip')}</th>
                 <th>Workflow</th>
+                <th class="sortable-th" onclick="toggleTableSort('leads','created')">Created${sortIndicator('leads', 'created')}</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -1867,6 +1989,7 @@
                     <div class="cell-wrap">Flow: ${displayValue(lead.workflow?.status || (lead.status === 'claimed' ? 'claimed' : 'N/A'))}</div>
                     <div class="cell-wrap">Audit: ${lead.manualAssignment ? `Assigned by ${displayValue(lead.manualAssignment.by)} at ${fmtDate(lead.manualAssignment.at)}` : 'None'}</div>
                   </td>
+                  <td><div class="cell-wrap">${fmtDate(lead.createdAt)}</div></td>
                   <td>
                     <details class="row-actions">
                       <summary title="Row actions">⋯</summary>
