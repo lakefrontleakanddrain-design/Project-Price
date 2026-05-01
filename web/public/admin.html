@@ -213,11 +213,12 @@
     }
     .panel h2 { margin: 0 0 10px; color: var(--navy); font-size: 1.05rem; }
     .list { display: grid; gap: 8px; max-height: 520px; overflow: auto; }
+    .list { gap: 6px; max-height: 560px; }
     .item {
       border: 1px solid #d5e3f8;
       border-radius: 10px;
       background: #fff;
-      padding: 10px;
+      padding: 8px;
     }
     .item h3 {
       margin: 0 0 6px;
@@ -251,6 +252,18 @@
     .tag.warn { background: #fff7e8; color: #8a5800; border: 1px solid #ffd591; }
     .tag.breach { background: #fdecea; color: #7a1a14; border: 1px solid #f5b7b1; }
     .meta { margin: 0; color: #4a6a8a; font-size: .82rem; }
+    .list-summary {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #f6faff;
+      border: 1px solid #d8e6fb;
+      border-radius: 8px;
+      padding: 6px 8px;
+      margin-bottom: 4px;
+      font-size: .78rem;
+      color: #3f6183;
+    }
     .actions {
       margin-top: 8px;
       display: flex;
@@ -258,6 +271,22 @@
       flex-wrap: wrap;
       align-items: center;
     }
+    .action-drawer {
+      margin-top: 8px;
+      border: 1px dashed #c8dbf6;
+      border-radius: 8px;
+      background: #f9fcff;
+      padding: 6px 8px;
+    }
+    .action-drawer > summary {
+      cursor: pointer;
+      color: #234569;
+      font-size: .8rem;
+      font-weight: 700;
+      list-style: none;
+    }
+    .action-drawer > summary::-webkit-details-marker { display: none; }
+    .action-drawer[open] > summary { margin-bottom: 6px; }
     .actions select { min-width: 190px; }
     .actions input[type=text] { min-width: 220px; }
     .actions input[readonly] {
@@ -364,6 +393,24 @@
     .bulk-bar label {
       font-size: .78rem;
       margin-bottom: 4px;
+    }
+    .pager {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .pager button {
+      padding: 5px 9px;
+      border-radius: 8px;
+      font-size: .76rem;
+      min-width: 34px;
+    }
+    .pager .meta {
+      font-size: .76rem;
+      color: #4a6a8a;
+      margin-right: 4px;
     }
     .advanced-panel {
       min-height: 0;
@@ -755,6 +802,8 @@
 
     let state = { contractors: [], homeowners: [], leads: [], activityLogs: [], signupCityWeekly: [], homeownerSignupWeekly: [], projectRequestWeekly: [], counts: {} };
     let activeQueue = 'all';
+    const PAGE_SIZE = 8;
+    const paginationState = { contractors: 1, homeowners: 1, leads: 1 };
     const ADMIN_SESSION_KEY = 'projectprice_admin_session';
     const ADMIN_VIEWS_KEY = 'projectprice_admin_saved_views_v1';
 
@@ -814,6 +863,39 @@
       const search = String(input?.value || '').trim().toLowerCase();
       if (!search) return true;
       return parts.some((part) => String(part || '').toLowerCase().includes(search));
+    };
+
+    const resetPage = (key) => {
+      paginationState[key] = 1;
+    };
+
+    const paginateRows = (rows, key) => {
+      const total = rows.length;
+      const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      const safePage = Math.min(Math.max(1, paginationState[key] || 1), totalPages);
+      paginationState[key] = safePage;
+      const start = (safePage - 1) * PAGE_SIZE;
+      const pageRows = rows.slice(start, start + PAGE_SIZE);
+      return {
+        pageRows,
+        total,
+        totalPages,
+        page: safePage,
+        startIndex: total ? start + 1 : 0,
+        endIndex: Math.min(start + PAGE_SIZE, total),
+      };
+    };
+
+    const renderPager = (key, pageInfo, renderFnName) => {
+      const { total, totalPages, page } = pageInfo;
+      if (total <= PAGE_SIZE) return '';
+      return `
+        <div class="pager">
+          <span class="meta">Page ${page} / ${totalPages}</span>
+          <button type="button" class="secondary" ${page <= 1 ? 'disabled' : ''} onclick="${renderFnName}ChangePage(-1)">Prev</button>
+          <button type="button" class="secondary" ${page >= totalPages ? 'disabled' : ''} onclick="${renderFnName}ChangePage(1)">Next</button>
+        </div>
+      `;
     };
 
     const zipToRegion = (zip) => {
@@ -1274,7 +1356,11 @@
         return;
       }
 
-      contractorsListEl.innerHTML = filteredContractors.map((c) => `
+      const pageInfo = paginateRows(filteredContractors, 'contractors');
+
+      contractorsListEl.innerHTML = `
+        <div class="list-summary">Showing ${pageInfo.startIndex}-${pageInfo.endIndex} of ${pageInfo.total} contractors</div>
+      ` + pageInfo.pageRows.map((c) => `
         <article class="item">
           <h3>
             <span>${displayValue(c.company_name, 'Unnamed Contractor')}</span>
@@ -1288,42 +1374,45 @@
           <p class="meta">Specialties: ${displayValue((c.specialties || []).join(', '))}</p>
           <p class="meta">Service Center ZIP: ${displayValue((c.service_zip_codes || [])[0])}</p>
           <p class="meta">Service Radius (miles): ${displayValue(kmToMiles(c.service_radius_km))}</p>
-          <div class="actions">
-            <input id="contractor-company-${c.id}" type="text" placeholder="Company name" value="${escapeHtml(c.company_name || '')}" />
-            <input id="contractor-email-${c.id}" type="text" placeholder="Login email" value="${escapeHtml(c.email || '')}" />
-            <input id="contractor-phone-${c.id}" type="text" placeholder="Contact phone" value="${escapeHtml(c.contact_phone || c.account_phone || '')}" />
-            <input id="contractor-specialties-${c.id}" type="text" placeholder="Specialties (comma separated)" value="${escapeHtml((c.specialties || []).join(', '))}" />
-            <input id="contractor-service-zip-${c.id}" type="text" placeholder="Center ZIP" value="${escapeHtml((c.service_zip_codes || [])[0] || '')}" />
-            <input id="contractor-service-radius-${c.id}" type="number" min="1" step="1" placeholder="Radius miles" value="${escapeHtml(kmToMiles(c.service_radius_km) || '')}" />
-            <button class="small secondary" onclick="updateContractorProfile('${c.id}')">Save Account</button>
-            <button class="small" onclick="resetContractorPassword('${c.id}')">Temp Password</button>
-            <button class="small secondary" onclick="generateContractorRecovery('${c.id}')">Recovery Link</button>
-            <button class="small" onclick="emailContractorRecovery('${c.id}')">Prepare Email</button>
-            <select id="contractor-reinvite-template-${c.id}">
-              <option value="standard" selected>Standard Invite</option>
-              <option value="founding">Founding Pro</option>
-            </select>
-            <button class="small secondary" onclick="reinviteContractor('${c.id}')">Reinvite</button>
-          </div>
-          <div class="actions">
-            <input id="contractor-recovery-link-${c.id}" type="text" placeholder="Recovery link will appear here" readonly />
-          </div>
-          <div class="actions">
-            <button class="small" onclick="approveContractor('${c.id}', true)">Approve</button>
-            <button class="small secondary" onclick="pauseContractor('${c.id}')">Pause</button>
-            <select id="deny-reason-${c.id}" onchange="toggleDenyOther('${c.id}')">
-              ${renderDenyReasonOptions()}
-            </select>
-            <input id="deny-reason-other-${c.id}" type="text" placeholder="Enter custom deny reason" style="display:none;" />
-            <button class="small" onclick="denyContractor('${c.id}')">Deny</button>
-            <button class="small" style="background: #c41e3a;" onclick="deleteContractor('${c.id}')">Delete Contractor</button>
-            <button class="small secondary" onclick="viewComplianceDocs('${c.id}', '${escapeHtml(c.company_name || 'Contractor')}')">View Compliance Docs</button>
-          </div>
-          <div class="compliance-panel" id="compliance-panel-${c.id}">
-            <div id="compliance-docs-${c.id}"><p class="meta">Loading...</p></div>
-          </div>
+          <details class="action-drawer">
+            <summary>Actions</summary>
+            <div class="actions">
+              <input id="contractor-company-${c.id}" type="text" placeholder="Company name" value="${escapeHtml(c.company_name || '')}" />
+              <input id="contractor-email-${c.id}" type="text" placeholder="Login email" value="${escapeHtml(c.email || '')}" />
+              <input id="contractor-phone-${c.id}" type="text" placeholder="Contact phone" value="${escapeHtml(c.contact_phone || c.account_phone || '')}" />
+              <input id="contractor-specialties-${c.id}" type="text" placeholder="Specialties (comma separated)" value="${escapeHtml((c.specialties || []).join(', '))}" />
+              <input id="contractor-service-zip-${c.id}" type="text" placeholder="Center ZIP" value="${escapeHtml((c.service_zip_codes || [])[0] || '')}" />
+              <input id="contractor-service-radius-${c.id}" type="number" min="1" step="1" placeholder="Radius miles" value="${escapeHtml(kmToMiles(c.service_radius_km) || '')}" />
+              <button class="small secondary" onclick="updateContractorProfile('${c.id}')">Save Account</button>
+              <button class="small" onclick="resetContractorPassword('${c.id}')">Temp Password</button>
+              <button class="small secondary" onclick="generateContractorRecovery('${c.id}')">Recovery Link</button>
+              <button class="small" onclick="emailContractorRecovery('${c.id}')">Prepare Email</button>
+              <select id="contractor-reinvite-template-${c.id}">
+                <option value="standard" selected>Standard Invite</option>
+                <option value="founding">Founding Pro</option>
+              </select>
+              <button class="small secondary" onclick="reinviteContractor('${c.id}')">Reinvite</button>
+            </div>
+            <div class="actions">
+              <input id="contractor-recovery-link-${c.id}" type="text" placeholder="Recovery link will appear here" readonly />
+            </div>
+            <div class="actions">
+              <button class="small" onclick="approveContractor('${c.id}', true)">Approve</button>
+              <button class="small secondary" onclick="pauseContractor('${c.id}')">Pause</button>
+              <select id="deny-reason-${c.id}" onchange="toggleDenyOther('${c.id}')">
+                ${renderDenyReasonOptions()}
+              </select>
+              <input id="deny-reason-other-${c.id}" type="text" placeholder="Enter custom deny reason" style="display:none;" />
+              <button class="small" onclick="denyContractor('${c.id}')">Deny</button>
+              <button class="small" style="background: #c41e3a;" onclick="deleteContractor('${c.id}')">Delete Contractor</button>
+              <button class="small secondary" onclick="viewComplianceDocs('${c.id}', '${escapeHtml(c.company_name || 'Contractor')}')">View Compliance Docs</button>
+            </div>
+            <div class="compliance-panel" id="compliance-panel-${c.id}">
+              <div id="compliance-docs-${c.id}"><p class="meta">Loading...</p></div>
+            </div>
+          </details>
         </article>
-      `).join('');
+      `).join('') + renderPager('contractors', pageInfo, 'contractors');
     };
 
     const renderHomeowners = () => {
@@ -1349,7 +1438,11 @@
         return;
       }
 
-      homeownersListEl.innerHTML = filteredHomeowners.map((homeowner) => `
+      const pageInfo = paginateRows(filteredHomeowners, 'homeowners');
+
+      homeownersListEl.innerHTML = `
+        <div class="list-summary">Showing ${pageInfo.startIndex}-${pageInfo.endIndex} of ${pageInfo.total} homeowners</div>
+      ` + pageInfo.pageRows.map((homeowner) => `
         <article class="item">
           <h3>
             <span>${displayValue(homeowner.full_name, 'Unnamed Homeowner')}</span>
@@ -1362,22 +1455,25 @@
           <p class="meta">Lead Count: ${displayValue(homeowner.leadCount, '0')}</p>
           <p class="meta">Latest Project: ${displayValue(homeowner.latestProjectName)}${homeowner.latestProjectType ? ` (${displayValue(homeowner.latestProjectType)})` : ''}</p>
           <p class="meta">Latest Activity: ${fmtDate(homeowner.latestProjectAt || homeowner.latestLeadAt || homeowner.created_at)}</p>
-          <div class="actions">
-            <input id="directory-homeowner-name-${homeowner.id}" type="text" placeholder="Homeowner name" value="${escapeHtml(homeowner.full_name || '')}" />
-            <input id="directory-homeowner-email-${homeowner.id}" type="text" placeholder="Homeowner email" value="${escapeHtml(homeowner.email || '')}" />
-            <input id="directory-homeowner-phone-${homeowner.id}" type="text" placeholder="Homeowner phone" value="${escapeHtml(homeowner.phone || '')}" />
-            <input id="directory-homeowner-zip-${homeowner.id}" type="text" placeholder="Zip code" value="${escapeHtml(homeowner.zip_code || '')}" />
-            <button class="small secondary" onclick="updateHomeownerDirectoryProfile('${homeowner.id}')">Save Homeowner</button>
-            <button class="small" onclick="resetHomeownerPassword('${homeowner.id}')">Temp Password</button>
-            <button class="small secondary" onclick="generateHomeownerRecovery('${homeowner.id}')">Recovery Link</button>
-            <button class="small" onclick="emailHomeownerRecovery('${homeowner.id}')">Prepare Email</button>
-            <button class="small" style="background: #c41e3a;" onclick="deleteHomeowner('${homeowner.id}')">Delete Homeowner</button>
-          </div>
-          <div class="actions">
-            <input id="homeowner-recovery-link-${homeowner.id}" type="text" placeholder="Recovery link will appear here" readonly />
-          </div>
+          <details class="action-drawer">
+            <summary>Actions</summary>
+            <div class="actions">
+              <input id="directory-homeowner-name-${homeowner.id}" type="text" placeholder="Homeowner name" value="${escapeHtml(homeowner.full_name || '')}" />
+              <input id="directory-homeowner-email-${homeowner.id}" type="text" placeholder="Homeowner email" value="${escapeHtml(homeowner.email || '')}" />
+              <input id="directory-homeowner-phone-${homeowner.id}" type="text" placeholder="Homeowner phone" value="${escapeHtml(homeowner.phone || '')}" />
+              <input id="directory-homeowner-zip-${homeowner.id}" type="text" placeholder="Zip code" value="${escapeHtml(homeowner.zip_code || '')}" />
+              <button class="small secondary" onclick="updateHomeownerDirectoryProfile('${homeowner.id}')">Save Homeowner</button>
+              <button class="small" onclick="resetHomeownerPassword('${homeowner.id}')">Temp Password</button>
+              <button class="small secondary" onclick="generateHomeownerRecovery('${homeowner.id}')">Recovery Link</button>
+              <button class="small" onclick="emailHomeownerRecovery('${homeowner.id}')">Prepare Email</button>
+              <button class="small" style="background: #c41e3a;" onclick="deleteHomeowner('${homeowner.id}')">Delete Homeowner</button>
+            </div>
+            <div class="actions">
+              <input id="homeowner-recovery-link-${homeowner.id}" type="text" placeholder="Recovery link will appear here" readonly />
+            </div>
+          </details>
         </article>
-      `).join('');
+      `).join('') + renderPager('homeowners', pageInfo, 'homeowners');
     };
 
     const contractorOptions = () => {
@@ -1571,9 +1667,13 @@
         return;
       }
 
+      const pageInfo = paginateRows(filteredLeads, 'leads');
+
       const options = contractorOptions();
 
-      leadsListEl.innerHTML = filteredLeads.map((lead) => `
+      leadsListEl.innerHTML = `
+        <div class="list-summary">Showing ${pageInfo.startIndex}-${pageInfo.endIndex} of ${pageInfo.total} leads</div>
+      ` + pageInfo.pageRows.map((lead) => `
         <article class="item">
           <h3>
             <span>${displayValue(lead.specialty, 'Unknown')} in ${displayValue(lead.zipCode)}</span>
@@ -1588,26 +1688,29 @@
           <p class="meta">Assigned Contractor: ${displayValue(lead.claimedProfessional?.company_name, 'Unassigned')}</p>
           <p class="meta">Workflow: ${displayValue(lead.workflow?.status || (lead.status === 'claimed' ? 'claimed' : 'N/A'))}</p>
           <p class="meta">Manual Audit: ${lead.manualAssignment ? `Assigned by ${displayValue(lead.manualAssignment.by)} at ${fmtDate(lead.manualAssignment.at)}` : 'None'}</p>
-          <div class="actions">
-            <select id="assign-${lead.id}">
-              <option value="">Select approved contractor...</option>
-              ${options}
-            </select>
-            <button class="small" onclick="assignLead('${lead.id}')">Assign Lead</button>
-            <button class="small secondary" onclick="removeLead('${lead.id}')">Remove Lead</button>
-          </div>
-          ${lead.homeowner?.id ? `
-          <div class="actions">
-            <input id="homeowner-name-${lead.id}" type="text" placeholder="Homeowner name" value="${escapeHtml(lead.homeowner?.full_name || '')}" />
-            <input id="homeowner-email-${lead.id}" type="text" placeholder="Homeowner email" value="${escapeHtml(lead.homeowner?.email || '')}" />
-            <input id="homeowner-phone-${lead.id}" type="text" placeholder="Homeowner phone" value="${escapeHtml(lead.homeowner?.phone || '')}" />
-            <input id="homeowner-zip-${lead.id}" type="text" placeholder="Zip code" value="${escapeHtml(lead.homeowner?.zip_code || lead.zipCode || '')}" />
-            <button class="small secondary" onclick="updateHomeownerProfile('${lead.id}', '${lead.homeowner.id}')">Save Homeowner</button>
-            <button class="small" onclick="resetHomeownerPassword('${lead.homeowner.id}')">Temp Password</button>
-            <button class="small secondary" onclick="generateHomeownerRecovery('${lead.homeowner.id}')">Recovery Link</button>
-          </div>` : '<p class="meta">No linked homeowner account found for this lead.</p>'}
+          <details class="action-drawer">
+            <summary>Actions</summary>
+            <div class="actions">
+              <select id="assign-${lead.id}">
+                <option value="">Select approved contractor...</option>
+                ${options}
+              </select>
+              <button class="small" onclick="assignLead('${lead.id}')">Assign Lead</button>
+              <button class="small secondary" onclick="removeLead('${lead.id}')">Remove Lead</button>
+            </div>
+            ${lead.homeowner?.id ? `
+            <div class="actions">
+              <input id="homeowner-name-${lead.id}" type="text" placeholder="Homeowner name" value="${escapeHtml(lead.homeowner?.full_name || '')}" />
+              <input id="homeowner-email-${lead.id}" type="text" placeholder="Homeowner email" value="${escapeHtml(lead.homeowner?.email || '')}" />
+              <input id="homeowner-phone-${lead.id}" type="text" placeholder="Homeowner phone" value="${escapeHtml(lead.homeowner?.phone || '')}" />
+              <input id="homeowner-zip-${lead.id}" type="text" placeholder="Zip code" value="${escapeHtml(lead.homeowner?.zip_code || lead.zipCode || '')}" />
+              <button class="small secondary" onclick="updateHomeownerProfile('${lead.id}', '${lead.homeowner.id}')">Save Homeowner</button>
+              <button class="small" onclick="resetHomeownerPassword('${lead.homeowner.id}')">Temp Password</button>
+              <button class="small secondary" onclick="generateHomeownerRecovery('${lead.homeowner.id}')">Recovery Link</button>
+            </div>` : '<p class="meta">No linked homeowner account found for this lead.</p>'}
+          </details>
         </article>
-      `).join('');
+      `).join('') + renderPager('leads', pageInfo, 'leads');
     };
 
     const renderActivityLogs = () => {
@@ -2518,6 +2621,19 @@
       tab.addEventListener('click', () => activateQueueTab(tab.dataset.queueTab));
     });
 
+    window.contractorsChangePage = (delta) => {
+      paginationState.contractors = Math.max(1, (paginationState.contractors || 1) + Number(delta || 0));
+      renderContractors();
+    };
+    window.homeownersChangePage = (delta) => {
+      paginationState.homeowners = Math.max(1, (paginationState.homeowners || 1) + Number(delta || 0));
+      renderHomeowners();
+    };
+    window.leadsChangePage = (delta) => {
+      paginationState.leads = Math.max(1, (paginationState.leads || 1) + Number(delta || 0));
+      renderLeads();
+    };
+
     clearBtn.addEventListener('click', () => {
       adminKeyInput.value = '';
       adminActorInput.value = '';
@@ -2547,18 +2663,18 @@
       } catch {}
     };
 
-    contractorFilterInput.addEventListener('change', renderContractors);
+    contractorFilterInput.addEventListener('change', () => { resetPage('contractors'); renderContractors(); });
     document.getElementById('loadExpiringDocsBtn').addEventListener('click', loadExpiringDocs);
     adminKeyInput.addEventListener('input', persistSession);
     adminActorInput.addEventListener('input', persistSession);
     contractorFilterInput.addEventListener('change', persistSession);
-    regionFilterInput.addEventListener('change', renderAll);
-    stateFilterInput.addEventListener('change', renderAll);
-    accountSearchInput.addEventListener('input', renderAll);
+    regionFilterInput.addEventListener('change', () => { resetPage('contractors'); resetPage('homeowners'); resetPage('leads'); renderAll(); });
+    stateFilterInput.addEventListener('change', () => { resetPage('contractors'); resetPage('homeowners'); resetPage('leads'); renderAll(); });
+    accountSearchInput.addEventListener('input', () => { resetPage('contractors'); resetPage('homeowners'); resetPage('leads'); renderAll(); });
     accountSearchInput.addEventListener('input', persistSession);
-    contractorSearchInput.addEventListener('input', renderContractors);
-    homeownerSearchInput.addEventListener('input', renderHomeowners);
-    leadSearchInput.addEventListener('input', renderLeads);
+    contractorSearchInput.addEventListener('input', () => { resetPage('contractors'); renderContractors(); });
+    homeownerSearchInput.addEventListener('input', () => { resetPage('homeowners'); renderHomeowners(); });
+    leadSearchInput.addEventListener('input', () => { resetPage('leads'); renderLeads(); });
     activitySearchInput.addEventListener('input', renderActivityLogs);
     queueLeadSearchInput.addEventListener('input', renderQueueLeads);
     queueContractorSearchInput.addEventListener('input', renderQueueContractors);
