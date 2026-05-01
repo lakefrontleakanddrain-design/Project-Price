@@ -319,10 +319,16 @@ exports.handler = async (event) => {
       _rawProbe,
     };
 
+    const permissionDenied = (
+      (_rawProbe && _rawProbe.status === 403)
+      || _debug.monthErrors.some((e) => String(e.error || '').includes('FORBIDDEN_ERROR') || String(e.error || '').includes('does not allow this request'))
+      || _debug.dayErrors.some((e) => String(e.error || '').includes('FORBIDDEN_ERROR') || String(e.error || '').includes('does not allow this request'))
+    );
+
     return {
       statusCode: 200,
       headers: responseHeaders,
-      body: JSON.stringify({ lifetimeTotal, byMonth, byCountry, errors, _debug }),
+      body: JSON.stringify({ lifetimeTotal, byMonth, byCountry, errors, permissionDenied, _debug }),
     };
   } catch (err) {
     console.error('[appstore-stats] Fatal error:', err.message);

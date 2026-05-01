@@ -3027,12 +3027,21 @@
         if (appDownloadsWeeklyEl) appDownloadsWeeklyEl.innerHTML = '<p class="meta" style="color:#ef4444;">Unavailable.</p>';
         return;
       }
-      const { lifetimeTotal = 0, byMonth = [], byCountry = [] } = data;
+      const { lifetimeTotal = 0, byMonth = [], byCountry = [], permissionDenied = false } = data;
       if (!byMonth.length) {
         const d = data._debug;
         const debugHtml = d ? `<details style="margin-top:8px;font-size:11px;color:#68778d;"><summary style="cursor:pointer;">Debug info</summary><pre style="background:#f4f8fe;padding:8px;border-radius:6px;overflow:auto;font-size:10px;margin-top:4px;">${escapeHtml(JSON.stringify(d, null, 2))}</pre></details>` : '';
-        appStoreStatsEl.innerHTML = `<p class="meta">No download data found.</p>${debugHtml}`;
-        if (appDownloadsWeeklyEl) appDownloadsWeeklyEl.innerHTML = `<p class="meta" style="color:#68778d;">No reports yet.</p>${debugHtml}`;
+        const permissionMsg = `<p class="meta" style="color:#ef4444;">App Store API key lacks Sales Reports access.</p>
+          <p class="meta">Current key role appears to be App Manager. Use a key with <strong>Finance</strong> or <strong>Sales</strong> permissions in App Store Connect.</p>
+          <p class="meta">Update Netlify env vars: <strong>APP_STORE_CONNECT_KEY_IDENTIFIER</strong>, <strong>APP_STORE_CONNECT_ISSUER_ID</strong>, <strong>APP_STORE_CONNECT_PRIVATE_KEY</strong>.</p>`;
+        appStoreStatsEl.innerHTML = permissionDenied
+          ? `${permissionMsg}${debugHtml}`
+          : `<p class="meta">No download data found.</p>${debugHtml}`;
+        if (appDownloadsWeeklyEl) {
+          appDownloadsWeeklyEl.innerHTML = permissionDenied
+            ? `<p class="meta" style="color:#ef4444;">Permissions error.<br><span style="font-size:10px;">Use Finance or Sales API key.</span></p>${debugHtml}`
+            : `<p class="meta" style="color:#68778d;">No reports yet.</p>${debugHtml}`;
+        }
         return;
       }
 
