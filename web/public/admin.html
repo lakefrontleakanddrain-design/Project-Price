@@ -160,11 +160,24 @@
       border: 1px solid #d5e3f8;
       background: #f8fbff;
       border-radius: 10px;
-      padding: 10px;
+      padding: 12px;
       font-size: .82rem;
       color: #4a6a8a;
     }
     .stat strong { display: block; font-size: 1.1rem; color: var(--navy); }
+    .stat .trend {
+      display: inline-flex;
+      margin-top: 6px;
+      font-size: .72rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid #d5e3f8;
+      background: #fff;
+    }
+    .stat .trend.up { color: #0d5c35; border-color: #a3dfc0; background: #e6f7ef; }
+    .stat .trend.down { color: #7a1a14; border-color: #f5b7b1; background: #fdecea; }
+    .stat .trend.flat { color: #446684; border-color: #d5e3f8; background: #eef5ff; }
     .table-wrap {
       overflow: auto;
       border: 1px solid #d5e3f8;
@@ -220,6 +233,12 @@
       background: #f6f9ff;
       color: #173a62;
       font-weight: 700;
+    }
+    .directory-table tbody tr:nth-child(even) {
+      background: #fbfdff;
+    }
+    .directory-table tbody tr:hover {
+      background: #f0f6ff;
     }
     .directory-table .cell-wrap {
       max-width: 220px;
@@ -560,8 +579,8 @@
         </select>
       </div>
       <div>
-        <label for="accountSearch">Account Search</label>
-        <input id="accountSearch" type="text" placeholder="Search name, email, phone, zip" />
+        <label for="accountSearch">Global Search</label>
+        <input id="accountSearch" type="text" placeholder="Search all records: name, email, phone, zip" />
       </div>
       <button id="refreshBtn" class="secondary">Refresh Data</button>
       <button id="clearBtn">Clear Key</button>
@@ -1184,19 +1203,58 @@
 
     const renderStats = () => {
       const c = state.counts || {};
+      const now = Date.now();
+      const dayMs = 24 * 60 * 60 * 1000;
+      const startCurr = now - (7 * dayMs);
+      const startPrev = now - (14 * dayMs);
+
+      const tsOf = (item) => {
+        const value = item?.createdAt || item?.created_at || item?.latestProjectAt || item?.latestLeadAt || null;
+        const ts = new Date(value || 0).getTime();
+        return Number.isFinite(ts) ? ts : 0;
+      };
+      const inCurr7 = (item) => {
+        const ts = tsOf(item);
+        return ts >= startCurr && ts <= now;
+      };
+      const inPrev7 = (item) => {
+        const ts = tsOf(item);
+        return ts >= startPrev && ts < startCurr;
+      };
+
+      const leads = Array.isArray(state.leads) ? state.leads : [];
+      const homeowners = Array.isArray(state.homeowners) ? state.homeowners : [];
+      const contractors = Array.isArray(state.contractors) ? state.contractors : [];
+
+      const leadCurr = leads.filter(inCurr7).length;
+      const leadPrev = leads.filter(inPrev7).length;
+      const homeownerCurr = homeowners.filter(inCurr7).length;
+      const homeownerPrev = homeowners.filter(inPrev7).length;
+      const contractorCurr = contractors.filter(inCurr7).length;
+      const contractorPrev = contractors.filter(inPrev7).length;
+
+      const trendBadge = (curr, prev) => {
+        const delta = curr - prev;
+        if (delta > 0) return `<span class="trend up">+${delta} vs prev 7d</span>`;
+        if (delta < 0) return `<span class="trend down">${delta} vs prev 7d</span>`;
+        return '<span class="trend flat">No change vs prev 7d</span>';
+      };
+
       const cards = [
-        ['Total Contractors', c.totalContractors || 0],
-        ['Active Contractors', c.activeContractors || 0],
-        ['Paused Contractors', c.pausedContractors || 0],
-        ['Denied Contractors', c.deniedContractors || 0],
-        ['Total Homeowners', c.totalHomeowners || 0],
-        ['Homeowners With Projects', c.homeownersWithProjects || 0],
-        ['Total Leads', c.totalLeads || 0],
-        ['Claimed Leads', c.claimedLeads || 0],
-        ['Pending Leads', c.pendingLeads || 0],
-        ['Expired Leads', c.expiredLeads || 0],
+        ['New Leads (7d)', leadCurr, trendBadge(leadCurr, leadPrev)],
+        ['New Customers (7d)', homeownerCurr, trendBadge(homeownerCurr, homeownerPrev)],
+        ['New Pros (7d)', contractorCurr, trendBadge(contractorCurr, contractorPrev)],
+        ['Active Contractors', c.activeContractors || 0, ''],
+        ['Pending Leads', c.pendingLeads || 0, ''],
+        ['Claimed Leads', c.claimedLeads || 0, ''],
       ];
-      statsEl.innerHTML = cards.map(([label, value]) => `<div class="stat"><strong>${value}</strong>${label}</div>`).join('');
+      statsEl.innerHTML = cards.map(([label, value, trend]) => `
+        <div class="stat">
+          <strong>${value}</strong>
+          <div>${label}</div>
+          ${trend || ''}
+        </div>
+      `).join('');
     };
 
     // ---- Shared weekly-breakout renderer -----------------------------------------------
@@ -1448,7 +1506,7 @@
                   <td><div class="cell-wrap">${displayValue(c.denied_reason)}</div></td>
                   <td>
                     <details class="row-actions">
-                      <summary>...</summary>
+                      <summary title="Row actions">⋯</summary>
                       <div class="actions">
                         <input id="contractor-company-${c.id}" type="text" placeholder="Company name" value="${escapeHtml(c.company_name || '')}" />
                         <input id="contractor-email-${c.id}" type="text" placeholder="Login email" value="${escapeHtml(c.email || '')}" />
@@ -1552,7 +1610,7 @@
                   <td><div class="cell-wrap">${fmtDate(homeowner.latestProjectAt || homeowner.latestLeadAt || homeowner.created_at)}</div></td>
                   <td>
                     <details class="row-actions">
-                      <summary>...</summary>
+                      <summary title="Row actions">⋯</summary>
                       <div class="actions">
                         <input id="directory-homeowner-name-${homeowner.id}" type="text" placeholder="Homeowner name" value="${escapeHtml(homeowner.full_name || '')}" />
                         <input id="directory-homeowner-email-${homeowner.id}" type="text" placeholder="Homeowner email" value="${escapeHtml(homeowner.email || '')}" />
@@ -1811,7 +1869,7 @@
                   </td>
                   <td>
                     <details class="row-actions">
-                      <summary>...</summary>
+                      <summary title="Row actions">⋯</summary>
                       <div class="actions">
                         <select id="assign-${lead.id}">
                           <option value="">Select approved contractor...</option>
