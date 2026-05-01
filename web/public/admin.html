@@ -1035,6 +1035,7 @@
 
     let state = { contractors: [], homeowners: [], leads: [], activityLogs: [], signupCityWeekly: [], homeownerSignupWeekly: [], projectRequestWeekly: [], counts: {} };
     let activeQueue = 'all';
+    let activeQueueTab = 'lead';
     const MEMBERSHIP_MRR = 399;
     let stateRevenueMode = 'active';
     const PAGE_SIZE = 8;
@@ -1108,6 +1109,7 @@
 
     const resetPage = (key) => {
       paginationState[key] = 1;
+      persistSession();
     };
 
     const paginateRows = (rows, key) => {
@@ -1115,6 +1117,7 @@
       const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
       const safePage = Math.min(Math.max(1, paginationState[key] || 1), totalPages);
       paginationState[key] = safePage;
+      persistSession();
       const start = (safePage - 1) * PAGE_SIZE;
       const pageRows = rows.slice(start, start + PAGE_SIZE);
       return {
@@ -1137,6 +1140,20 @@
           <button type="button" class="secondary" ${page >= totalPages ? 'disabled' : ''} onclick="${renderFnName}ChangePage(1)">Next</button>
         </div>
       `;
+    };
+
+    const csvEscape = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+    const downloadCsv = (filename, headers, rows) => {
+      const csv = [headers.map(csvEscape).join(',')]
+        .concat(rows.map((row) => row.map(csvEscape).join(',')))
+        .join('\n');
+      const link = Object.assign(document.createElement('a'), {
+        href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })),
+        download: `${filename}-${new Date().toISOString().slice(0, 10)}.csv`,
+      });
+      link.click();
+      URL.revokeObjectURL(link.href);
     };
 
     const persistLayout = () => {
@@ -1212,6 +1229,7 @@
         ? { field, dir: current.dir === 'asc' ? 'desc' : 'asc' }
         : { field, dir: 'asc' };
       resetPage(table);
+      persistSession();
       if (table === 'contractors') renderContractors();
       if (table === 'homeowners') renderHomeowners();
       if (table === 'leads') renderLeads();
@@ -1375,6 +1393,7 @@
       buildStateOptions();
       stateFilterInput.value = view.state || 'all';
       renderAll();
+      persistSession();
     };
 
     const populateSavedViews = (selectedName = '') => {
@@ -1435,6 +1454,7 @@
         activeQueue = 'all';
       }
       renderAll();
+      persistSession();
       showMessage(`Loaded role defaults for ${role}.`, 'success');
     };
 
@@ -1835,6 +1855,7 @@
           renderQueueLeads();
           renderQueueContractors();
           renderQueueCompliance();
+          persistSession();
         });
       });
     };
@@ -1863,9 +1884,9 @@
       .map((reason) => `<option value="${reason}">${reason}</option>`)
       .join('');
 
-    const renderContractors = () => {
+    const getFilteredContractors = () => {
       const selectedFilter = contractorFilterInput.value || 'all';
-      const filteredContractors = (selectedFilter === 'all'
+      return (selectedFilter === 'all'
         ? state.contractors
         : state.contractors.filter((c) => contractorState(c) === selectedFilter))
         .filter((c) => passesNationalFilter({
@@ -1888,6 +1909,51 @@
           (c.specialties || []).join(' '),
           (c.service_zip_codes || []).join(' '),
         ], contractorSearchInput));
+    };
+
+    const getFilteredHomeowners = () => state.homeowners.filter((homeowner) => includesSearch([
+      homeowner.full_name,
+      homeowner.email,
+      homeowner.phone,
+      homeowner.zip_code,
+      homeowner.latestProjectName,
+      homeowner.latestProjectType,
+    ])).filter((homeowner) => passesNationalFilter({ zip: homeowner.zip_code, stateCode: detectStateCode(homeowner.state, homeowner.street_address) }))
+      .filter((homeowner) => includesColumnSearch([
+        homeowner.full_name,
+        homeowner.email,
+        homeowner.phone,
+        homeowner.zip_code,
+        homeowner.latestProjectName,
+        homeowner.latestProjectType,
+      ], homeownerSearchInput));
+
+    const getFilteredLeads = () => state.leads.filter((lead) => includesSearch([
+      lead.specialty,
+      lead.zipCode,
+      lead.homeowner?.full_name,
+      lead.homeowner?.email,
+      lead.homeowner?.phone,
+      lead.project?.project_type,
+      lead.project?.description,
+      lead.claimedProfessional?.company_name,
+    ])).filter((lead) => passesNationalFilter({
+      zip: lead.zipCode,
+      stateCode: detectStateCode(lead.homeowner?.state, lead.homeowner?.street_address),
+    })).filter((lead) => includesColumnSearch([
+      lead.specialty,
+      lead.zipCode,
+      lead.status,
+      lead.homeowner?.full_name,
+      lead.homeowner?.email,
+      lead.homeowner?.phone,
+      lead.project?.project_type,
+      lead.project?.description,
+      lead.claimedProfessional?.company_name,
+    ], leadSearchInput));
+
+    const renderContractors = () => {
+      const filteredContractors = getFilteredContractors();
 
       if (!filteredContractors.length) {
         contractorsListEl.innerHTML = '<p class="meta">No contractors found.</p>';
@@ -1904,7 +1970,10 @@
       const pageInfo = paginateRows(sortedContractors, 'contractors');
 
       contractorsListEl.innerHTML = `
-        <div class="list-summary">Showing ${pageInfo.startIndex}-${pageInfo.endIndex} of ${pageInfo.total} contractors</div>
+        <div class="list-summary" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span>Showing ${pageInfo.startIndex}-${pageInfo.endIndex} of ${pageInfo.total} contractors</span>
+          <button type="button" class="secondary" onclick="exportContractorsCsv()">Export CSV</button>
+        </div>
         <div class="directory-table-wrap">
           <table class="directory-table">
             <thead>
@@ -1987,22 +2056,7 @@
     };
 
     const renderHomeowners = () => {
-      const filteredHomeowners = state.homeowners.filter((homeowner) => includesSearch([
-        homeowner.full_name,
-        homeowner.email,
-        homeowner.phone,
-        homeowner.zip_code,
-        homeowner.latestProjectName,
-        homeowner.latestProjectType,
-      ])).filter((homeowner) => passesNationalFilter({ zip: homeowner.zip_code, stateCode: detectStateCode(homeowner.state, homeowner.street_address) }))
-      .filter((homeowner) => includesColumnSearch([
-        homeowner.full_name,
-        homeowner.email,
-        homeowner.phone,
-        homeowner.zip_code,
-        homeowner.latestProjectName,
-        homeowner.latestProjectType,
-      ], homeownerSearchInput));
+      const filteredHomeowners = getFilteredHomeowners();
 
       if (!filteredHomeowners.length) {
         homeownersListEl.innerHTML = '<p class="meta">No homeowners found.</p>';
@@ -2018,7 +2072,10 @@
       const pageInfo = paginateRows(sortedHomeowners, 'homeowners');
 
       homeownersListEl.innerHTML = `
-        <div class="list-summary">Showing ${pageInfo.startIndex}-${pageInfo.endIndex} of ${pageInfo.total} homeowners</div>
+        <div class="list-summary" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span>Showing ${pageInfo.startIndex}-${pageInfo.endIndex} of ${pageInfo.total} homeowners</span>
+          <button type="button" class="secondary" onclick="exportHomeownersCsv()">Export CSV</button>
+        </div>
         <div class="directory-table-wrap">
           <table class="directory-table">
             <thead>
@@ -2238,29 +2295,7 @@
     };
 
     const renderLeads = () => {
-      const filteredLeads = state.leads.filter((lead) => includesSearch([
-        lead.specialty,
-        lead.zipCode,
-        lead.homeowner?.full_name,
-        lead.homeowner?.email,
-        lead.homeowner?.phone,
-        lead.project?.project_type,
-        lead.project?.description,
-        lead.claimedProfessional?.company_name,
-      ])).filter((lead) => passesNationalFilter({
-        zip: lead.zipCode,
-        stateCode: detectStateCode(lead.homeowner?.state, lead.homeowner?.street_address),
-      })).filter((lead) => includesColumnSearch([
-        lead.specialty,
-        lead.zipCode,
-        lead.status,
-        lead.homeowner?.full_name,
-        lead.homeowner?.email,
-        lead.homeowner?.phone,
-        lead.project?.project_type,
-        lead.project?.description,
-        lead.claimedProfessional?.company_name,
-      ], leadSearchInput));
+      const filteredLeads = getFilteredLeads();
 
       if (!filteredLeads.length) {
         leadsListEl.innerHTML = '<p class="meta">No leads found.</p>';
@@ -2279,7 +2314,10 @@
       const options = contractorOptions();
 
       leadsListEl.innerHTML = `
-        <div class="list-summary">Showing ${pageInfo.startIndex}-${pageInfo.endIndex} of ${pageInfo.total} leads</div>
+        <div class="list-summary" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span>Showing ${pageInfo.startIndex}-${pageInfo.endIndex} of ${pageInfo.total} leads</span>
+          <button type="button" class="secondary" onclick="exportLeadsCsv()">Export CSV</button>
+        </div>
         <div class="directory-table-wrap">
           <table class="directory-table">
             <thead>
@@ -2346,6 +2384,68 @@
           </table>
         </div>
       ` + renderPager('leads', pageInfo, 'leads');
+    };
+
+    window.exportContractorsCsv = () => {
+      const rows = sortRows(getFilteredContractors(), 'contractors', {
+        name: (c) => String(c.company_name || ''),
+        status: (c) => String(contractorState(c) || ''),
+        zip: (c) => String((c.service_zip_codes || [])[0] || ''),
+        created: (c) => new Date(c.created_at || 0).getTime() || 0,
+      }).map((c) => [
+        c.company_name || '',
+        contractorState(c) || '',
+        c.email || '',
+        c.contact_phone || c.account_phone || '',
+        (c.service_zip_codes || [])[0] || '',
+        kmToMiles(c.service_radius_km) || '',
+        (c.specialties || []).join(', '),
+        c.denied_reason || '',
+        c.created_at || '',
+      ]);
+      downloadCsv('contractors-directory', ['Company', 'Status', 'Email', 'Phone', 'Service ZIP', 'Radius Miles', 'Specialties', 'Deny Reason', 'Created'], rows);
+    };
+
+    window.exportHomeownersCsv = () => {
+      const rows = sortRows(getFilteredHomeowners(), 'homeowners', {
+        name: (h) => String(h.full_name || ''),
+        zip: (h) => String(h.zip_code || ''),
+        created: (h) => new Date(h.created_at || 0).getTime() || 0,
+      }).map((h) => [
+        h.full_name || '',
+        h.email || '',
+        h.phone || '',
+        h.zip_code || '',
+        h.projectCount || 0,
+        h.leadCount || 0,
+        h.latestProjectName || '',
+        h.latestProjectType || '',
+        h.created_at || '',
+      ]);
+      downloadCsv('homeowners-directory', ['Name', 'Email', 'Phone', 'ZIP', 'Projects', 'Leads', 'Latest Project', 'Project Type', 'Created'], rows);
+    };
+
+    window.exportLeadsCsv = () => {
+      const rows = sortRows(getFilteredLeads(), 'leads', {
+        name: (l) => String(l.homeowner?.full_name || l.specialty || ''),
+        status: (l) => String(l.status || ''),
+        zip: (l) => String(l.zipCode || ''),
+        created: (l) => new Date(l.createdAt || l.created_at || 0).getTime() || 0,
+      }).map((l) => [
+        l.id || '',
+        l.specialty || '',
+        l.status || '',
+        l.homeowner?.full_name || '',
+        l.homeowner?.email || '',
+        l.homeowner?.phone || '',
+        l.zipCode || '',
+        l.project?.project_type || '',
+        l.project?.description || '',
+        l.claimedProfessional?.company_name || '',
+        l.workflow?.status || '',
+        l.createdAt || l.created_at || '',
+      ]);
+      downloadCsv('leads-directory', ['Lead ID', 'Specialty', 'Status', 'Homeowner', 'Email', 'Phone', 'ZIP', 'Project Type', 'Description', 'Assigned Contractor', 'Workflow', 'Created'], rows);
     };
 
     const renderActivityLogs = () => {
@@ -3248,33 +3348,41 @@
 
     const queueTabs = Array.from(document.querySelectorAll('[data-queue-tab]'));
     const queuePanes = Array.from(document.querySelectorAll('[data-queue-pane]'));
-    const activateQueueTab = (name) => {
+    const activateQueueTab = (name, shouldPersist = true) => {
+      activeQueueTab = name || 'lead';
       queueTabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.queueTab === name));
       queuePanes.forEach((pane) => pane.classList.toggle('active', pane.dataset.queuePane === name));
+      if (shouldPersist) persistSession();
     };
     queueTabs.forEach((tab) => {
       tab.addEventListener('click', () => activateQueueTab(tab.dataset.queueTab));
     });
+    activateQueueTab(activeQueueTab, false);
 
     stateRevenueActiveBtn?.addEventListener('click', () => {
       stateRevenueMode = 'active';
       renderStats();
+      persistSession();
     });
     stateRevenuePotentialBtn?.addEventListener('click', () => {
       stateRevenueMode = 'potential';
       renderStats();
+      persistSession();
     });
 
     window.contractorsChangePage = (delta) => {
       paginationState.contractors = Math.max(1, (paginationState.contractors || 1) + Number(delta || 0));
+      persistSession();
       renderContractors();
     };
     window.homeownersChangePage = (delta) => {
       paginationState.homeowners = Math.max(1, (paginationState.homeowners || 1) + Number(delta || 0));
+      persistSession();
       renderHomeowners();
     };
     window.leadsChangePage = (delta) => {
       paginationState.leads = Math.max(1, (paginationState.leads || 1) + Number(delta || 0));
+      persistSession();
       renderLeads();
     };
 
@@ -3286,13 +3394,29 @@
     });
 
     const persistSession = () => {
-      const data = {
-        adminKey: adminKeyInput.value,
-        adminActor: adminActorInput.value,
-        contractorFilter: contractorFilterInput.value,
-        accountSearch: accountSearchInput.value,
-      };
-      sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(data));
+      try {
+        const data = {
+          adminKey: adminKeyInput.value,
+          adminActor: adminActorInput.value,
+          contractorFilter: contractorFilterInput.value,
+          accountSearch: accountSearchInput.value,
+          region: regionFilterInput.value,
+          state: stateFilterInput.value,
+          contractorSearch: contractorSearchInput.value,
+          homeownerSearch: homeownerSearchInput.value,
+          leadSearch: leadSearchInput.value,
+          activitySearch: activitySearchInput.value,
+          queueLeadSearch: queueLeadSearchInput.value,
+          queueContractorSearch: queueContractorSearchInput.value,
+          queueComplianceSearch: queueComplianceSearchInput.value,
+          activeQueue,
+          activeQueueTab,
+          stateRevenueMode,
+          paginationState,
+          sortState,
+        };
+        sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(data));
+      } catch {}
     };
 
     const restoreSession = () => {
@@ -3304,6 +3428,21 @@
         adminActorInput.value = data.adminActor || '';
         contractorFilterInput.value = data.contractorFilter || 'all';
         accountSearchInput.value = data.accountSearch || '';
+        regionFilterInput.value = data.region || 'all';
+        contractorSearchInput.value = data.contractorSearch || '';
+        homeownerSearchInput.value = data.homeownerSearch || '';
+        leadSearchInput.value = data.leadSearch || '';
+        activitySearchInput.value = data.activitySearch || '';
+        queueLeadSearchInput.value = data.queueLeadSearch || '';
+        queueContractorSearchInput.value = data.queueContractorSearch || '';
+        queueComplianceSearchInput.value = data.queueComplianceSearch || '';
+        activeQueue = data.activeQueue || 'all';
+        activeQueueTab = data.activeQueueTab || 'lead';
+        stateRevenueMode = data.stateRevenueMode === 'potential' ? 'potential' : 'active';
+        Object.assign(paginationState, data.paginationState || {});
+        Object.assign(sortState, data.sortState || {});
+        buildStateOptions();
+        stateFilterInput.value = data.state || 'all';
       } catch {}
     };
 
@@ -3312,17 +3451,17 @@
     adminKeyInput.addEventListener('input', persistSession);
     adminActorInput.addEventListener('input', persistSession);
     contractorFilterInput.addEventListener('change', persistSession);
-    regionFilterInput.addEventListener('change', () => { resetPage('contractors'); resetPage('homeowners'); resetPage('leads'); renderAll(); });
-    stateFilterInput.addEventListener('change', () => { resetPage('contractors'); resetPage('homeowners'); resetPage('leads'); renderAll(); });
+    regionFilterInput.addEventListener('change', () => { resetPage('contractors'); resetPage('homeowners'); resetPage('leads'); renderAll(); persistSession(); });
+    stateFilterInput.addEventListener('change', () => { resetPage('contractors'); resetPage('homeowners'); resetPage('leads'); renderAll(); persistSession(); });
     accountSearchInput.addEventListener('input', () => { resetPage('contractors'); resetPage('homeowners'); resetPage('leads'); renderAll(); });
     accountSearchInput.addEventListener('input', persistSession);
-    contractorSearchInput.addEventListener('input', () => { resetPage('contractors'); renderContractors(); });
-    homeownerSearchInput.addEventListener('input', () => { resetPage('homeowners'); renderHomeowners(); });
-    leadSearchInput.addEventListener('input', () => { resetPage('leads'); renderLeads(); });
-    activitySearchInput.addEventListener('input', renderActivityLogs);
-    queueLeadSearchInput.addEventListener('input', renderQueueLeads);
-    queueContractorSearchInput.addEventListener('input', renderQueueContractors);
-    queueComplianceSearchInput.addEventListener('input', renderQueueCompliance);
+    contractorSearchInput.addEventListener('input', () => { resetPage('contractors'); renderContractors(); persistSession(); });
+    homeownerSearchInput.addEventListener('input', () => { resetPage('homeowners'); renderHomeowners(); persistSession(); });
+    leadSearchInput.addEventListener('input', () => { resetPage('leads'); renderLeads(); persistSession(); });
+    activitySearchInput.addEventListener('input', () => { renderActivityLogs(); persistSession(); });
+    queueLeadSearchInput.addEventListener('input', () => { renderQueueLeads(); persistSession(); });
+    queueContractorSearchInput.addEventListener('input', () => { renderQueueContractors(); persistSession(); });
+    queueComplianceSearchInput.addEventListener('input', () => { renderQueueCompliance(); persistSession(); });
     saveViewBtn.addEventListener('click', saveCurrentView);
     loadSavedViewBtn.addEventListener('click', loadSavedView);
     deleteSavedViewBtn.addEventListener('click', deleteSavedView);
@@ -3344,8 +3483,9 @@
     createContractorBtn.addEventListener('click', createContractor);
 
     restoreSession();
-  restoreLayout();
-  setSidebarToggleLabel();
+    restoreLayout();
+    setSidebarToggleLabel();
+    activateQueueTab(activeQueueTab, false);
     populateSavedViews();
     initSidebarSectionTracking();
     loadData();
