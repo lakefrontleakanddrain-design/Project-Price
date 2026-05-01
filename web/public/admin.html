@@ -3033,9 +3033,17 @@
         if (appDownloadsWeeklyEl) appDownloadsWeeklyEl.innerHTML = '<p class="meta">Not configured.</p>';
         return;
       }
-      if (data.error) { appStoreStatsEl.innerHTML = `<p class="meta" style="color:#ef4444;">Error: ${escapeHtml(data.error)}</p>`; return; }
+      if (data.error) {
+        appStoreStatsEl.innerHTML = `<p class="meta" style="color:#ef4444;">Error: ${escapeHtml(data.error)}</p>`;
+        if (appDownloadsWeeklyEl) appDownloadsWeeklyEl.innerHTML = '<p class="meta" style="color:#ef4444;">Unavailable.</p>';
+        return;
+      }
       const { territories = [], grandTotal = 0, weeksChecked = [] } = data;
-      if (!territories.length) { appStoreStatsEl.innerHTML = '<p class="meta">No download data found for the last 4 weeks.</p>'; return; }
+      if (!territories.length) {
+        appStoreStatsEl.innerHTML = '<p class="meta">No download data found for the last 4 weeks.</p>';
+        if (appDownloadsWeeklyEl) appDownloadsWeeklyEl.innerHTML = '<p class="meta">No data yet.</p>';
+        return;
+      }
 
       // Build weekly totals (all countries summed)
       const weeklyTotals = {};
