@@ -819,6 +819,8 @@ const createContractor = async (payload) => {
     headers: { Prefer: 'return=minimal' },
   });
 
+  const bypassPayment = payload.bypassPayment === true;
+
   const professionalInsert = {
     user_id: userId,
     company_name: companyName,
@@ -827,7 +829,7 @@ const createContractor = async (payload) => {
     service_zip_codes: [centerZip],
     service_radius_km: radius,
     is_verified: approved,
-    subscription_status: 'active',
+    subscription_status: bypassPayment ? 'active' : 'pending',
   };
 
   if (centerPoint) {
