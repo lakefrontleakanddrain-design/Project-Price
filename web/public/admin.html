@@ -104,6 +104,33 @@
       color: #4a6a8a;
     }
     .stat strong { display: block; font-size: 1.1rem; color: var(--navy); }
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid #d5e3f8;
+      border-radius: 10px;
+      background: #fff;
+    }
+    .compact-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .82rem;
+      color: #2a4460;
+    }
+    .compact-table th,
+    .compact-table td {
+      border-bottom: 1px solid #e7eefb;
+      padding: 8px 10px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .compact-table thead th {
+      background: #f6f9ff;
+      color: #173a62;
+      font-weight: 700;
+    }
+    .compact-table tbody tr:last-child td {
+      border-bottom: none;
+    }
     .grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -465,6 +492,12 @@
     <section class="stats" id="stats"></section>
 
     <section class="panel" style="min-height:0;margin-bottom:14px;">
+      <h2>Contractor Signups by City (Weekly)</h2>
+      <p class="meta" style="margin-bottom:10px;">Weekly signup breakout by city to monitor market traction. City falls back to ZIP when city is unavailable.</p>
+      <div id="signupCityWeekly"><p class="meta">Loading signup analytics...</p></div>
+    </section>
+
+    <section class="panel" style="min-height:0;margin-bottom:14px;">
       <h2>Compliance Documents — Expiring Within 30 Days</h2>
       <p class="meta" style="margin-bottom:10px;">Documents that expire within 30 days or have already expired. Use the Clear button to admin-approve and re-activate the contractor.</p>
       <button id="loadExpiringDocsBtn" type="button" class="secondary" style="margin-bottom:12px;">Load Expiring / Expired Docs</button>
@@ -519,6 +552,7 @@
     const createBypassPaymentInput = document.getElementById('createBypassPayment');
     const createContractorBtn = document.getElementById('createContractorBtn');
     const statsEl = document.getElementById('stats');
+    const signupCityWeeklyEl = document.getElementById('signupCityWeekly');
     const queueCardsEl = document.getElementById('queueCards');
     const adminRoleInput = document.getElementById('adminRole');
     const regionFilterInput = document.getElementById('regionFilter');
@@ -549,7 +583,7 @@
     const leadsListEl = document.getElementById('leadsList');
     const activityLogsListEl = document.getElementById('activityLogsList');
 
-    let state = { contractors: [], homeowners: [], leads: [], activityLogs: [], counts: {} };
+    let state = { contractors: [], homeowners: [], leads: [], activityLogs: [], signupCityWeekly: [], counts: {} };
     let activeQueue = 'all';
     const ADMIN_SESSION_KEY = 'projectprice_admin_session';
     const ADMIN_VIEWS_KEY = 'projectprice_admin_saved_views_v1';
@@ -857,6 +891,38 @@
         ['Expired Leads', c.expiredLeads || 0],
       ];
       statsEl.innerHTML = cards.map(([label, value]) => `<div class="stat"><strong>${value}</strong>${label}</div>`).join('');
+    };
+
+    const renderSignupCityWeekly = () => {
+      if (!signupCityWeeklyEl) return;
+      const rows = Array.isArray(state.signupCityWeekly) ? state.signupCityWeekly : [];
+      if (!rows.length) {
+        signupCityWeeklyEl.innerHTML = '<p class="meta">No contractor signup rows yet.</p>';
+        return;
+      }
+
+      signupCityWeeklyEl.innerHTML = `
+        <div class="table-wrap">
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>Week Start (UTC)</th>
+                <th>City</th>
+                <th>Signups</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map((row) => `
+                <tr>
+                  <td>${escapeHtml(row.weekStart || '')}</td>
+                  <td>${escapeHtml(row.city || 'Unknown')}</td>
+                  <td>${Number(row.signups || 0)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
     };
 
     const contractorState = (contractor) => {
@@ -1361,6 +1427,7 @@
 
     const renderAll = () => {
       renderStats();
+      renderSignupCityWeekly();
       renderQueueCards();
       renderQueueLeads();
       renderQueueContractors();

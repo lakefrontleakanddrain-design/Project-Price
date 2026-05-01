@@ -345,11 +345,22 @@ const sendEmail = async ({ to, subject, html }) => {
 
 const loadContractors = async () => {
   try {
-    return (await supabaseRequest('/rest/v1/professionals?select=id,user_id,company_name,contact_phone,specialties,service_zip_codes,service_radius_km,service_center_lat,service_center_lng,is_verified,is_denied,denied_reason,created_at&order=created_at.desc&limit=500')) || [];
+    return (await supabaseRequest('/rest/v1/professionals?select=id,user_id,company_name,contact_phone,specialties,service_zip_codes,service_radius_km,service_center_lat,service_center_lng,is_verified,is_denied,denied_reason,city,service_city,state,service_state,created_at&order=created_at.desc&limit=500')) || [];
   } catch (err) {
-    if (!hasMissingColumnError(err, 'is_denied') && !hasMissingColumnError(err, 'denied_reason')) throw err;
+    const missingDeniedColumns = hasMissingColumnError(err, 'is_denied') || hasMissingColumnError(err, 'denied_reason');
+    const missingLocationColumns = hasMissingColumnError(err, 'city') || hasMissingColumnError(err, 'service_city') || hasMissingColumnError(err, 'state') || hasMissingColumnError(err, 'service_state');
+    if (!missingDeniedColumns && !missingLocationColumns) throw err;
+
     const base = (await supabaseRequest('/rest/v1/professionals?select=id,user_id,company_name,contact_phone,specialties,service_zip_codes,service_radius_km,service_center_lat,service_center_lng,is_verified,created_at&order=created_at.desc&limit=500')) || [];
-    return base.map((c) => ({ ...c, is_denied: false, denied_reason: null }));
+    return base.map((c) => ({
+      ...c,
+      is_denied: false,
+      denied_reason: null,
+      city: null,
+      service_city: null,
+      state: null,
+      service_state: null,
+    }));
   }
 };
 
@@ -396,6 +407,53 @@ const contractorState = (contractor) => {
   if (contractor?.is_denied) return 'denied';
   if (contractor?.is_verified) return 'active';
   return 'paused';
+};
+
+const normalizeSignupCity = (contractor) => {
+  const city = String(contractor?.service_city || contractor?.city || '').trim();
+  if (city) return city;
+
+  const firstZip = Array.isArray(contractor?.service_zip_codes)
+    ? String(contractor.service_zip_codes[0] || '').trim()
+    : '';
+  if (firstZip) return `ZIP ${firstZip}`;
+
+  return 'Unknown';
+};
+
+const getIsoWeekStart = (value) => {
+  const date = new Date(value || '');
+  if (Number.isNaN(date.getTime())) return null;
+
+  date.setUTCHours(0, 0, 0, 0);
+  const weekday = date.getUTCDay();
+  const daysSinceMonday = (weekday + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - daysSinceMonday);
+  return date;
+};
+
+const buildWeeklyCitySignupBreakout = (contractors) => {
+  const byWeekCity = new Map();
+
+  contractors.forEach((contractor) => {
+    const weekStart = getIsoWeekStart(contractor?.created_at);
+    if (!weekStart) return;
+
+    const weekStartIso = weekStart.toISOString().slice(0, 10);
+    const city = normalizeSignupCity(contractor);
+    const key = `${weekStartIso}__${city.toLowerCase()}`;
+    const current = byWeekCity.get(key) || { weekStart: weekStartIso, city, signups: 0 };
+    current.signups += 1;
+    byWeekCity.set(key, current);
+  });
+
+  return Array.from(byWeekCity.values())
+    .sort((a, b) => {
+      if (a.weekStart !== b.weekStart) return String(b.weekStart).localeCompare(String(a.weekStart));
+      if (a.signups !== b.signups) return b.signups - a.signups;
+      return String(a.city).localeCompare(String(b.city));
+    })
+    .slice(0, 120);
 };
 
 const buildDefaultRecoveryRedirect = () => {
@@ -609,12 +667,14 @@ const fetchOverview = async () => {
     });
 
   const activityLogs = await loadRecentActivityLogs(supabaseRequest, 60);
+  const signupCityWeekly = buildWeeklyCitySignupBreakout(enrichedContractors);
 
   return {
     contractors: enrichedContractors,
     homeowners: enrichedHomeowners,
     leads: enrichedLeads,
     activityLogs,
+    signupCityWeekly,
     counts: {
       totalContractors: enrichedContractors.length,
       activeContractors: enrichedContractors.filter((c) => contractorState(c) === 'active').length,
