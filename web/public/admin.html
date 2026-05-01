@@ -1136,7 +1136,7 @@
           c.account_phone,
           (c.specialties || []).join(' '),
           (c.service_zip_codes || []).join(' '),
-        ]));
+        ], contractorSearchInput));
 
       if (!filteredContractors.length) {
         contractorsListEl.innerHTML = '<p class="meta">No contractors found.</p>';
