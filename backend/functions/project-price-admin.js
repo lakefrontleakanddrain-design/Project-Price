@@ -827,6 +827,7 @@ const createContractor = async (payload) => {
     service_zip_codes: [centerZip],
     service_radius_km: radius,
     is_verified: approved,
+    subscription_status: 'active',
   };
 
   if (centerPoint) {
