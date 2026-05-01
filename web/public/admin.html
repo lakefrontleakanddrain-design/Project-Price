@@ -80,6 +80,47 @@
       font-weight: 700;
     }
     .sidebar-links a:hover { color: #0e3a78; }
+    .admin-shell.sidebar-collapsed {
+      grid-template-columns: 76px minmax(0, 1fr);
+    }
+    .admin-shell.sidebar-collapsed .admin-sidebar {
+      padding: 12px 8px;
+      justify-items: center;
+    }
+    .admin-shell.sidebar-collapsed .admin-sidebar .brand-logo {
+      font-size: 0;
+      gap: 0;
+    }
+    .admin-shell.sidebar-collapsed .admin-sidebar .brand-logo img {
+      height: 32px;
+    }
+    .admin-shell.sidebar-collapsed .side-nav {
+      width: 100%;
+    }
+    .admin-shell.sidebar-collapsed .side-nav a {
+      font-size: 0;
+      text-align: center;
+      padding: 10px 6px;
+      position: relative;
+    }
+    .admin-shell.sidebar-collapsed .side-nav a::after {
+      content: attr(data-short);
+      font-size: .76rem;
+      font-weight: 800;
+      color: inherit;
+    }
+    .admin-shell.sidebar-collapsed .sidebar-links {
+      display: none;
+    }
+    .sidebar-toggle {
+      border: 1px solid #cfe0f7;
+      background: #fff;
+      color: #0e3a78;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: .8rem;
+      font-weight: 800;
+    }
     .brand-bar {
       margin: 0 0 12px;
       display: flex;
@@ -184,6 +225,23 @@
     .stat .trend.up { color: #0d5c35; border-color: #a3dfc0; background: #e6f7ef; }
     .stat .trend.down { color: #7a1a14; border-color: #f5b7b1; background: #fdecea; }
     .stat .trend.flat { color: #446684; border-color: #d5e3f8; background: #eef5ff; }
+    .stat .sparkline {
+      display: block;
+      width: 100%;
+      height: 28px;
+      margin-top: 8px;
+    }
+    .stat .sparkline path.line {
+      fill: none;
+      stroke: #0e3a78;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .stat .sparkline path.fill {
+      fill: rgba(14, 58, 120, 0.08);
+      stroke: none;
+    }
     .table-wrap {
       overflow: auto;
       border: 1px solid #d5e3f8;
@@ -609,12 +667,12 @@
     <aside class="admin-sidebar" aria-label="Admin navigation">
       <a href="/" class="brand-logo"><img src="/logo.jpg" alt="ProjectPrice™" /> ProjectPrice Admin</a>
       <nav class="side-nav">
-        <a href="#statsSection">KPI Snapshot</a>
-        <a href="#queuesSection">Operations Queues</a>
-        <a href="#createContractorSection">Create Contractor</a>
-        <a href="#marketPulseSection">Market Pulse</a>
-        <a href="#complianceSection">Compliance</a>
-        <a href="#directorySection">Directories</a>
+        <a href="#statsSection" data-short="KP" title="KPI Snapshot">KPI Snapshot</a>
+        <a href="#queuesSection" data-short="Q" title="Operations Queues">Operations Queues</a>
+        <a href="#createContractorSection" data-short="CR" title="Create Contractor">Create Contractor</a>
+        <a href="#marketPulseSection" data-short="MP" title="Market Pulse">Market Pulse</a>
+        <a href="#complianceSection" data-short="CO" title="Compliance">Compliance</a>
+        <a href="#directorySection" data-short="DB" title="Directories">Directories</a>
       </nav>
       <div class="sidebar-links">
         <a href="/get-quotes.html">Request Estimate</a>
@@ -626,7 +684,10 @@
 
     <div>
   <header class="brand-bar">
-    <h1 style="margin:0;color:#0e3a78;">Admin Console</h1>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button id="toggleSidebarBtn" class="sidebar-toggle" type="button" title="Collapse sidebar">Toggle Nav</button>
+      <h1 style="margin:0;color:#0e3a78;">Admin Console</h1>
+    </div>
     <nav class="brand-nav">
       <a href="#advancedControlsSection">More Options</a>
     </nav>
@@ -905,6 +966,8 @@
   </div>
 
   <script>
+    const adminShellEl = document.querySelector('.admin-shell');
+    const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
     const adminKeyInput = document.getElementById('adminKey');
     const adminActorInput = document.getElementById('adminActor');
     const contractorFilterInput = document.getElementById('contractorFilter');
@@ -981,6 +1044,7 @@
       homeowners: { field: 'created', dir: 'desc' },
       leads: { field: 'created', dir: 'desc' },
     };
+    const ADMIN_LAYOUT_KEY = 'projectprice_admin_layout_v1';
     const ADMIN_SESSION_KEY = 'projectprice_admin_session';
     const ADMIN_VIEWS_KEY = 'projectprice_admin_saved_views_v1';
 
@@ -1072,6 +1136,50 @@
           <button type="button" class="secondary" ${page <= 1 ? 'disabled' : ''} onclick="${renderFnName}ChangePage(-1)">Prev</button>
           <button type="button" class="secondary" ${page >= totalPages ? 'disabled' : ''} onclick="${renderFnName}ChangePage(1)">Next</button>
         </div>
+      `;
+    };
+
+    const persistLayout = () => {
+      try {
+        localStorage.setItem(ADMIN_LAYOUT_KEY, JSON.stringify({ sidebarCollapsed: adminShellEl?.classList.contains('sidebar-collapsed') }));
+      } catch {}
+    };
+
+    const restoreLayout = () => {
+      try {
+        const raw = JSON.parse(localStorage.getItem(ADMIN_LAYOUT_KEY) || '{}');
+        if (raw.sidebarCollapsed && window.innerWidth > 1180) {
+          adminShellEl?.classList.add('sidebar-collapsed');
+        }
+      } catch {}
+    };
+
+    const setSidebarToggleLabel = () => {
+      if (!toggleSidebarBtn || !adminShellEl) return;
+      const collapsed = adminShellEl.classList.contains('sidebar-collapsed');
+      toggleSidebarBtn.textContent = collapsed ? 'Expand Nav' : 'Collapse Nav';
+      toggleSidebarBtn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+    };
+
+    const sparklineSvg = (values) => {
+      const width = 140;
+      const height = 28;
+      const points = Array.isArray(values) && values.length ? values : [0, 0, 0, 0, 0, 0, 0];
+      const max = Math.max(...points, 1);
+      const min = Math.min(...points, 0);
+      const range = Math.max(max - min, 1);
+      const coords = points.map((value, index) => {
+        const x = (index / Math.max(points.length - 1, 1)) * (width - 4) + 2;
+        const y = height - 4 - (((value - min) / range) * (height - 10));
+        return [x, y];
+      });
+      const line = coords.map(([x, y], index) => `${index === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+      const fill = `${line} L ${coords[coords.length - 1][0].toFixed(1)},${height - 2} L ${coords[0][0].toFixed(1)},${height - 2} Z`;
+      return `
+        <svg class="sparkline" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
+          <path class="fill" d="${fill}"></path>
+          <path class="line" d="${line}"></path>
+        </svg>
       `;
     };
 
@@ -1456,6 +1564,18 @@
       const homeowners = Array.isArray(state.homeowners) ? state.homeowners : [];
       const contractors = Array.isArray(state.contractors) ? state.contractors : [];
 
+      const buildDailySeries = (items, getTs, predicate = () => true) => {
+        const buckets = Array.from({ length: 7 }, () => 0);
+        items.forEach((item) => {
+          if (!predicate(item)) return;
+          const ts = getTs(item);
+          if (!Number.isFinite(ts) || ts < startCurr || ts > now) return;
+          const index = Math.min(6, Math.max(0, Math.floor((ts - startCurr) / dayMs)));
+          buckets[index] += 1;
+        });
+        return buckets;
+      };
+
       const leadCurr = leads.filter(inCurr7).length;
       const leadPrev = leads.filter(inPrev7).length;
       const homeownerCurr = homeowners.filter(inCurr7).length;
@@ -1470,6 +1590,15 @@
       const monetizationGap = Math.max(0, potentialMrr - activeMrr);
       const inactiveSigned = Math.max(0, signedMemberships - activeMemberships);
 
+      const leadSeries = buildDailySeries(leads, (item) => tsOf(item));
+      const homeownerSeries = buildDailySeries(homeowners, (item) => tsOf(item));
+      const contractorSeries = buildDailySeries(contractors, (item) => tsOf(item));
+      const activeContractorSeries = buildDailySeries(contractors, (item) => tsOf(item), (item) => contractorState(item) === 'active');
+      const pendingLeadSeries = buildDailySeries(leads, (item) => tsOf(item), (item) => String(item.status || '').toLowerCase() === 'pending');
+      const claimedLeadSeries = buildDailySeries(leads, (item) => tsOf(item), (item) => String(item.status || '').toLowerCase() === 'claimed');
+      const activeMrrSeries = activeContractorSeries.map((n) => n * MEMBERSHIP_MRR);
+      const potentialMrrSeries = contractorSeries.map((n) => n * MEMBERSHIP_MRR);
+
       const trendBadge = (curr, prev) => {
         const delta = curr - prev;
         if (delta > 0) return `<span class="trend up">+${delta} vs prev 7d</span>`;
@@ -1478,20 +1607,21 @@
       };
 
       const cards = [
-        ['New Leads (7d)', leadCurr, trendBadge(leadCurr, leadPrev)],
-        ['New Customers (7d)', homeownerCurr, trendBadge(homeownerCurr, homeownerPrev)],
-        ['New Pros (7d)', contractorCurr, trendBadge(contractorCurr, contractorPrev)],
-        ['Expected Active MRR', `$${activeMrr.toLocaleString()}`, `<span class="trend flat">${activeMemberships} active memberships</span>`],
-        ['Potential Signed MRR', `$${potentialMrr.toLocaleString()}`, `<span class="trend flat">${signedMemberships} signed memberships</span>`],
-        ['Active Contractors', c.activeContractors || 0, ''],
-        ['Pending Leads', c.pendingLeads || 0, ''],
-        ['Claimed Leads', c.claimedLeads || 0, ''],
+        ['New Leads (7d)', leadCurr, trendBadge(leadCurr, leadPrev), leadSeries],
+        ['New Customers (7d)', homeownerCurr, trendBadge(homeownerCurr, homeownerPrev), homeownerSeries],
+        ['New Pros (7d)', contractorCurr, trendBadge(contractorCurr, contractorPrev), contractorSeries],
+        ['Expected Active MRR', `$${activeMrr.toLocaleString()}`, `<span class="trend flat">${activeMemberships} active memberships</span>`, activeMrrSeries],
+        ['Potential Signed MRR', `$${potentialMrr.toLocaleString()}`, `<span class="trend flat">${signedMemberships} signed memberships</span>`, potentialMrrSeries],
+        ['Active Contractors', c.activeContractors || 0, '', contractorSeries],
+        ['Pending Leads', c.pendingLeads || 0, '', pendingLeadSeries],
+        ['Claimed Leads', c.claimedLeads || 0, '', claimedLeadSeries],
       ];
-      statsEl.innerHTML = cards.map(([label, value, trend]) => `
+      statsEl.innerHTML = cards.map(([label, value, trend, series]) => `
         <div class="stat">
           <strong>${value}</strong>
           <div>${label}</div>
           ${trend || ''}
+          ${sparklineSvg(series)}
         </div>
       `).join('');
 
@@ -3200,6 +3330,12 @@
     presetSalesBtn?.addEventListener('click', () => loadPresetView('sales'));
     presetComplianceBtn?.addEventListener('click', () => loadPresetView('compliance'));
     presetOpsTriageBtn?.addEventListener('click', () => loadPresetView('opsTriage'));
+    toggleSidebarBtn?.addEventListener('click', () => {
+      if (window.innerWidth <= 1180) return;
+      adminShellEl?.classList.toggle('sidebar-collapsed');
+      setSidebarToggleLabel();
+      persistLayout();
+    });
     bulkAssignLeadsBtn.addEventListener('click', bulkAssignLeads);
     bulkRemoveLeadsBtn.addEventListener('click', bulkRemoveLeads);
     bulkApproveContractorsBtn.addEventListener('click', () => bulkContractorState(true));
@@ -3208,6 +3344,8 @@
     createContractorBtn.addEventListener('click', createContractor);
 
     restoreSession();
+  restoreLayout();
+  setSidebarToggleLabel();
     populateSavedViews();
     initSidebarSectionTracking();
     loadData();
