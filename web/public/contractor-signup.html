@@ -137,6 +137,76 @@
       font-weight: 600;
     }
     .brand-nav a:hover { color: var(--navy); }
+    .compliance-section { margin-top: 20px; }
+    .compliance-section > .section-label {
+      font-weight: 700; font-size: .9rem; margin-bottom: 10px; display: block;
+    }
+    .doc-card {
+      border: 1px solid #bfd2ee;
+      border-radius: 10px;
+      background: #f9fcff;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+    .doc-card h4 {
+      margin: 0 0 12px;
+      color: var(--navy);
+      font-size: .92rem;
+    }
+    .doc-row { margin-bottom: 14px; }
+    .doc-row:last-child { margin-bottom: 0; }
+    .doc-row label { font-weight: 600; font-size: .85rem; color: #27496b; margin-bottom: 4px; }
+    .doc-row input[type=file] {
+      width: 100%;
+      border: 1px solid #bfd2ee;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: .84rem;
+      background: #fff;
+      margin-bottom: 6px;
+    }
+    .doc-row input[type=date] {
+      width: 100%;
+      border: 1px solid #bfd2ee;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: .84rem;
+    }
+    .doc-row input[type=date]:focus { border-color: var(--navy); outline: none; }
+    .waiver-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0 0;
+      font-size: .82rem;
+      color: #446684;
+      cursor: pointer;
+    }
+    .waiver-toggle input[type=checkbox] { width: auto; margin: 0; }
+    .waiver-sig {
+      display: none;
+      margin-top: 8px;
+      background: #fff8e7;
+      border: 1px solid #f0c040;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: .82rem;
+      color: #5a4500;
+    }
+    .waiver-sig p { margin: 0 0 6px; line-height: 1.4; }
+    .waiver-sig input[type=text] {
+      width: 100%;
+      border: 1px solid #c8a000;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: .84rem;
+    }
+    .doc-expired-warn {
+      color: #b00;
+      font-size: .8rem;
+      margin-top: 3px;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -195,6 +265,13 @@
         <option value="100">100 miles</option>
       </select>
 
+      <div class="compliance-section" id="complianceSection" style="display:none;">
+        <hr class="divider" />
+        <span class="section-label">Compliance Documents</span>
+        <p class="hint" style="margin-bottom:10px;">Upload required documents for each selected trade. Expired documents will not be accepted. If a trade license is not required in your state, you may waive it by signing below — you remain solely responsible for all applicable licensing requirements.</p>
+        <div id="complianceCards"></div>
+      </div>
+
       <hr class="divider" />
 
       <label for="email">Email Address</label>
@@ -236,12 +313,208 @@
     const btn = document.getElementById('btn');
     const termsAgree = document.getElementById('termsAgree');
 
+    // Trades that require a license (General Contractor does NOT)
+    const LICENSE_TRADES = new Set([
+      'roofing', 'plumbing', 'hvac', 'electrical',
+      'painting', 'flooring', 'windows and doors', 'siding', 'landscaping',
+    ]);
+
+    const TRADE_LABELS = {
+      'roofing': 'Roofing',
+      'plumbing': 'Plumbing',
+      'hvac': 'HVAC',
+      'electrical': 'Electrical',
+      'general contractor': 'General Contractor',
+      'painting': 'Painting',
+      'flooring': 'Flooring',
+      'windows and doors': 'Windows & Doors',
+      'siding': 'Siding',
+      'landscaping': 'Landscaping',
+    };
+
+    const todayStr = () => new Date().toISOString().slice(0, 10);
+
+    const buildCard = (trade) => {
+      const key = trade.replace(/\s+/g, '-');
+      const label = TRADE_LABELS[trade] || trade;
+      const needsLicense = LICENSE_TRADES.has(trade);
+      const licenseHtml = needsLicense ? `
+        <div class="doc-row" id="licRow-${key}">
+          <label>Trade License Certificate</label>
+          <input type="file" id="licFile-${key}" accept=".pdf,.jpg,.jpeg,.png" />
+          <input type="date" id="licExp-${key}" min="${todayStr()}" placeholder="License Expiration Date" />
+          <div class="doc-expired-warn" id="licWarn-${key}">Expiration date must be today or in the future.</div>
+          <label class="waiver-toggle">
+            <input type="checkbox" id="licWaive-${key}" onchange="toggleWaiver('${key}')" />
+            Not required by my trade license in my state — I will waive this requirement
+          </label>
+          <div class="waiver-sig" id="waiverSig-${key}">
+            <p><strong>Waiver Acknowledgment:</strong> By typing your full legal name below, you certify that a trade license is not required for ${label} work in your jurisdiction and that you are solely responsible for compliance with all applicable state, county, and municipal licensing laws. Project Price accepts no liability for unlicensed work.</p>
+            <input type="text" id="waiverName-${key}" placeholder="Type your full legal name as signature" />
+          </div>
+        </div>
+      ` : '';
+
+      return `
+        <div class="doc-card" id="docCard-${key}">
+          <h4>${label}</h4>
+          <div class="doc-row">
+            <label>Insurance Certificate</label>
+            <input type="file" id="insFile-${key}" accept=".pdf,.jpg,.jpeg,.png" />
+            <input type="date" id="insExp-${key}" min="${todayStr()}" placeholder="Insurance Expiration Date" />
+            <div class="doc-expired-warn" id="insWarn-${key}">Expiration date must be today or in the future.</div>
+          </div>
+          ${licenseHtml}
+        </div>
+      `;
+    };
+
+    const toggleWaiver = window.toggleWaiver = (key) => {
+      const cb = document.getElementById(`licWaive-${key}`);
+      const sigDiv = document.getElementById(`waiverSig-${key}`);
+      const licFile = document.getElementById(`licFile-${key}`);
+      const licExp = document.getElementById(`licExp-${key}`);
+      if (!cb || !sigDiv) return;
+      sigDiv.style.display = cb.checked ? 'block' : 'none';
+      if (licFile) licFile.disabled = cb.checked;
+      if (licExp) licExp.disabled = cb.checked;
+      refreshSubmitState();
+    };
+
+    const syncComplianceCards = () => {
+      const checked = Array.from(
+        document.querySelectorAll('.specialties-grid input[type=checkbox]:checked')
+      ).map((cb) => cb.value);
+
+      const section = document.getElementById('complianceSection');
+      const container = document.getElementById('complianceCards');
+
+      // Remove cards for unchecked trades
+      Array.from(container.children).forEach((card) => {
+        const trade = card.dataset.trade;
+        if (!checked.includes(trade)) card.remove();
+      });
+
+      // Add cards for newly checked trades (preserve order)
+      checked.forEach((trade) => {
+        const key = trade.replace(/\s+/g, '-');
+        if (!document.getElementById(`docCard-${key}`)) {
+          const div = document.createElement('div');
+          div.dataset.trade = trade;
+          div.innerHTML = buildCard(trade);
+          container.appendChild(div.firstElementChild || div);
+          // Attach date validation listeners
+          const insExp = document.getElementById(`insExp-${key}`);
+          const licExp = document.getElementById(`licExp-${key}`);
+          if (insExp) insExp.addEventListener('change', () => validateDate(`insExp-${key}`, `insWarn-${key}`));
+          if (licExp) licExp.addEventListener('change', () => validateDate(`licExp-${key}`, `licWarn-${key}`));
+        }
+      });
+
+      section.style.display = checked.length ? 'block' : 'none';
+      refreshSubmitState();
+    };
+
+    const validateDate = (inputId, warnId) => {
+      const input = document.getElementById(inputId);
+      const warn = document.getElementById(warnId);
+      if (!input || !warn) return true;
+      if (!input.value || input.value < todayStr()) {
+        warn.style.display = 'block';
+        return false;
+      }
+      warn.style.display = 'none';
+      return true;
+    };
+
+    const isComplianceComplete = () => {
+      const checked = Array.from(
+        document.querySelectorAll('.specialties-grid input[type=checkbox]:checked')
+      ).map((cb) => cb.value);
+
+      for (const trade of checked) {
+        const key = trade.replace(/\s+/g, '-');
+
+        const insFile = document.getElementById(`insFile-${key}`);
+        const insExp = document.getElementById(`insExp-${key}`);
+        if (!insFile || !insFile.files.length) return false;
+        if (!insExp || !insExp.value || insExp.value < todayStr()) return false;
+
+        if (LICENSE_TRADES.has(trade)) {
+          const waiveCb = document.getElementById(`licWaive-${key}`);
+          if (waiveCb && waiveCb.checked) {
+            const sig = document.getElementById(`waiverName-${key}`);
+            if (!sig || !sig.value.trim()) return false;
+          } else {
+            const licFile = document.getElementById(`licFile-${key}`);
+            const licExp = document.getElementById(`licExp-${key}`);
+            if (!licFile || !licFile.files.length) return false;
+            if (!licExp || !licExp.value || licExp.value < todayStr()) return false;
+          }
+        }
+      }
+      return true;
+    };
+
+    const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+      reader.readAsDataURL(file);
+    });
+
+    const collectComplianceDocs = async () => {
+      const checked = Array.from(
+        document.querySelectorAll('.specialties-grid input[type=checkbox]:checked')
+      ).map((cb) => cb.value);
+
+      const docs = [];
+      for (const trade of checked) {
+        const key = trade.replace(/\s+/g, '-');
+        const insFile = document.getElementById(`insFile-${key}`).files[0];
+        const insExp = document.getElementById(`insExp-${key}`).value;
+        const waiveCb = document.getElementById(`licWaive-${key}`);
+        const licWaived = waiveCb ? waiveCb.checked : false;
+
+        let licDataUrl = null, licFileName = null, licExp = null;
+        let waiverSignature = null;
+
+        if (LICENSE_TRADES.has(trade)) {
+          if (licWaived) {
+            waiverSignature = document.getElementById(`waiverName-${key}`).value.trim();
+          } else {
+            const licFile = document.getElementById(`licFile-${key}`).files[0];
+            licDataUrl = await readFileAsDataUrl(licFile);
+            licFileName = licFile.name;
+            licExp = document.getElementById(`licExp-${key}`).value;
+          }
+        }
+
+        docs.push({
+          specialty: trade,
+          insuranceDocDataUrl: await readFileAsDataUrl(insFile),
+          insuranceDocFileName: insFile.name,
+          insuranceExpiresOn: insExp,
+          licenseDocDataUrl: licDataUrl,
+          licenseDocFileName: licFileName,
+          licenseExpiresOn: licExp,
+          licenseWaived: licWaived,
+          licenseWaiverSignature: waiverSignature,
+        });
+      }
+      return docs;
+    };
+
     const refreshSubmitState = () => {
-      btn.disabled = !termsAgree.checked;
+      btn.disabled = !termsAgree.checked || !isComplianceComplete();
     };
 
     termsAgree.addEventListener('change', refreshSubmitState);
     refreshSubmitState();
+
+    document.querySelectorAll('.specialties-grid input[type=checkbox]').forEach((cb) => {
+      cb.addEventListener('change', syncComplianceCards);
+    });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -266,6 +539,30 @@
         return;
       }
 
+      if (!isComplianceComplete()) {
+        result.className = 'result error';
+        result.textContent = 'Please upload all required compliance documents with valid (non-expired) expiration dates.';
+        result.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Uploading documents...';
+
+      let complianceDocs;
+      try {
+        complianceDocs = await collectComplianceDocs();
+      } catch (err) {
+        result.className = 'result error';
+        result.textContent = `File read error: ${err.message}`;
+        result.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+        return;
+      }
+
+      btn.textContent = 'Submitting...';
+
       const payload = {
         fullName: document.getElementById('fullName').value.trim(),
         companyName: document.getElementById('companyName').value.trim(),
@@ -279,10 +576,8 @@
         accelerationClauseAccepted: true,
         twentyFourHourRuleAccepted: true,
         termsVersion,
+        complianceDocs,
       };
-
-      btn.disabled = true;
-      btn.textContent = 'Submitting...';
 
       try {
         const res = await fetch('/.netlify/functions/project-price-register', {
@@ -296,6 +591,8 @@
           result.className = 'result success';
           result.textContent = data.message;
           document.getElementById('form').reset();
+          document.getElementById('complianceCards').innerHTML = '';
+          document.getElementById('complianceSection').style.display = 'none';
         } else {
           result.className = 'result error';
           result.textContent = data.error || 'Something went wrong. Please try again.';
@@ -307,6 +604,7 @@
         result.style.display = 'block';
         btn.disabled = false;
         btn.textContent = 'Create Account';
+        refreshSubmitState();
       }
     });
   </script>

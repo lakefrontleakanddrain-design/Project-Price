@@ -19,7 +19,10 @@ exports.config = {
   schedule: '@daily',
 };
 
-const LICENSE_REQUIRED_SERVICES = new Set(['plumbing', 'electrical', 'hvac']);
+const LICENSE_REQUIRED_SERVICES = new Set([
+  'roofing', 'plumbing', 'hvac', 'electrical',
+  'painting', 'flooring', 'windows and doors', 'siding', 'landscaping',
+]);
 
 const supabaseRequest = async (path, { method = 'GET', body, headers = {} } = {}) => {
   const { supabaseUrl, serviceKey } = env();
@@ -105,9 +108,16 @@ const pauseProfessional = async (professionalId) => {
   }
 };
 
-const shouldNotifyToday = (lastNotifiedOn) => {
-  const today = new Date().toISOString().slice(0, 10);
-  return String(lastNotifiedOn || '') !== today;
+// Notify if never notified, or last notification was 5+ days ago
+const shouldNotifyNow = (lastNotifiedOn) => {
+  if (!lastNotifiedOn) return true;
+  const last = new Date(lastNotifiedOn);
+  if (Number.isNaN(last.getTime())) return true;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  last.setHours(0, 0, 0, 0);
+  const daysSince = Math.round((today.getTime() - last.getTime()) / (24 * 60 * 60 * 1000));
+  return daysSince >= 5;
 };
 
 const buildReminderEmail = ({ companyName, serviceName, insuranceDays, licenseDays }) => {
@@ -140,7 +150,7 @@ exports.handler = async (event) => {
 
     let docs = [];
     try {
-      docs = (await supabaseRequest('/rest/v1/contractor_compliance_docs?select=id,professional_id,service_name,insurance_expires_on,license_expires_on,last_notified_on')) || [];
+      docs = (await supabaseRequest('/rest/v1/contractor_compliance_docs?select=id,professional_id,service_name,insurance_expires_on,license_expires_on,license_waived,last_notified_on,admin_cleared_at')) || [];
     } catch (err) {
       const msg = String(err?.message || '');
       if (msg.includes('42P01') || msg.includes('PGRST205')) {
@@ -163,15 +173,21 @@ exports.handler = async (event) => {
       const pro = proById[doc.professional_id];
       if (!pro) continue;
 
+      const adminCleared = !!doc.admin_cleared_at;
       const insuranceDays = daysUntil(doc.insurance_expires_on);
-      const requiresLicense = LICENSE_REQUIRED_SERVICES.has(String(doc.service_name || '').toLowerCase());
+      const serviceName = String(doc.service_name || '').toLowerCase();
+      const requiresLicense = LICENSE_REQUIRED_SERVICES.has(serviceName) && !doc.license_waived;
       const licenseDays = requiresLicense ? daysUntil(doc.license_expires_on) : null;
 
-      const shouldWarnInsurance = insuranceDays !== null && insuranceDays <= 30;
-      const shouldWarnLicense = licenseDays !== null && licenseDays <= 30;
-      if (!shouldWarnInsurance && !shouldWarnLicense) continue;
+      const shouldWarnInsurance = !adminCleared && insuranceDays !== null && insuranceDays <= 30;
+      const shouldWarnLicense = !adminCleared && licenseDays !== null && licenseDays <= 30;
+      const isExpired = !adminCleared && (
+        (insuranceDays !== null && insuranceDays < 0) || (licenseDays !== null && licenseDays < 0)
+      );
 
-      if (shouldNotifyToday(doc.last_notified_on)) {
+      if (!shouldWarnInsurance && !shouldWarnLicense && !isExpired) continue;
+
+      if ((shouldWarnInsurance || shouldWarnLicense) && shouldNotifyNow(doc.last_notified_on)) {
         const authUser = await getAuthUserById(pro.user_id);
         const to = authUser?.email || null;
         const email = buildReminderEmail({
@@ -189,11 +205,32 @@ exports.handler = async (event) => {
         await upsertLastNotified(doc.id);
       }
 
-      const isExpired = (insuranceDays !== null && insuranceDays < 0) || (licenseDays !== null && licenseDays < 0);
       if (isExpired && pro.is_verified) {
-        await pauseProfessional(pro.id);
-        contractorsPaused += 1;
-      }
+          // Fetch email to send pause notification
+          const authUser = await getAuthUserById(pro.user_id);
+          await pauseProfessional(pro.id);
+          contractorsPaused += 1;
+          const { appBaseUrl } = env();
+          const pauseHtml = `
+            <div style="font-family:Segoe UI,Arial,sans-serif;line-height:1.45;color:#1f2d3d;">
+              <h2 style="color:#b00000;">Your Project Price account has been paused</h2>
+              <p>One or more of your compliance documents (insurance certificate or trade license) for <strong>${doc.service_name}</strong> have expired.</p>
+              <p>Your account has been paused and you will not receive new leads until your documents are updated.</p>
+              <p>Please upload your updated documents in your contractor dashboard:</p>
+              <p><a href="${appBaseUrl}/contractor-portal.html" style="background:#0e3a78;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:700;">Update Documents Now</a></p>
+              <p style="color:#666;font-size:.85rem;">If you believe this is an error, reply to this email or contact support@projectprice.app.</p>
+            </div>
+          `;
+          try {
+            await sendEmail({
+              to: authUser?.email || null,
+              subject: `[Action Required] Your Project Price account is paused — expired compliance document`,
+              html: pauseHtml,
+            });
+          } catch {
+            // Do not fail the whole job on one email error.
+          }
+        }
     }
 
     return jsonResponse(200, {

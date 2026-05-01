@@ -151,6 +151,14 @@
     .tag.approved, .tag.claimed { background: #e6f7ef; color: #0d5c35; border: 1px solid #a3dfc0; }
     .tag.pending { background: #fff7e8; color: #8a5800; border: 1px solid #ffd591; }
     .tag.expired { background: #f5f5f5; color: #666; border: 1px solid #d9d9d9; }
+    .tag.expiring { background: #fff7e8; color: #8a5800; border: 1px solid #ffd591; }
+    .compliance-doc-row { border: 1px solid #e0eaf8; border-radius: 8px; padding: 10px; margin-bottom: 8px; background: #f8fbff; font-size: .83rem; }
+    .compliance-doc-row.expired-row { border-color: #f5b7b1; background: #fff5f5; }
+    .compliance-doc-row.expiring-row { border-color: #ffd591; background: #fffbf0; }
+    .compliance-doc-row.cleared-row { border-color: #a3dfc0; background: #f0fbf5; }
+    .compliance-doc-row h4 { margin: 0 0 6px; font-size: .88rem; color: #0e3a78; }
+    .compliance-doc-row p { margin: 0 0 3px; color: #4a6a8a; }
+    .compliance-panel { display: none; margin-top: 10px; border-top: 1px solid #e0eaf8; padding-top: 10px; }
     .tag.denied { background: #fdecea; color: #7a1a14; border: 1px solid #f5b7b1; }
     .tag.warn { background: #fff7e8; color: #8a5800; border: 1px solid #ffd591; }
     .tag.breach { background: #fdecea; color: #7a1a14; border: 1px solid #f5b7b1; }
@@ -451,6 +459,13 @@
     </section>
 
     <section class="stats" id="stats"></section>
+
+    <section class="panel" style="min-height:0;margin-bottom:14px;">
+      <h2>Compliance Documents — Expiring Within 30 Days</h2>
+      <p class="meta" style="margin-bottom:10px;">Documents that expire within 30 days or have already expired. Use the Clear button to admin-approve and re-activate the contractor.</p>
+      <button id="loadExpiringDocsBtn" type="button" class="secondary" style="margin-bottom:12px;">Load Expiring / Expired Docs</button>
+      <div id="expiringDocsList"><p class="meta">Click the button above to load expiring compliance documents.</p></div>
+    </section>
 
     <div class="grid">
       <section class="panel">
@@ -1010,6 +1025,10 @@
             <input id="deny-reason-other-${c.id}" type="text" placeholder="Enter custom deny reason" style="display:none;" />
             <button class="small" onclick="denyContractor('${c.id}')">Deny</button>
             <button class="small" style="background: #c41e3a;" onclick="deleteContractor('${c.id}')">Delete Contractor</button>
+            <button class="small secondary" onclick="viewComplianceDocs('${c.id}', '${escapeHtml(c.company_name || 'Contractor')}')">View Compliance Docs</button>
+          </div>
+          <div class="compliance-panel" id="compliance-panel-${c.id}">
+            <div id="compliance-docs-${c.id}"><p class="meta">Loading...</p></div>
           </div>
         </article>
       `).join('');
@@ -1458,6 +1477,144 @@
       } catch (err) {
         showMessage(err.message || `Unable to generate ${label.toLowerCase()} recovery link.`, 'error');
       }
+    };
+
+    const fmtExpiry = (dateStr) => {
+      if (!dateStr) return 'N/A';
+      const d = new Date(dateStr);
+      if (Number.isNaN(d.getTime())) return 'N/A';
+      const today = new Date(); today.setHours(0,0,0,0);
+      d.setHours(0,0,0,0);
+      const days = Math.round((d - today) / 86400000);
+      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      if (days < 0) return `<span style="color:#b00;font-weight:700;">${label} (EXPIRED ${Math.abs(days)}d ago)</span>`;
+      if (days <= 30) return `<span style="color:#8a5800;font-weight:700;">${label} (${days}d remaining)</span>`;
+      return `<span style="color:#0d5c35;">${label}</span>`;
+    };
+
+    const buildComplianceDocHtml = (doc, professionalId) => {
+      const today = new Date(); today.setHours(0,0,0,0);
+      const insExp = doc.insurance_expires_on ? new Date(doc.insurance_expires_on) : null;
+      const licExp = doc.license_expires_on ? new Date(doc.license_expires_on) : null;
+      const isExpiredIns = insExp && insExp < today;
+      const isExpiredLic = licExp && licExp < today;
+      const isExpiredAny = isExpiredIns || isExpiredLic;
+      const daysInsLeft = insExp ? Math.round((insExp - today) / 86400000) : null;
+      const daysLicLeft = licExp ? Math.round((licExp - today) / 86400000) : null;
+      const isExpiringSoon = (!isExpiredIns && daysInsLeft !== null && daysInsLeft <= 30) || (!isExpiredLic && daysLicLeft !== null && daysLicLeft <= 30);
+      const adminCleared = !!doc.admin_cleared_at;
+      let rowClass = 'compliance-doc-row';
+      if (adminCleared) rowClass += ' cleared-row';
+      else if (isExpiredAny) rowClass += ' expired-row';
+      else if (isExpiringSoon) rowClass += ' expiring-row';
+      return `
+        <div class="${rowClass}">
+          <h4>${escapeHtml(doc.service_name || '')} ${adminCleared ? '<span class="tag approved">Admin Cleared</span>' : (isExpiredAny ? '<span class="tag denied">Expired</span>' : (isExpiringSoon ? '<span class="tag expiring">Expiring Soon</span>' : '<span class="tag approved">OK</span>'))}</h4>
+          <p>Insurance: ${fmtExpiry(doc.insurance_expires_on)} ${doc.insurance_doc_path ? `<a href="#" style="font-size:.8rem;" onclick="alert('Path: ${escapeHtml(doc.insurance_doc_path)}');return false;">View Path</a>` : '<span style="color:#b00;">No file</span>'}</p>
+          <p>License: ${doc.license_waived ? '<em>Waived</em>' + (doc.license_waiver_signature ? ` — Signed: ${escapeHtml(doc.license_waiver_signature)}` : '') : (fmtExpiry(doc.license_expires_on) + (doc.license_doc_path ? ` <a href="#" style="font-size:.8rem;" onclick="alert('Path: ${escapeHtml(doc.license_doc_path || '')}');return false;">View Path</a>` : ' <span style="color:#b00;">No file</span>'))}</p>
+          ${adminCleared ? `<p style="color:#0d5c35;font-size:.8rem;">Cleared by ${escapeHtml(doc.admin_cleared_by || 'admin')} on ${fmtDate(doc.admin_cleared_at)}</p>` : ''}
+          <div class="actions" style="margin-top:6px;">
+            ${!adminCleared ? `<button class="small" onclick="clearComplianceDoc('${doc.id}', '${professionalId}')">Admin Clear &amp; Reactivate</button>` : ''}
+          </div>
+        </div>
+      `;
+    };
+
+    window.viewComplianceDocs = async (professionalId, companyName) => {
+      const panel = document.getElementById(`compliance-panel-${professionalId}`);
+      const container = document.getElementById(`compliance-docs-${professionalId}`);
+      if (!panel || !container) return;
+      if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
+      panel.style.display = 'block';
+      container.innerHTML = '<p class="meta">Loading compliance docs...</p>';
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ action: 'get_compliance_docs', professionalId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to load docs.');
+        const docs = data.docs || [];
+        if (!docs.length) {
+          container.innerHTML = '<p class="meta">No compliance documents on file for this contractor.</p>';
+          return;
+        }
+        container.innerHTML = docs.map((d) => buildComplianceDocHtml(d, professionalId)).join('');
+      } catch (err) {
+        container.innerHTML = `<p class="meta" style="color:#b00;">${escapeHtml(err.message)}</p>`;
+      }
+    };
+
+    window.clearComplianceDoc = async (docId, professionalId) => {
+      if (!confirm('Mark this document as admin-cleared and reactivate the contractor?')) return;
+      try {
+        const res = await fetch('/.netlify/functions/project-price-admin', {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ action: 'clear_compliance_doc', docId, professionalId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Clear failed.');
+        showMessage(data.message || 'Doc cleared.', 'success');
+        // Reload the compliance panel
+        await window.viewComplianceDocs(professionalId, '');
+        await window.viewComplianceDocs(professionalId, ''); // Toggle back open
+        await loadData();
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    };
+
+    const loadExpiringDocs = async () => {
+      const container = document.getElementById('expiringDocsList');
+      if (!container) return;
+      container.innerHTML = '<p class="meta">Loading...</p>';
+      // Fetch all contractors and get compliance docs for each
+      const contractors = Array.isArray(state.contractors) ? state.contractors : [];
+      if (!contractors.length) {
+        container.innerHTML = '<p class="meta">No contractors loaded. Refresh the page first.</p>';
+        return;
+      }
+      const today = new Date(); today.setHours(0,0,0,0);
+      const in30 = new Date(today); in30.setDate(in30.getDate() + 30);
+      let allExpiring = [];
+      for (const c of contractors) {
+        try {
+          const res = await fetch('/.netlify/functions/project-price-admin', {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ action: 'get_compliance_docs', professionalId: c.id }),
+          });
+          if (!res.ok) continue;
+          const data = await res.json();
+          const docs = data.docs || [];
+          for (const d of docs) {
+            if (d.admin_cleared_at) continue;
+            const insExp = d.insurance_expires_on ? new Date(d.insurance_expires_on) : null;
+            const licExp = d.license_expires_on ? new Date(d.license_expires_on) : null;
+            const insExpiring = insExp && insExp <= in30;
+            const licExpiring = licExp && licExp <= in30;
+            if (insExpiring || licExpiring) {
+              allExpiring.push({ doc: d, contractor: c });
+            }
+          }
+        } catch { /* skip */ }
+      }
+      if (!allExpiring.length) {
+        container.innerHTML = '<p class="meta" style="color:#0d5c35;">No expiring documents found within the next 30 days.</p>';
+        return;
+      }
+      container.innerHTML = allExpiring.map(({ doc, contractor }) => `
+        <div class="${'compliance-doc-row' + (new Date(doc.insurance_expires_on || doc.license_expires_on) < today ? ' expired-row' : ' expiring-row')}">
+          <h4>${escapeHtml(contractor.company_name || contractor.id)} — ${escapeHtml(doc.service_name || '')}</h4>
+          <p>Insurance: ${fmtExpiry(doc.insurance_expires_on)}</p>
+          <p>License: ${doc.license_waived ? '<em>Waived</em>' : fmtExpiry(doc.license_expires_on)}</p>
+          <div class="actions" style="margin-top:6px;">
+            <button class="small" onclick="clearComplianceDoc('${doc.id}', '${contractor.id}')">Admin Clear &amp; Reactivate</button>
+          </div>
+        </div>
+      `).join('');
     };
 
     window.approveContractor = async (professionalId, approved) => {
@@ -1956,6 +2113,7 @@
     };
 
     contractorFilterInput.addEventListener('change', renderContractors);
+    document.getElementById('loadExpiringDocsBtn').addEventListener('click', loadExpiringDocs);
     adminKeyInput.addEventListener('input', persistSession);
     adminActorInput.addEventListener('input', persistSession);
     contractorFilterInput.addEventListener('change', persistSession);

@@ -107,7 +107,7 @@ const buildActivityEntry = (event, payload, action, result) => {
   if (action === 'assign_lead' || action === 'remove_lead') {
     base.targetType = 'lead';
     base.targetId = payload.leadRequestId || null;
-  } else if (action === 'approve_contractor' || action === 'pause_contractor' || action === 'deny_contractor' || action === 'update_contractor_profile' || action === 'reset_contractor_password' || action === 'generate_contractor_recovery' || action === 'reinvite_contractor' || action === 'delete_professional' || action === 'create_contractor') {
+  } else if (action === 'approve_contractor' || action === 'pause_contractor' || action === 'deny_contractor' || action === 'update_contractor_profile' || action === 'reset_contractor_password' || action === 'generate_contractor_recovery' || action === 'reinvite_contractor' || action === 'delete_professional' || action === 'create_contractor' || action === 'clear_compliance_doc') {
     base.targetType = 'professional';
     base.targetId = payload.professionalId || result?.professionalId || null;
   } else if (action === 'set_lead_homeowner_email' || action === 'set_lead_homeowner_phone') {
@@ -1562,6 +1562,55 @@ exports.handler = async (event) => {
 
     if (action === 'create_contractor') {
       const result = await createContractor(payload);
+      await appendActivityLog(supabaseRequest, buildActivityEntry(event, payload, action, result));
+      return jsonResponse(200, result);
+    }
+
+    if (action === 'get_compliance_docs') {
+      const professionalId = String(payload.professionalId || '').trim();
+      if (!professionalId) return jsonResponse(400, { error: 'professionalId is required.' });
+      const q = new URLSearchParams({
+        professional_id: `eq.${professionalId}`,
+        select: 'id,service_name,insurance_doc_path,insurance_expires_on,license_doc_path,license_expires_on,license_waived,license_waiver_signature,admin_cleared_at,admin_cleared_by,last_notified_on,created_at,updated_at',
+        order: 'service_name.asc',
+      });
+      let docs = [];
+      try {
+        docs = (await supabaseRequest(`/rest/v1/contractor_compliance_docs?${q.toString()}`)) || [];
+      } catch {
+        docs = [];
+      }
+      return jsonResponse(200, { docs });
+    }
+
+    if (action === 'clear_compliance_doc') {
+      const docId = String(payload.docId || '').trim();
+      const actor = getAdminActor(event, payload);
+      if (!docId) return jsonResponse(400, { error: 'docId is required.' });
+      const q = new URLSearchParams({ id: `eq.${docId}` });
+      await supabaseRequest(`/rest/v1/contractor_compliance_docs?${q.toString()}`, {
+        method: 'PATCH',
+        body: { admin_cleared_at: new Date().toISOString(), admin_cleared_by: actor },
+        headers: { Prefer: 'return=minimal' },
+      });
+      // Auto-reactivate the professional if they were paused
+      if (payload.professionalId) {
+        const proQ = new URLSearchParams({ id: `eq.${payload.professionalId}` });
+        try {
+          await supabaseRequest(`/rest/v1/professionals?${proQ.toString()}`, {
+            method: 'PATCH',
+            body: { is_verified: true, is_paused_by_contractor: false },
+            headers: { Prefer: 'return=minimal' },
+          });
+        } catch {
+          await supabaseRequest(`/rest/v1/professionals?${proQ.toString()}`, {
+            method: 'PATCH',
+            body: { is_verified: true },
+            headers: { Prefer: 'return=minimal' },
+          });
+        }
+      }
+      const result = { message: 'Compliance doc cleared and contractor re-activated.' };
       await appendActivityLog(supabaseRequest, buildActivityEntry(event, payload, action, result));
       return jsonResponse(200, result);
     }

@@ -46,6 +46,11 @@ const milesToKm = (miles) => Number(miles) * 1.60934;
 
 const getGoogleMapsApiKey = () => String(process.env.GOOGLE_MAPS_API_KEY || '').trim();
 const getResendApiKey = () => String(process.env.RESEND_API_KEY || '').trim();
+
+const LICENSE_REQUIRED_SERVICES = new Set([
+  'roofing', 'plumbing', 'hvac', 'electrical',
+  'painting', 'flooring', 'windows and doors', 'siding', 'landscaping',
+]);
 const getNotificationsFromEmail = () => String(process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectprice.app').trim();
 const getNotificationsReplyToEmail = () => String(process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'support@projectprice.app').trim();
 const getAdminPhone = () => normalizePhone(String(process.env.ADMIN_PHONE_NUMBER || '').trim());
@@ -104,6 +109,92 @@ const sendEmail = async ({ to, subject, html }) => {
   const text = await res.text();
   if (!res.ok) throw new Error(`Resend error ${res.status}: ${text}`);
   return { skipped: false };
+};
+
+const ensureStorageBucket = async () => {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const bucket = 'contractor-docs';
+  const getRes = await fetch(`${supabaseUrl}/storage/v1/bucket/${bucket}`, {
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+  });
+  if (!getRes.ok) {
+    await fetch(`${supabaseUrl}/storage/v1/bucket`, {
+      method: 'POST',
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: bucket, public: false }),
+    });
+  }
+  return bucket;
+};
+
+const uploadDataUrlDoc = async ({ professionalId, serviceName, kind, dataUrl, filename }) => {
+  if (!dataUrl) return null;
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const bucket = await ensureStorageBucket();
+  const match = String(dataUrl).match(/^data:(.+);base64,(.+)$/);
+  if (!match) throw new Error('Invalid file format.');
+  const contentType = match[1] || 'application/octet-stream';
+  const bytes = Buffer.from(match[2] || '', 'base64');
+  const safeName = (filename || `${kind}.bin`).replace(/[^a-zA-Z0-9._-]/g, '_');
+  const path = `${professionalId}/${serviceName}/${kind}-${Date.now()}-${safeName}`;
+  const res = await fetch(`${supabaseUrl}/storage/v1/object/${bucket}/${path}`, {
+    method: 'POST',
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': contentType, 'x-upsert': 'true' },
+    body: bytes,
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Failed to upload ${kind}: ${text}`);
+  return `${bucket}/${path}`;
+};
+
+const saveComplianceDocs = async ({ professionalId, complianceDocs, clientIp }) => {
+  if (!Array.isArray(complianceDocs) || complianceDocs.length === 0) return;
+  for (const doc of complianceDocs) {
+    const serviceName = String(doc.specialty || '').trim().toLowerCase();
+    if (!serviceName) continue;
+
+    const insurancePath = await uploadDataUrlDoc({
+      professionalId,
+      serviceName,
+      kind: 'insurance',
+      dataUrl: doc.insuranceDocDataUrl,
+      filename: doc.insuranceDocFileName,
+    });
+
+    let licensePath = null;
+    const licWaived = doc.licenseWaived === true;
+    const needsLicense = LICENSE_REQUIRED_SERVICES.has(serviceName);
+
+    if (needsLicense && !licWaived && doc.licenseDocDataUrl) {
+      licensePath = await uploadDataUrlDoc({
+        professionalId,
+        serviceName,
+        kind: 'license',
+        dataUrl: doc.licenseDocDataUrl,
+        filename: doc.licenseDocFileName,
+      });
+    }
+
+    await supabaseRequest('/rest/v1/contractor_compliance_docs', {
+      method: 'POST',
+      body: {
+        professional_id: professionalId,
+        service_name: serviceName,
+        insurance_doc_path: insurancePath,
+        insurance_expires_on: doc.insuranceExpiresOn || null,
+        license_doc_path: licensePath,
+        license_expires_on: licWaived ? null : (doc.licenseExpiresOn || null),
+        license_waived: licWaived,
+        license_waiver_signature: licWaived ? (doc.licenseWaiverSignature || null) : null,
+        license_waiver_ip: licWaived ? clientIp : null,
+        license_waiver_at: licWaived ? new Date().toISOString() : null,
+        last_notified_on: null,
+      },
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    });
+  }
 };
 
 const notifyOnContractorRegistration = async ({
@@ -300,6 +391,7 @@ exports.handler = async (event) => {
     accelerationClauseAccepted,
     twentyFourHourRuleAccepted,
     termsVersion,
+    complianceDocs,
   } = payload;
 
   if (!email || !password || !fullName || !companyName || !phone) {
@@ -401,6 +493,15 @@ exports.handler = async (event) => {
       },
       headers: { Prefer: 'return=minimal' },
     });
+
+    // 5. Get the new professional's id and save compliance docs
+    const proRows = await supabaseRequest(
+      `/rest/v1/professionals?user_id=eq.${userId}&select=id&limit=1`
+    );
+    const professionalId = proRows?.[0]?.id || null;
+    if (professionalId && Array.isArray(complianceDocs) && complianceDocs.length > 0) {
+      await saveComplianceDocs({ professionalId, complianceDocs, clientIp: acceptedIp });
+    }
 
     const notificationStatus = await notifyOnContractorRegistration({
       fullName,

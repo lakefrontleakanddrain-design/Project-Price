@@ -9,7 +9,10 @@ const env = () => ({
   serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
 });
 
-const LICENSE_REQUIRED_SERVICES = new Set(['plumbing', 'electrical', 'hvac']);
+const LICENSE_REQUIRED_SERVICES = new Set([
+  'roofing', 'plumbing', 'hvac', 'electrical',
+  'painting', 'flooring', 'windows and doors', 'siding', 'landscaping',
+]);
 
 const supabaseRequest = async (path, { method = 'GET', body, headers = {} } = {}) => {
   const { supabaseUrl, serviceKey } = env();
@@ -282,8 +285,9 @@ const upsertComplianceDoc = async ({ professionalId, payload }) => {
   }
 
   const requiresLicense = LICENSE_REQUIRED_SERVICES.has(serviceName);
-  if (requiresLicense && (!licensePath || !licenseExpiresOn)) {
-    throw new Error(`License document and expiration date are required for ${serviceName}.`);
+  const licenseWaived = payload.licenseWaived === true;
+  if (requiresLicense && !licenseWaived && (!licensePath || !licenseExpiresOn)) {
+    throw new Error(`License document and expiration date are required for ${serviceName}. If not required in your state, select the waiver option.`);
   }
   if (!insurancePath || !insuranceExpiresOn) {
     throw new Error('Insurance document and expiration date are required.');
@@ -296,8 +300,14 @@ const upsertComplianceDoc = async ({ professionalId, payload }) => {
       service_name: serviceName,
       insurance_doc_path: insurancePath,
       insurance_expires_on: insuranceExpiresOn,
-      license_doc_path: licensePath,
-      license_expires_on: licenseExpiresOn,
+      license_doc_path: licenseWaived ? null : licensePath,
+      license_expires_on: licenseWaived ? null : licenseExpiresOn,
+      license_waived: licenseWaived,
+      license_waiver_signature: licenseWaived ? (payload.licenseWaiverSignature || null) : null,
+      license_waiver_ip: licenseWaived ? (payload.clientIp || null) : null,
+      license_waiver_at: licenseWaived ? new Date().toISOString() : null,
+      admin_cleared_at: null,
+      admin_cleared_by: null,
       last_notified_on: null,
     },
     headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
@@ -341,7 +351,7 @@ const maybeAutoPauseForCompliance = async (professional) => {
       break;
     }
 
-    if (LICENSE_REQUIRED_SERVICES.has(service)) {
+    if (LICENSE_REQUIRED_SERVICES.has(service) && !doc.license_waived) {
       const licenseExp = doc.license_expires_on ? new Date(doc.license_expires_on) : null;
       if (!doc.license_doc_path || !licenseExp || Number.isNaN(licenseExp.getTime()) || licenseExp < today) {
         shouldPause = true;
@@ -350,9 +360,27 @@ const maybeAutoPauseForCompliance = async (professional) => {
     }
   }
 
-  if (!shouldPause) return;
-
   const q = new URLSearchParams({ id: `eq.${professional.id}` });
+  if (!shouldPause) {
+    // Auto-reactivate if currently paused due to compliance and all docs are now valid
+    if (!professional.is_verified) {
+      try {
+        await supabaseRequest(`/rest/v1/professionals?${q.toString()}`, {
+          method: 'PATCH',
+          body: { is_verified: true, is_paused_by_contractor: false },
+          headers: { Prefer: 'return=minimal' },
+        });
+      } catch {
+        await supabaseRequest(`/rest/v1/professionals?${q.toString()}`, {
+          method: 'PATCH',
+          body: { is_verified: true },
+          headers: { Prefer: 'return=minimal' },
+        });
+      }
+    }
+    return;
+  }
+
   try {
     await supabaseRequest(`/rest/v1/professionals?${q.toString()}`, {
       method: 'PATCH',
