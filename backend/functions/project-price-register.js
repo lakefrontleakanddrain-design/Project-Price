@@ -230,7 +230,7 @@ exports.handler = async (event) => {
     });
 
     return jsonResponse(201, {
-      message: 'Registration submitted. Your account is pending verification. Once approved, sign in at https://project-price-app.netlify.app/contractor-portal.html to view accepted leads.',
+      message: 'Registration submitted. Your account is pending verification. Once approved, sign in at https://projectpriceapp.com/contractor-portal.html to view accepted leads.',
       userId,
     });
   } catch (err) {
