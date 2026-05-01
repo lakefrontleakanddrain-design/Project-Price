@@ -18,13 +18,68 @@
       min-height: 100vh;
       padding: 24px;
     }
+    .admin-shell {
+      max-width: 1500px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .admin-sidebar {
+      position: sticky;
+      top: 20px;
+      border: 1px solid #d5e3f8;
+      border-radius: 14px;
+      background: #f7fbff;
+      box-shadow: 0 8px 24px rgba(0,0,0,.06);
+      padding: 14px;
+      display: grid;
+      gap: 14px;
+      max-height: calc(100vh - 40px);
+      overflow: auto;
+    }
+    .admin-sidebar .brand-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: #0e3a78;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: .95rem;
+    }
+    .admin-sidebar .brand-logo img { height: 36px; width: auto; }
+    .side-nav { display: grid; gap: 6px; }
+    .side-nav a {
+      text-decoration: none;
+      color: #315579;
+      border: 1px solid #dce9fa;
+      border-radius: 9px;
+      background: #fff;
+      padding: 8px 10px;
+      font-size: .82rem;
+      font-weight: 700;
+    }
+    .side-nav a:hover { border-color: #0e3a78; color: #0e3a78; }
+    .sidebar-links {
+      display: grid;
+      gap: 6px;
+      padding-top: 8px;
+      border-top: 1px solid #dce9fa;
+    }
+    .sidebar-links a {
+      color: #4a6a8a;
+      text-decoration: none;
+      font-size: .8rem;
+      font-weight: 700;
+    }
+    .sidebar-links a:hover { color: #0e3a78; }
     .brand-bar {
-      max-width: 1100px;
-      margin: 0 auto 18px;
+      margin: 0 0 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 4px;
+      padding: 8px 2px;
     }
     .brand-logo { display: flex; align-items: center; text-decoration: none; }
     .brand-logo img { height: 44px; width: auto; }
@@ -37,22 +92,28 @@
     }
     .brand-nav a:hover { color: var(--navy); }
     .card {
-      max-width: 1100px;
-      margin: 0 auto;
+      margin: 0;
       background: #fff;
       border: 1px solid #d5e3f8;
       border-radius: 14px;
       box-shadow: 0 8px 24px rgba(0,0,0,.08);
-      padding: 20px;
+      padding: 18px;
     }
     h1 { margin: 0 0 8px; color: var(--navy); }
     .sub { color: #4a6a8a; margin: 0 0 16px; }
     .top {
       display: grid;
-      grid-template-columns: 1fr 220px 180px 1fr auto auto;
+      grid-template-columns: minmax(220px,1fr) 170px 170px minmax(240px,1fr) auto auto;
       gap: 10px;
       align-items: end;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
+      padding: 12px;
+      border: 1px solid #dbe7f8;
+      border-radius: 12px;
+      background: #f8fbff;
+      position: sticky;
+      top: 10px;
+      z-index: 5;
     }
     label { display: block; font-weight: 700; font-size: .86rem; margin-bottom: 5px; }
     input, select {
@@ -304,21 +365,80 @@
       font-size: .78rem;
       margin-bottom: 4px;
     }
+    .advanced-panel {
+      min-height: 0;
+      margin-bottom: 14px;
+      padding: 0;
+      overflow: hidden;
+    }
+    .advanced-panel > summary {
+      list-style: none;
+      cursor: pointer;
+      font-weight: 800;
+      color: #0e3a78;
+      padding: 12px;
+      border-bottom: 1px solid #dce7f8;
+      background: #f7fbff;
+    }
+    .advanced-panel > summary::-webkit-details-marker { display: none; }
+    .advanced-panel .advanced-body { padding: 12px; }
+    .queue-tabs {
+      display: flex;
+      gap: 8px;
+      margin: 8px 0 10px;
+      flex-wrap: wrap;
+    }
+    .queue-tab {
+      border: 1px solid #c9dbf6;
+      background: #fff;
+      color: #234569;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: .78rem;
+      font-weight: 700;
+    }
+    .queue-tab.active {
+      background: #0e3a78;
+      color: #fff;
+      border-color: #0e3a78;
+    }
+    .queue-pane { display: none; }
+    .queue-pane.active { display: block; grid-column: 1 / -1; }
+    @media (max-width: 1180px) {
+      .admin-shell { grid-template-columns: 1fr; }
+      .admin-sidebar { position: static; max-height: none; }
+    }
   </style>
 </head>
 <body>
+  <div class="admin-shell">
+    <aside class="admin-sidebar" aria-label="Admin navigation">
+      <a href="/" class="brand-logo"><img src="/logo.jpg" alt="ProjectPrice™" /> ProjectPrice Admin</a>
+      <nav class="side-nav">
+        <a href="#statsSection">KPI Snapshot</a>
+        <a href="#queuesSection">Operations Queues</a>
+        <a href="#createContractorSection">Create Contractor</a>
+        <a href="#marketPulseSection">Market Pulse</a>
+        <a href="#complianceSection">Compliance</a>
+        <a href="#directorySection">Directories</a>
+      </nav>
+      <div class="sidebar-links">
+        <a href="/get-quotes.html">Request Estimate</a>
+        <a href="/my-estimates.html">My Saved Projects</a>
+        <a href="/contractor-signup.html">For Contractors</a>
+        <a href="/contractor-portal.html">Contractor Login</a>
+      </div>
+    </aside>
+
+    <div>
   <header class="brand-bar">
-    <a href="/" class="brand-logo"><img src="/logo.jpg" alt="ProjectPrice™" /></a>
+    <h1 style="margin:0;color:#0e3a78;">Admin Console</h1>
     <nav class="brand-nav">
-      <a href="/get-quotes.html">Request Estimate</a>
-      <a href="/my-estimates.html">My Saved Projects</a>
-      <a href="/contractor-signup.html">For Contractors</a>
-      <a href="/contractor-portal.html">Contractor Login</a>
+      <a href="#advancedControlsSection">More Options</a>
     </nav>
   </header>
 
   <main class="card">
-    <h1>Admin Console</h1>
 
     <div class="top">
       <div>
@@ -348,8 +468,9 @@
 
     <div class="result" id="result"></div>
 
-    <section class="panel" style="min-height:0;margin-bottom:14px;">
-      <h2>National Ops Controls</h2>
+    <details class="panel advanced-panel" id="advancedControlsSection">
+      <summary>Filters + Advanced Controls</summary>
+      <div class="advanced-body">
       <div class="ops-toolbar">
         <div>
           <label for="adminRole">Role Preset</label>
@@ -392,7 +513,8 @@
         <button id="deleteSavedViewBtn" type="button">Delete Saved View</button>
         <button id="loadRoleViewBtn" type="button">Load Role Defaults</button>
       </div>
-    </section>
+      </div>
+    </details>
 
     <section class="bulk-bar" style="min-height:0;">
       <div>
@@ -407,22 +529,27 @@
       <button id="bulkPauseContractorsBtn" type="button">Pause Selected Contractors</button>
     </section>
 
-    <section class="panel" style="min-height:0;margin-bottom:14px;">
+    <section class="panel" style="min-height:0;margin-bottom:14px;" id="queuesSection">
       <h2>Operations Queues</h2>
       <p class="meta" style="margin-bottom:10px;">Prioritize urgent work without losing detailed contractor/homeowner/lead controls below.</p>
       <div class="queue-cards" id="queueCards"></div>
+      <div class="queue-tabs" role="tablist" aria-label="Operations Queue Tabs">
+        <button class="queue-tab active" type="button" data-queue-tab="lead">Lead Queue</button>
+        <button class="queue-tab" type="button" data-queue-tab="contractor">Contractor Queue</button>
+        <button class="queue-tab" type="button" data-queue-tab="compliance">Compliance Queue</button>
+      </div>
       <div class="queue-grid">
-        <section class="panel" style="min-height:0;">
+        <section class="panel queue-pane active" style="min-height:0;" data-queue-pane="lead">
           <h2>Lead Queue</h2>
           <input id="queueLeadSearch" class="column-search" type="text" placeholder="Search lead queue" />
           <div class="list" id="queueLeadsList"></div>
         </section>
-        <section class="panel" style="min-height:0;">
+        <section class="panel queue-pane" style="min-height:0;" data-queue-pane="contractor">
           <h2>Contractor Queue</h2>
           <input id="queueContractorSearch" class="column-search" type="text" placeholder="Search contractor queue" />
           <div class="list" id="queueContractorsList"></div>
         </section>
-        <section class="panel" style="min-height:0;">
+        <section class="panel queue-pane" style="min-height:0;" data-queue-pane="compliance">
           <h2>Compliance Queue</h2>
           <input id="queueComplianceSearch" class="column-search" type="text" placeholder="Search compliance queue" />
           <div class="list" id="queueComplianceList"></div>
@@ -430,7 +557,7 @@
       </div>
     </section>
 
-    <section class="panel" style="min-height:0;margin-bottom:14px;">
+    <section class="panel" style="min-height:0;margin-bottom:14px;" id="createContractorSection">
       <h2>Create Contractor</h2>
       <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
         <div>
@@ -489,7 +616,9 @@
       </div>
     </section>
 
-    <section class="stats" id="stats"></section>
+    <section id="statsSection">
+      <div class="stats" id="stats"></div>
+    </section>
 
     <!-- ===== MARKET PULSE ===== -->
     <section class="panel" style="min-height:0;margin-bottom:14px;" id="marketPulseSection">
@@ -530,7 +659,7 @@
       <div id="appStoreStats"><p class="meta">Loading App Store data…</p></div>
     </section>
 
-    <section class="panel" style="min-height:0;margin-bottom:14px;">
+    <section class="panel" style="min-height:0;margin-bottom:14px;" id="complianceSection">
       <h2>Compliance Documents — Expiring Within 30 Days</h2>
       <p class="meta" style="margin-bottom:10px;">Documents that expire within 30 days or have already expired. Use the Clear button to admin-approve and re-activate the contractor.</p>
       <button id="loadExpiringDocsBtn" type="button" class="secondary" style="margin-bottom:12px;">Load Expiring / Expired Docs</button>
@@ -538,32 +667,34 @@
     </section>
 
 
-    <div class="grid">
-      <section class="panel">
+    <div class="grid" id="directorySection">
+      <section class="panel" id="contractorsSection">
         <h2>Contractors</h2>
         <input id="contractorSearch" class="column-search" type="text" placeholder="Search contractors" />
         <div class="list" id="contractorsList"></div>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="homeownersSection">
         <h2>Homeowners</h2>
         <input id="homeownerSearch" class="column-search" type="text" placeholder="Search homeowners" />
         <div class="list" id="homeownersList"></div>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="leadsSection">
         <h2>Leads</h2>
         <input id="leadSearch" class="column-search" type="text" placeholder="Search leads" />
         <div class="list" id="leadsList"></div>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="activitySection">
         <h2>Activity Log</h2>
         <input id="activitySearch" class="column-search" type="text" placeholder="Search activity log" />
         <div class="list" id="activityLogsList"></div>
       </section>
     </div>
   </main>
+    </div>
+  </div>
 
   <script>
     const adminKeyInput = document.getElementById('adminKey');
@@ -2376,6 +2507,16 @@
         createContractorBtn.textContent = 'Create Contractor';
       }
     };
+
+    const queueTabs = Array.from(document.querySelectorAll('[data-queue-tab]'));
+    const queuePanes = Array.from(document.querySelectorAll('[data-queue-pane]'));
+    const activateQueueTab = (name) => {
+      queueTabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.queueTab === name));
+      queuePanes.forEach((pane) => pane.classList.toggle('active', pane.dataset.queuePane === name));
+    };
+    queueTabs.forEach((tab) => {
+      tab.addEventListener('click', () => activateQueueTab(tab.dataset.queueTab));
+    });
 
     clearBtn.addEventListener('click', () => {
       adminKeyInput.value = '';
