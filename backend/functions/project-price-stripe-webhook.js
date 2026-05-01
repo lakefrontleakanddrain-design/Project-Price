@@ -15,6 +15,7 @@
  *   invoice.paid                → ensure contractor is active (renewals)
  *   invoice.payment_failed      → pause contractor
  *   customer.subscription.deleted → pause + cancel contractor
+ *   customer.subscription.updated → pause/cancel when status transitions
  */
 
 const crypto = require('crypto');
@@ -260,6 +261,44 @@ const handleSubscriptionDeleted = async (subscription) => {
   }
 };
 
+/**
+ * customer.subscription.updated — fallback for Stripe accounts where deleted event
+ * isn't available in event destination UI.
+ */
+const handleSubscriptionUpdated = async (subscription) => {
+  const customerId = subscription.customer;
+  const status = String(subscription.status || '').toLowerCase();
+  if (!customerId || !status) return;
+
+  const pro = await getProfessionalByStripeCustomer(customerId);
+  if (!pro) { console.warn(`subscription.updated: no professional found for customer ${customerId}`); return; }
+
+  if (status === 'active' || status === 'trialing') {
+    await updateProfessional(pro.id, {
+      subscription_status: 'active',
+      is_verified: true,
+      is_paused_by_contractor: false,
+      stripe_subscription_id: subscription.id || null,
+    });
+    console.log(`subscription.updated: activated professional ${pro.id}`);
+    return;
+  }
+
+  if (status === 'past_due' || status === 'unpaid' || status === 'incomplete_expired') {
+    await updateProfessional(pro.id, {
+      subscription_status: 'past_due',
+      is_verified: false,
+      stripe_subscription_id: subscription.id || null,
+    });
+    console.log(`subscription.updated: marked past_due professional ${pro.id}`);
+    return;
+  }
+
+  if (status === 'canceled') {
+    await handleSubscriptionDeleted(subscription);
+  }
+};
+
 // ─── Main handler ────────────────────────────────────────────────────────────
 
 exports.handler = async (event) => {
@@ -305,6 +344,9 @@ exports.handler = async (event) => {
         break;
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(stripeEvent.data.object);
+        break;
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdated(stripeEvent.data.object);
         break;
       default:
         console.log(`Unhandled Stripe event type: ${stripeEvent.type}`);
