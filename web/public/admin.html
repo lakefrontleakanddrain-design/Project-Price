@@ -1520,38 +1520,61 @@
 
       homeownersListEl.innerHTML = `
         <div class="list-summary">Showing ${pageInfo.startIndex}-${pageInfo.endIndex} of ${pageInfo.total} homeowners</div>
-      ` + pageInfo.pageRows.map((homeowner) => `
-        <article class="item">
-          <h3>
-            <span>${displayValue(homeowner.full_name, 'Unnamed Homeowner')}</span>
-            <span class="tag pending">${homeowner.projectCount || 0} Projects</span>
-          </h3>
-          <p class="meta">ID: ${displayValue(homeowner.id)}</p>
-          <p class="meta">Email: ${displayValue(homeowner.email)}</p>
-          <p class="meta">Phone: ${displayValue(homeowner.phone)}</p>
-          <p class="meta">Zip: ${displayValue(homeowner.zip_code)}</p>
-          <p class="meta">Lead Count: ${displayValue(homeowner.leadCount, '0')}</p>
-          <p class="meta">Latest Project: ${displayValue(homeowner.latestProjectName)}${homeowner.latestProjectType ? ` (${displayValue(homeowner.latestProjectType)})` : ''}</p>
-          <p class="meta">Latest Activity: ${fmtDate(homeowner.latestProjectAt || homeowner.latestLeadAt || homeowner.created_at)}</p>
-          <details class="action-drawer">
-            <summary>Actions</summary>
-            <div class="actions">
-              <input id="directory-homeowner-name-${homeowner.id}" type="text" placeholder="Homeowner name" value="${escapeHtml(homeowner.full_name || '')}" />
-              <input id="directory-homeowner-email-${homeowner.id}" type="text" placeholder="Homeowner email" value="${escapeHtml(homeowner.email || '')}" />
-              <input id="directory-homeowner-phone-${homeowner.id}" type="text" placeholder="Homeowner phone" value="${escapeHtml(homeowner.phone || '')}" />
-              <input id="directory-homeowner-zip-${homeowner.id}" type="text" placeholder="Zip code" value="${escapeHtml(homeowner.zip_code || '')}" />
-              <button class="small secondary" onclick="updateHomeownerDirectoryProfile('${homeowner.id}')">Save Homeowner</button>
-              <button class="small" onclick="resetHomeownerPassword('${homeowner.id}')">Temp Password</button>
-              <button class="small secondary" onclick="generateHomeownerRecovery('${homeowner.id}')">Recovery Link</button>
-              <button class="small" onclick="emailHomeownerRecovery('${homeowner.id}')">Prepare Email</button>
-              <button class="small" style="background: #c41e3a;" onclick="deleteHomeowner('${homeowner.id}')">Delete Homeowner</button>
-            </div>
-            <div class="actions">
-              <input id="homeowner-recovery-link-${homeowner.id}" type="text" placeholder="Recovery link will appear here" readonly />
-            </div>
-          </details>
-        </article>
-      `).join('') + renderPager('homeowners', pageInfo, 'homeowners');
+        <div class="directory-table-wrap">
+          <table class="directory-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Contact</th>
+                <th>ZIP</th>
+                <th>Project / Lead</th>
+                <th>Latest Activity</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${pageInfo.pageRows.map((homeowner) => `
+                <tr>
+                  <td>
+                    <div><strong>${displayValue(homeowner.full_name, 'Unnamed Homeowner')}</strong></div>
+                    <div class="cell-wrap">ID: ${displayValue(homeowner.id)}</div>
+                  </td>
+                  <td>
+                    <div class="cell-wrap">${displayValue(homeowner.email)}</div>
+                    <div class="cell-wrap">${displayValue(homeowner.phone)}</div>
+                  </td>
+                  <td>${displayValue(homeowner.zip_code)}</td>
+                  <td>
+                    <div class="cell-wrap">Projects: ${displayValue(homeowner.projectCount, '0')}</div>
+                    <div class="cell-wrap">Leads: ${displayValue(homeowner.leadCount, '0')}</div>
+                    <div class="cell-wrap">${displayValue(homeowner.latestProjectName)}${homeowner.latestProjectType ? ` (${displayValue(homeowner.latestProjectType)})` : ''}</div>
+                  </td>
+                  <td><div class="cell-wrap">${fmtDate(homeowner.latestProjectAt || homeowner.latestLeadAt || homeowner.created_at)}</div></td>
+                  <td>
+                    <details class="row-actions">
+                      <summary>...</summary>
+                      <div class="actions">
+                        <input id="directory-homeowner-name-${homeowner.id}" type="text" placeholder="Homeowner name" value="${escapeHtml(homeowner.full_name || '')}" />
+                        <input id="directory-homeowner-email-${homeowner.id}" type="text" placeholder="Homeowner email" value="${escapeHtml(homeowner.email || '')}" />
+                        <input id="directory-homeowner-phone-${homeowner.id}" type="text" placeholder="Homeowner phone" value="${escapeHtml(homeowner.phone || '')}" />
+                        <input id="directory-homeowner-zip-${homeowner.id}" type="text" placeholder="Zip code" value="${escapeHtml(homeowner.zip_code || '')}" />
+                        <button class="small secondary" onclick="updateHomeownerDirectoryProfile('${homeowner.id}')">Save</button>
+                        <button class="small" onclick="resetHomeownerPassword('${homeowner.id}')">Temp Pwd</button>
+                        <button class="small secondary" onclick="generateHomeownerRecovery('${homeowner.id}')">Recovery</button>
+                        <button class="small" onclick="emailHomeownerRecovery('${homeowner.id}')">Email</button>
+                        <button class="small" style="background: #c41e3a;" onclick="deleteHomeowner('${homeowner.id}')">Delete</button>
+                      </div>
+                      <div class="actions">
+                        <input id="homeowner-recovery-link-${homeowner.id}" type="text" placeholder="Recovery link will appear here" readonly />
+                      </div>
+                    </details>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` + renderPager('homeowners', pageInfo, 'homeowners');
     };
 
     const contractorOptions = () => {
@@ -1751,44 +1774,70 @@
 
       leadsListEl.innerHTML = `
         <div class="list-summary">Showing ${pageInfo.startIndex}-${pageInfo.endIndex} of ${pageInfo.total} leads</div>
-      ` + pageInfo.pageRows.map((lead) => `
-        <article class="item">
-          <h3>
-            <span>${displayValue(lead.specialty, 'Unknown')} in ${displayValue(lead.zipCode)}</span>
-            ${leadStatusTag(lead.status)}
-          </h3>
-          <p class="meta"><label><input class="lead-select" type="checkbox" value="${lead.id}" /> Select for bulk</label> ${leadSlaTag(lead)}</p>
-          <p class="meta">Lead ID: ${displayValue(lead.id)}</p>
-          <p class="meta">Created: ${fmtDate(lead.createdAt)}</p>
-          <p class="meta">Homeowner: ${displayValue(lead.homeowner?.full_name)}</p>
-          <p class="meta">Contact: ${displayValue(lead.homeowner?.email)} | ${displayValue(lead.homeowner?.phone)}</p>
-          <p class="meta">Project: ${displayValue(lead.project?.project_type)} - ${displayValue(lead.project?.description, 'No description')}</p>
-          <p class="meta">Assigned Contractor: ${displayValue(lead.claimedProfessional?.company_name, 'Unassigned')}</p>
-          <p class="meta">Workflow: ${displayValue(lead.workflow?.status || (lead.status === 'claimed' ? 'claimed' : 'N/A'))}</p>
-          <p class="meta">Manual Audit: ${lead.manualAssignment ? `Assigned by ${displayValue(lead.manualAssignment.by)} at ${fmtDate(lead.manualAssignment.at)}` : 'None'}</p>
-          <details class="action-drawer">
-            <summary>Actions</summary>
-            <div class="actions">
-              <select id="assign-${lead.id}">
-                <option value="">Select approved contractor...</option>
-                ${options}
-              </select>
-              <button class="small" onclick="assignLead('${lead.id}')">Assign Lead</button>
-              <button class="small secondary" onclick="removeLead('${lead.id}')">Remove Lead</button>
-            </div>
-            ${lead.homeowner?.id ? `
-            <div class="actions">
-              <input id="homeowner-name-${lead.id}" type="text" placeholder="Homeowner name" value="${escapeHtml(lead.homeowner?.full_name || '')}" />
-              <input id="homeowner-email-${lead.id}" type="text" placeholder="Homeowner email" value="${escapeHtml(lead.homeowner?.email || '')}" />
-              <input id="homeowner-phone-${lead.id}" type="text" placeholder="Homeowner phone" value="${escapeHtml(lead.homeowner?.phone || '')}" />
-              <input id="homeowner-zip-${lead.id}" type="text" placeholder="Zip code" value="${escapeHtml(lead.homeowner?.zip_code || lead.zipCode || '')}" />
-              <button class="small secondary" onclick="updateHomeownerProfile('${lead.id}', '${lead.homeowner.id}')">Save Homeowner</button>
-              <button class="small" onclick="resetHomeownerPassword('${lead.homeowner.id}')">Temp Password</button>
-              <button class="small secondary" onclick="generateHomeownerRecovery('${lead.homeowner.id}')">Recovery Link</button>
-            </div>` : '<p class="meta">No linked homeowner account found for this lead.</p>'}
-          </details>
-        </article>
-      `).join('') + renderPager('leads', pageInfo, 'leads');
+        <div class="directory-table-wrap">
+          <table class="directory-table">
+            <thead>
+              <tr>
+                <th>Sel</th>
+                <th>Lead</th>
+                <th>Status</th>
+                <th>Homeowner</th>
+                <th>Project</th>
+                <th>Workflow</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${pageInfo.pageRows.map((lead) => `
+                <tr>
+                  <td><input class="lead-select" type="checkbox" value="${lead.id}" /></td>
+                  <td>
+                    <div><strong>${displayValue(lead.specialty, 'Unknown')} in ${displayValue(lead.zipCode)}</strong></div>
+                    <div class="cell-wrap">ID: ${displayValue(lead.id)}</div>
+                    <div class="cell-wrap">${leadSlaTag(lead)}</div>
+                    <div class="cell-wrap">Created: ${fmtDate(lead.createdAt)}</div>
+                  </td>
+                  <td>${leadStatusTag(lead.status)}</td>
+                  <td>
+                    <div class="cell-wrap">${displayValue(lead.homeowner?.full_name)}</div>
+                    <div class="cell-wrap">${displayValue(lead.homeowner?.email)}</div>
+                    <div class="cell-wrap">${displayValue(lead.homeowner?.phone)}</div>
+                  </td>
+                  <td><div class="cell-wrap">${displayValue(lead.project?.project_type)} - ${displayValue(lead.project?.description, 'No description')}</div></td>
+                  <td>
+                    <div class="cell-wrap">Assigned: ${displayValue(lead.claimedProfessional?.company_name, 'Unassigned')}</div>
+                    <div class="cell-wrap">Flow: ${displayValue(lead.workflow?.status || (lead.status === 'claimed' ? 'claimed' : 'N/A'))}</div>
+                    <div class="cell-wrap">Audit: ${lead.manualAssignment ? `Assigned by ${displayValue(lead.manualAssignment.by)} at ${fmtDate(lead.manualAssignment.at)}` : 'None'}</div>
+                  </td>
+                  <td>
+                    <details class="row-actions">
+                      <summary>...</summary>
+                      <div class="actions">
+                        <select id="assign-${lead.id}">
+                          <option value="">Select approved contractor...</option>
+                          ${options}
+                        </select>
+                        <button class="small" onclick="assignLead('${lead.id}')">Assign</button>
+                        <button class="small secondary" onclick="removeLead('${lead.id}')">Remove</button>
+                      </div>
+                      ${lead.homeowner?.id ? `
+                      <div class="actions">
+                        <input id="homeowner-name-${lead.id}" type="text" placeholder="Homeowner name" value="${escapeHtml(lead.homeowner?.full_name || '')}" />
+                        <input id="homeowner-email-${lead.id}" type="text" placeholder="Homeowner email" value="${escapeHtml(lead.homeowner?.email || '')}" />
+                        <input id="homeowner-phone-${lead.id}" type="text" placeholder="Homeowner phone" value="${escapeHtml(lead.homeowner?.phone || '')}" />
+                        <input id="homeowner-zip-${lead.id}" type="text" placeholder="Zip code" value="${escapeHtml(lead.homeowner?.zip_code || lead.zipCode || '')}" />
+                        <button class="small secondary" onclick="updateHomeownerProfile('${lead.id}', '${lead.homeowner.id}')">Save Homeowner</button>
+                        <button class="small" onclick="resetHomeownerPassword('${lead.homeowner.id}')">Temp Pwd</button>
+                        <button class="small secondary" onclick="generateHomeownerRecovery('${lead.homeowner.id}')">Recovery</button>
+                      </div>` : '<p class="meta">No linked homeowner account found for this lead.</p>'}
+                    </details>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` + renderPager('leads', pageInfo, 'leads');
     };
 
     const renderActivityLogs = () => {
