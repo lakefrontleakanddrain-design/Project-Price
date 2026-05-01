@@ -432,22 +432,19 @@ const getIsoWeekStart = (value) => {
   return date;
 };
 
-const buildWeeklyCitySignupBreakout = (contractors) => {
-  const byWeekCity = new Map();
-
-  contractors.forEach((contractor) => {
-    const weekStart = getIsoWeekStart(contractor?.created_at);
+const buildWeeklyBreakout = (items, getCreatedAt, getLabel) => {
+  const byWeekLabel = new Map();
+  items.forEach((item) => {
+    const weekStart = getIsoWeekStart(getCreatedAt(item));
     if (!weekStart) return;
-
     const weekStartIso = weekStart.toISOString().slice(0, 10);
-    const city = normalizeSignupCity(contractor);
-    const key = `${weekStartIso}__${city.toLowerCase()}`;
-    const current = byWeekCity.get(key) || { weekStart: weekStartIso, city, signups: 0 };
+    const label = getLabel(item);
+    const key = `${weekStartIso}__${label.toLowerCase()}`;
+    const current = byWeekLabel.get(key) || { weekStart: weekStartIso, city: label, signups: 0 };
     current.signups += 1;
-    byWeekCity.set(key, current);
+    byWeekLabel.set(key, current);
   });
-
-  return Array.from(byWeekCity.values())
+  return Array.from(byWeekLabel.values())
     .sort((a, b) => {
       if (a.weekStart !== b.weekStart) return String(b.weekStart).localeCompare(String(a.weekStart));
       if (a.signups !== b.signups) return b.signups - a.signups;
@@ -455,6 +452,9 @@ const buildWeeklyCitySignupBreakout = (contractors) => {
     })
     .slice(0, 120);
 };
+
+const buildWeeklyCitySignupBreakout = (contractors) =>
+  buildWeeklyBreakout(contractors, (c) => c?.created_at, normalizeSignupCity);
 
 const buildDefaultRecoveryRedirect = () => {
   return `${resolvePublicBaseUrl()}/update-password.html`;
@@ -669,12 +669,32 @@ const fetchOverview = async () => {
   const activityLogs = await loadRecentActivityLogs(supabaseRequest, 60);
   const signupCityWeekly = buildWeeklyCitySignupBreakout(enrichedContractors);
 
+  const homeownerSignupWeekly = buildWeeklyBreakout(
+    enrichedHomeowners,
+    (h) => h?.created_at,
+    (h) => {
+      const zip = String(h?.zip_code || '').trim();
+      return zip ? `ZIP ${zip}` : 'Unknown';
+    },
+  );
+
+  const projectRequestWeekly = buildWeeklyBreakout(
+    leads,
+    (l) => l?.created_at,
+    (l) => {
+      const zip = String(l?.zip_code || '').trim();
+      return zip ? `ZIP ${zip}` : 'Unknown';
+    },
+  );
+
   return {
     contractors: enrichedContractors,
     homeowners: enrichedHomeowners,
     leads: enrichedLeads,
     activityLogs,
     signupCityWeekly,
+    homeownerSignupWeekly,
+    projectRequestWeekly,
     counts: {
       totalContractors: enrichedContractors.length,
       activeContractors: enrichedContractors.filter((c) => contractorState(c) === 'active').length,
