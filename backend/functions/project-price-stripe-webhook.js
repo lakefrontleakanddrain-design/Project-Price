@@ -195,6 +195,20 @@ const handleInvoicePaid = async (invoice) => {
       is_paused_by_contractor: false,
     });
     console.log(`invoice.paid: reactivated professional ${pro.id}`);
+
+    const email = await getUserEmailByProfessionalId(pro.id);
+    if (email) {
+      await sendEmail({
+        to: email,
+        subject: 'Project Price subscription restored',
+        html: `
+          <p>Great news - your Project Price subscription payment was successful.</p>
+          <p>Your contractor account is active again and you can continue receiving jobs.</p>
+          <p><a href="https://projectpriceapp.com/contractor-portal.html">Open your contractor portal</a></p>
+          <p>If you need help, contact support@projectprice.app.</p>
+        `,
+      });
+    }
   }
 };
 
