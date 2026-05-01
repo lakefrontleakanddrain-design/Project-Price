@@ -226,7 +226,10 @@ exports.handler = async (event) => {
     );
 
     for (const result of dayResults) {
-      if (result.status === 'rejected') continue; // daily failures are non-fatal
+      if (result.status === 'rejected') {
+        errors.push({ day: 'daily', error: result.reason?.message || 'Unknown error' });
+        continue;
+      }
       const { day, tsv } = result.value;
       if (!tsv) continue;
       parseUnits(parseTSV(tsv), dailyData, day);
@@ -264,6 +267,31 @@ exports.handler = async (event) => {
     const lifetimeTotal = byMonth.reduce((s, m) => s + m.total, 0);
 
     // Debug info — included always so admin can diagnose "no data" issues
+    // Also do a raw diagnostic probe on the most recent active day to capture
+    // exact HTTP status + body from Apple (helps diagnose auth/format issues)
+    let _rawProbe = null;
+    try {
+      const probeDate = '2026-04-28'; // first known day with downloads
+      const probeUrl = new URL('https://api.appstoreconnect.apple.com/v1/salesReports');
+      probeUrl.searchParams.set('filter[frequency]', 'DAILY');
+      probeUrl.searchParams.set('filter[reportType]', 'SALES');
+      probeUrl.searchParams.set('filter[reportSubType]', 'SUMMARY');
+      probeUrl.searchParams.set('filter[vendorNumber]', vendorNumber);
+      probeUrl.searchParams.set('filter[reportDate]', probeDate);
+      const probeRes = await fetch(probeUrl.toString(), {
+        headers: { Authorization: `Bearer ${jwt}`, Accept: 'application/a-gzip' },
+      });
+      const probeBody = await probeRes.text();
+      _rawProbe = {
+        date: probeDate,
+        status: probeRes.status,
+        contentType: probeRes.headers.get('content-type'),
+        bodySnippet: probeBody.slice(0, 500),
+      };
+    } catch (probeErr) {
+      _rawProbe = { error: probeErr.message };
+    }
+
     const _debug = {
       monthsTried: months,
       monthsWithTsv: monthResults
@@ -288,6 +316,7 @@ exports.handler = async (event) => {
         if (!first) return null;
         return parseTSV(first.value.tsv).slice(0, 3);
       })(),
+      _rawProbe,
     };
 
     return {
