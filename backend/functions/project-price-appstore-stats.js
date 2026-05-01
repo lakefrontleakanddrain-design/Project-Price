@@ -293,6 +293,11 @@ exports.handler = async (event) => {
     }
 
     const _debug = {
+      runtimeConfig: {
+        keyId: keyId || null,
+        issuerId: issuerId || null,
+        vendorNumber: vendorNumber || null,
+      },
       monthsTried: months,
       monthsWithTsv: monthResults
         .filter((r) => r.status === 'fulfilled' && r.value.tsv)
