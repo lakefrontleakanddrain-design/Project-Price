@@ -336,6 +336,162 @@
     .row-actions > summary::-webkit-details-marker { display: none; }
     .row-actions[open] > summary { margin-bottom: 6px; }
     .row-actions .actions { margin-top: 4px; }
+    .priority-focus {
+      margin-bottom: 14px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .focus-card {
+      border: 1px solid #d5e3f8;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #fcfeff 0%, #f2f7ff 100%);
+      padding: 12px 14px;
+      display: grid;
+      gap: 6px;
+    }
+    .focus-card .eyebrow {
+      font-size: .7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #537396;
+    }
+    .focus-card strong {
+      color: #0e3a78;
+      font-size: 1.35rem;
+      line-height: 1;
+    }
+    .focus-card .meta { margin: 0; }
+    .focus-card button {
+      justify-self: start;
+      padding: 6px 10px;
+      font-size: .76rem;
+      border-radius: 999px;
+    }
+    .directory-table tbody tr.clickable-row {
+      cursor: pointer;
+    }
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 25, 46, 0.42);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease;
+      z-index: 70;
+    }
+    .drawer-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .detail-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: min(460px, 94vw);
+      height: 100vh;
+      background: #fbfdff;
+      border-left: 1px solid #d5e3f8;
+      box-shadow: -18px 0 42px rgba(6, 22, 39, 0.16);
+      transform: translateX(104%);
+      transition: transform .2s ease;
+      z-index: 80;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+    .detail-drawer.open {
+      transform: translateX(0);
+    }
+    .drawer-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid #dce9fa;
+      background: linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
+    }
+    .drawer-head h3 {
+      margin: 0 0 4px;
+      color: #0e3a78;
+      font-size: 1.1rem;
+    }
+    .drawer-body {
+      overflow: auto;
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+    .drawer-close {
+      background: #fff;
+      color: #0e3a78;
+      border: 1px solid #cfe0f7;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: .82rem;
+      font-weight: 800;
+    }
+    .drawer-section {
+      border: 1px solid #dbe7f8;
+      border-radius: 12px;
+      background: #fff;
+      padding: 12px 14px;
+    }
+    .drawer-section h4 {
+      margin: 0 0 10px;
+      color: #183c66;
+      font-size: .82rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .drawer-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 12px;
+    }
+    .drawer-field {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+    .drawer-field span {
+      font-size: .7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #6685a6;
+    }
+    .drawer-field strong,
+    .drawer-field div {
+      color: #234564;
+      font-size: .86rem;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+    .drawer-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .drawer-tags .tag,
+    .drawer-tags .mini-tag {
+      margin: 0;
+    }
+    .drawer-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .text-link-button {
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: #0e3a78;
+      font-size: .76rem;
+      font-weight: 800;
+      text-decoration: underline;
+    }
     .state-revenue-wrap {
       margin-top: 10px;
       border: 1px solid #d5e3f8;
@@ -659,6 +815,7 @@
     @media (max-width: 1180px) {
       .admin-shell { grid-template-columns: 1fr; }
       .admin-sidebar { position: static; max-height: none; }
+      .drawer-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -877,6 +1034,7 @@
     </section>
 
     <section id="statsSection">
+      <div id="priorityFocus" class="priority-focus"></div>
       <div class="stats" id="stats"></div>
       <div id="monetizationGap" class="monetization-gap"></div>
       <div class="state-revenue-toolbar">
@@ -965,6 +1123,23 @@
     </div>
   </div>
 
+  <div id="detailDrawerBackdrop" class="drawer-backdrop"></div>
+  <aside id="detailDrawer" class="detail-drawer" aria-hidden="true" aria-label="Record details">
+    <div class="drawer-head">
+      <div>
+        <p class="meta" id="detailDrawerEyebrow" style="margin:0 0 4px;">Details</p>
+        <h3 id="detailDrawerTitle">Record Details</h3>
+        <p class="meta" id="detailDrawerSubtitle" style="margin:0;">Select a contractor, homeowner, or lead row to inspect details.</p>
+      </div>
+      <button id="closeDetailDrawerBtn" class="drawer-close" type="button">Close</button>
+    </div>
+    <div id="detailDrawerBody" class="drawer-body">
+      <div class="drawer-section">
+        <p class="meta" style="margin:0;">Select a row to review full details without losing your place in the table.</p>
+      </div>
+    </div>
+  </aside>
+
   <script>
     const adminShellEl = document.querySelector('.admin-shell');
     const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
@@ -988,6 +1163,7 @@
     const createBypassPaymentInput = document.getElementById('createBypassPayment');
     const createContractorBtn = document.getElementById('createContractorBtn');
     const statsEl = document.getElementById('stats');
+    const priorityFocusEl = document.getElementById('priorityFocus');
     const monetizationGapEl = document.getElementById('monetizationGap');
     const stateRevenueBreakoutEl = document.getElementById('stateRevenueBreakout');
     const stateRevenueLabelEl = document.getElementById('stateRevenueLabel');
@@ -1032,10 +1208,18 @@
     const homeownersListEl = document.getElementById('homeownersList');
     const leadsListEl = document.getElementById('leadsList');
     const activityLogsListEl = document.getElementById('activityLogsList');
+    const detailDrawerEl = document.getElementById('detailDrawer');
+    const detailDrawerBackdropEl = document.getElementById('detailDrawerBackdrop');
+    const detailDrawerEyebrowEl = document.getElementById('detailDrawerEyebrow');
+    const detailDrawerTitleEl = document.getElementById('detailDrawerTitle');
+    const detailDrawerSubtitleEl = document.getElementById('detailDrawerSubtitle');
+    const detailDrawerBodyEl = document.getElementById('detailDrawerBody');
+    const closeDetailDrawerBtn = document.getElementById('closeDetailDrawerBtn');
 
     let state = { contractors: [], homeowners: [], leads: [], activityLogs: [], signupCityWeekly: [], homeownerSignupWeekly: [], projectRequestWeekly: [], counts: {} };
     let activeQueue = 'all';
     let activeQueueTab = 'lead';
+    let openDrawerRecord = null;
     const MEMBERSHIP_MRR = 399;
     let stateRevenueMode = 'active';
     const PAGE_SIZE = 8;
@@ -1154,6 +1338,190 @@
       });
       link.click();
       URL.revokeObjectURL(link.href);
+    };
+
+    const drawerField = (label, value) => `
+      <div class="drawer-field">
+        <span>${escapeHtml(label)}</span>
+        <div>${displayValue(value)}</div>
+      </div>
+    `;
+
+    const drawerSection = (title, body) => `
+      <section class="drawer-section">
+        <h4>${escapeHtml(title)}</h4>
+        ${body}
+      </section>
+    `;
+
+    const miniTag = (text) => `<span class="tag pending mini-tag">${escapeHtml(text)}</span>`;
+
+    const buildContractorDrawer = (contractor) => {
+      const specialties = Array.isArray(contractor.specialties) ? contractor.specialties : [];
+      const zipCodes = Array.isArray(contractor.service_zip_codes) ? contractor.service_zip_codes : [];
+      const statusTag = contractorStatusTag(contractor);
+      return {
+        eyebrow: 'Contractor',
+        title: contractor.company_name || contractor.full_name || 'Contractor Record',
+        subtitle: `${contractor.email || 'No email'}${contractor.contact_phone || contractor.account_phone ? ` | ${contractor.contact_phone || contractor.account_phone}` : ''}`,
+        body: [
+          drawerSection('Status', `
+            <div class="drawer-tags">
+              ${statusTag}
+              ${contractor.is_verified ? miniTag('Verified') : miniTag('Needs Review')}
+            </div>
+          `),
+          drawerSection('Profile', `
+            <div class="drawer-grid">
+              ${drawerField('Company', contractor.company_name)}
+              ${drawerField('Contractor ID', contractor.id)}
+              ${drawerField('Email', contractor.email)}
+              ${drawerField('Phone', contractor.contact_phone || contractor.account_phone)}
+              ${drawerField('Created', fmtDate(contractor.created_at))}
+              ${drawerField('Deny Reason', contractor.denied_reason || 'None')}
+            </div>
+          `),
+          drawerSection('Service Coverage', `
+            <div class="drawer-grid">
+              ${drawerField('Primary ZIP', zipCodes[0] || '')}
+              ${drawerField('Radius', kmToMiles(contractor.service_radius_km) ? `${kmToMiles(contractor.service_radius_km)} mi` : '')}
+              ${drawerField('State', detectStateCode(contractor.state, contractor.service_state) || 'Unknown')}
+              ${drawerField('All ZIPs', zipCodes.join(', ') || 'N/A')}
+            </div>
+          `),
+          drawerSection('Specialties', specialties.length
+            ? `<div class="drawer-tags">${specialties.map((item) => miniTag(item)).join('')}</div>`
+            : '<p class="meta" style="margin:0;">No specialties on file.</p>'),
+          drawerSection('Actions', `
+            <div class="drawer-actions">
+              <button type="button" class="secondary" onclick="document.getElementById('contractorsSection')?.scrollIntoView({behavior:'smooth',block:'start'})">Jump to Table</button>
+            </div>
+          `),
+        ].join(''),
+      };
+    };
+
+    const buildHomeownerDrawer = (homeowner) => ({
+      eyebrow: 'Homeowner',
+      title: homeowner.full_name || 'Homeowner Record',
+      subtitle: `${homeowner.email || 'No email'}${homeowner.phone ? ` | ${homeowner.phone}` : ''}`,
+      body: [
+        drawerSection('Overview', `
+          <div class="drawer-grid">
+            ${drawerField('Homeowner ID', homeowner.id)}
+            ${drawerField('Created', fmtDate(homeowner.created_at))}
+            ${drawerField('ZIP', homeowner.zip_code)}
+            ${drawerField('State', detectStateCode(homeowner.state, homeowner.street_address) || 'Unknown')}
+            ${drawerField('Projects', homeowner.projectCount || 0)}
+            ${drawerField('Leads', homeowner.leadCount || 0)}
+          </div>
+        `),
+        drawerSection('Contact', `
+          <div class="drawer-grid">
+            ${drawerField('Full Name', homeowner.full_name)}
+            ${drawerField('Email', homeowner.email)}
+            ${drawerField('Phone', homeowner.phone)}
+            ${drawerField('Address', homeowner.street_address || '')}
+          </div>
+        `),
+        drawerSection('Recent Activity', `
+          <div class="drawer-grid">
+            ${drawerField('Latest Project', homeowner.latestProjectName || 'None')}
+            ${drawerField('Project Type', homeowner.latestProjectType || 'N/A')}
+            ${drawerField('Latest Project Date', fmtDate(homeowner.latestProjectAt))}
+            ${drawerField('Latest Lead Date', fmtDate(homeowner.latestLeadAt))}
+          </div>
+        `),
+      ].join(''),
+    });
+
+    const buildLeadDrawer = (lead) => ({
+      eyebrow: 'Lead',
+      title: `${lead.specialty || 'Lead'} ${lead.zipCode ? `in ${lead.zipCode}` : ''}`.trim(),
+      subtitle: `${lead.homeowner?.full_name || 'No homeowner linked'}${lead.homeowner?.phone ? ` | ${lead.homeowner.phone}` : ''}`,
+      body: [
+        drawerSection('Status', `
+          <div class="drawer-tags">
+            ${leadStatusTag(lead.status)}
+            ${leadSlaTag(lead)}
+            ${miniTag(lead.workflow?.status || 'workflow n/a')}
+          </div>
+        `),
+        drawerSection('Lead Snapshot', `
+          <div class="drawer-grid">
+            ${drawerField('Lead ID', lead.id)}
+            ${drawerField('Created', fmtDate(lead.createdAt || lead.created_at))}
+            ${drawerField('ZIP', lead.zipCode)}
+            ${drawerField('Assigned Pro', lead.claimedProfessional?.company_name || 'Unassigned')}
+            ${drawerField('Project Type', lead.project?.project_type || '')}
+            ${drawerField('Workflow', lead.workflow?.status || 'N/A')}
+          </div>
+        `),
+        drawerSection('Homeowner', `
+          <div class="drawer-grid">
+            ${drawerField('Name', lead.homeowner?.full_name || '')}
+            ${drawerField('Email', lead.homeowner?.email || '')}
+            ${drawerField('Phone', lead.homeowner?.phone || '')}
+            ${drawerField('State', detectStateCode(lead.homeowner?.state, lead.homeowner?.street_address) || 'Unknown')}
+          </div>
+        `),
+        drawerSection('Project Detail', `
+          <div class="drawer-grid">
+            ${drawerField('Description', lead.project?.description || 'No description')}
+            ${drawerField('Manual Assignment', lead.manualAssignment ? `Assigned by ${lead.manualAssignment.by} at ${fmtDate(lead.manualAssignment.at)}` : 'None')}
+          </div>
+        `),
+      ].join(''),
+    });
+
+    const closeDetailDrawer = () => {
+      detailDrawerEl?.classList.remove('open');
+      detailDrawerBackdropEl?.classList.remove('open');
+      detailDrawerEl?.setAttribute('aria-hidden', 'true');
+      openDrawerRecord = null;
+    };
+
+    const openDetailDrawer = (type, id) => {
+      let item = null;
+      let payload = null;
+      if (type === 'contractor') {
+        item = (state.contractors || []).find((entry) => entry.id === id);
+        if (item) payload = buildContractorDrawer(item);
+      }
+      if (type === 'homeowner') {
+        item = (state.homeowners || []).find((entry) => entry.id === id);
+        if (item) payload = buildHomeownerDrawer(item);
+      }
+      if (type === 'lead') {
+        item = (state.leads || []).find((entry) => entry.id === id);
+        if (item) payload = buildLeadDrawer(item);
+      }
+      if (!payload) return;
+      openDrawerRecord = { type, id };
+      detailDrawerEyebrowEl.textContent = payload.eyebrow;
+      detailDrawerTitleEl.textContent = payload.title;
+      detailDrawerSubtitleEl.textContent = payload.subtitle;
+      detailDrawerBodyEl.innerHTML = payload.body;
+      detailDrawerEl?.classList.add('open');
+      detailDrawerBackdropEl?.classList.add('open');
+      detailDrawerEl?.setAttribute('aria-hidden', 'false');
+    };
+
+    window.openDetailDrawer = openDetailDrawer;
+    window.handleRowOpen = (event, type, id) => {
+      const interactive = event.target.closest('button,summary,details,input,select,a,label,textarea');
+      if (interactive) return;
+      openDetailDrawer(type, id);
+    };
+    window.jumpToQueue = (queueKey, tabKey) => {
+      if (tabKey) activateQueueTab(tabKey);
+      activeQueue = queueKey || 'all';
+      persistSession();
+      renderQueueCards();
+      renderQueueLeads();
+      renderQueueContractors();
+      renderQueueCompliance();
+      document.getElementById('queuesSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
     const persistLayout = () => {
@@ -1561,6 +1929,7 @@
 
     const renderStats = () => {
       const c = state.counts || {};
+      const queueCountsSnapshot = queueCounts();
       const now = Date.now();
       const dayMs = 24 * 60 * 60 * 1000;
       const startCurr = now - (7 * dayMs);
@@ -1636,6 +2005,50 @@
         ['Pending Leads', c.pendingLeads || 0, '', pendingLeadSeries],
         ['Claimed Leads', c.claimedLeads || 0, '', claimedLeadSeries],
       ];
+      if (priorityFocusEl) {
+        const focusCards = [
+          {
+            eyebrow: 'Urgent Queue',
+            value: queueCountsSnapshot.staleLeads,
+            label: 'Stale leads older than 30 minutes',
+            action: `
+              <button type="button" class="secondary" onclick="jumpToQueue('staleLeads','lead')">Open Lead Queue</button>
+            `,
+          },
+          {
+            eyebrow: 'Pipeline',
+            value: c.pendingLeads || 0,
+            label: 'Pending leads needing contractor response',
+            action: `
+              <button type="button" class="secondary" onclick="jumpToQueue('pendingLeads','lead')">Review Pending Leads</button>
+            `,
+          },
+          {
+            eyebrow: 'Contractor Ops',
+            value: queueCountsSnapshot.pendingPros,
+            label: 'Paused or pending contractors awaiting action',
+            action: `
+              <button type="button" class="secondary" onclick="jumpToQueue('pendingPros','contractor')">Review Contractor Queue</button>
+            `,
+          },
+          {
+            eyebrow: 'Revenue Gap',
+            value: `$${monetizationGap.toLocaleString()}`,
+            label: `${inactiveSigned} signed memberships not yet active`,
+            action: `
+              <button type="button" class="secondary" onclick="document.getElementById('stateRevenueBreakout')?.scrollIntoView({behavior:'smooth',block:'start'})">Review State MRR</button>
+            `,
+          },
+        ];
+        priorityFocusEl.innerHTML = focusCards.map((card) => `
+          <article class="focus-card">
+            <span class="eyebrow">${card.eyebrow}</span>
+            <strong>${card.value}</strong>
+            <p class="meta">${card.label}</p>
+            ${card.action}
+          </article>
+        `).join('');
+      }
       statsEl.innerHTML = cards.map(([label, value, trend, series]) => `
         <div class="stat">
           <strong>${value}</strong>
@@ -1990,12 +2403,13 @@
             </thead>
             <tbody>
               ${pageInfo.pageRows.map((c) => `
-                <tr>
+                <tr class="clickable-row" onclick="handleRowOpen(event, 'contractor', '${c.id}')">
                   <td><input class="contractor-select" type="checkbox" value="${c.id}" /></td>
                   <td>
                     <div><strong>${displayValue(c.company_name, 'Unnamed Contractor')}</strong></div>
                     <div class="cell-wrap">ID: ${displayValue(c.id)}</div>
                     <div class="cell-wrap">Specialties: ${displayValue((c.specialties || []).join(', '))}</div>
+                    <button type="button" class="text-link-button" onclick="openDetailDrawer('contractor', '${c.id}')">View full profile</button>
                   </td>
                   <td>${contractorStatusTag(c)}</td>
                   <td>
@@ -2090,10 +2504,11 @@
             </thead>
             <tbody>
               ${pageInfo.pageRows.map((homeowner) => `
-                <tr>
+                <tr class="clickable-row" onclick="handleRowOpen(event, 'homeowner', '${homeowner.id}')">
                   <td>
                     <div><strong>${displayValue(homeowner.full_name, 'Unnamed Homeowner')}</strong></div>
                     <div class="cell-wrap">ID: ${displayValue(homeowner.id)}</div>
+                    <button type="button" class="text-link-button" onclick="openDetailDrawer('homeowner', '${homeowner.id}')">View full profile</button>
                   </td>
                   <td>
                     <div class="cell-wrap">${displayValue(homeowner.email)}</div>
@@ -2334,13 +2749,14 @@
             </thead>
             <tbody>
               ${pageInfo.pageRows.map((lead) => `
-                <tr>
+                <tr class="clickable-row" onclick="handleRowOpen(event, 'lead', '${lead.id}')">
                   <td><input class="lead-select" type="checkbox" value="${lead.id}" /></td>
                   <td>
                     <div><strong>${displayValue(lead.specialty, 'Unknown')} in ${displayValue(lead.zipCode)}</strong></div>
                     <div class="cell-wrap">ID: ${displayValue(lead.id)}</div>
                     <div class="cell-wrap">${leadSlaTag(lead)}</div>
                     <div class="cell-wrap">Created: ${fmtDate(lead.createdAt)}</div>
+                    <button type="button" class="text-link-button" onclick="openDetailDrawer('lead', '${lead.id}')">View full profile</button>
                   </td>
                   <td>${leadStatusTag(lead.status)}</td>
                   <td>
@@ -2495,6 +2911,7 @@
       renderHomeowners();
       renderLeads();
       renderActivityLogs();
+      if (openDrawerRecord) openDetailDrawer(openDrawerRecord.type, openDrawerRecord.id);
     };
 
     // App Store stats — separate async load so it never blocks the main dashboard
@@ -3474,6 +3891,11 @@
       adminShellEl?.classList.toggle('sidebar-collapsed');
       setSidebarToggleLabel();
       persistLayout();
+    });
+    closeDetailDrawerBtn?.addEventListener('click', closeDetailDrawer);
+    detailDrawerBackdropEl?.addEventListener('click', closeDetailDrawer);
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeDetailDrawer();
     });
     bulkAssignLeadsBtn.addEventListener('click', bulkAssignLeads);
     bulkRemoveLeadsBtn.addEventListener('click', bulkRemoveLeads);
