@@ -192,6 +192,60 @@
     .compact-table tbody tr:last-child td {
       border-bottom: none;
     }
+    .directory-table-wrap {
+      overflow: auto;
+      border: 1px solid #d5e3f8;
+      border-radius: 10px;
+      background: #fff;
+      max-height: 560px;
+    }
+    .directory-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .8rem;
+      color: #2a4460;
+    }
+    .directory-table th,
+    .directory-table td {
+      border-bottom: 1px solid #e7eefb;
+      padding: 7px 8px;
+      text-align: left;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+    .directory-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #f6f9ff;
+      color: #173a62;
+      font-weight: 700;
+    }
+    .directory-table .cell-wrap {
+      max-width: 220px;
+      white-space: normal;
+      line-height: 1.3;
+      color: #3f6183;
+      font-size: .76rem;
+    }
+    .row-actions {
+      min-width: 140px;
+    }
+    .row-actions > summary {
+      cursor: pointer;
+      font-weight: 700;
+      color: #0e3a78;
+      font-size: .76rem;
+      list-style: none;
+      border: 1px solid #c9dbf6;
+      border-radius: 7px;
+      display: inline-block;
+      padding: 4px 7px;
+      background: #f7fbff;
+    }
+    .row-actions > summary::-webkit-details-marker { display: none; }
+    .row-actions[open] > summary { margin-bottom: 6px; }
+    .row-actions .actions { margin-top: 4px; }
     .grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1360,59 +1414,83 @@
 
       contractorsListEl.innerHTML = `
         <div class="list-summary">Showing ${pageInfo.startIndex}-${pageInfo.endIndex} of ${pageInfo.total} contractors</div>
-      ` + pageInfo.pageRows.map((c) => `
-        <article class="item">
-          <h3>
-            <span>${displayValue(c.company_name, 'Unnamed Contractor')}</span>
-            ${contractorStatusTag(c)}
-          </h3>
-          <p class="meta"><label><input class="contractor-select" type="checkbox" value="${c.id}" /> Select for bulk</label></p>
-          <p class="meta">ID: ${displayValue(c.id)}</p>
-          <p class="meta">Email: ${displayValue(c.email)}</p>
-          <p class="meta">Phone: ${displayValue(c.contact_phone || c.account_phone)}</p>
-          <p class="meta">Denied Reason: ${displayValue(c.denied_reason)}</p>
-          <p class="meta">Specialties: ${displayValue((c.specialties || []).join(', '))}</p>
-          <p class="meta">Service Center ZIP: ${displayValue((c.service_zip_codes || [])[0])}</p>
-          <p class="meta">Service Radius (miles): ${displayValue(kmToMiles(c.service_radius_km))}</p>
-          <details class="action-drawer">
-            <summary>Actions</summary>
-            <div class="actions">
-              <input id="contractor-company-${c.id}" type="text" placeholder="Company name" value="${escapeHtml(c.company_name || '')}" />
-              <input id="contractor-email-${c.id}" type="text" placeholder="Login email" value="${escapeHtml(c.email || '')}" />
-              <input id="contractor-phone-${c.id}" type="text" placeholder="Contact phone" value="${escapeHtml(c.contact_phone || c.account_phone || '')}" />
-              <input id="contractor-specialties-${c.id}" type="text" placeholder="Specialties (comma separated)" value="${escapeHtml((c.specialties || []).join(', '))}" />
-              <input id="contractor-service-zip-${c.id}" type="text" placeholder="Center ZIP" value="${escapeHtml((c.service_zip_codes || [])[0] || '')}" />
-              <input id="contractor-service-radius-${c.id}" type="number" min="1" step="1" placeholder="Radius miles" value="${escapeHtml(kmToMiles(c.service_radius_km) || '')}" />
-              <button class="small secondary" onclick="updateContractorProfile('${c.id}')">Save Account</button>
-              <button class="small" onclick="resetContractorPassword('${c.id}')">Temp Password</button>
-              <button class="small secondary" onclick="generateContractorRecovery('${c.id}')">Recovery Link</button>
-              <button class="small" onclick="emailContractorRecovery('${c.id}')">Prepare Email</button>
-              <select id="contractor-reinvite-template-${c.id}">
-                <option value="standard" selected>Standard Invite</option>
-                <option value="founding">Founding Pro</option>
-              </select>
-              <button class="small secondary" onclick="reinviteContractor('${c.id}')">Reinvite</button>
-            </div>
-            <div class="actions">
-              <input id="contractor-recovery-link-${c.id}" type="text" placeholder="Recovery link will appear here" readonly />
-            </div>
-            <div class="actions">
-              <button class="small" onclick="approveContractor('${c.id}', true)">Approve</button>
-              <button class="small secondary" onclick="pauseContractor('${c.id}')">Pause</button>
-              <select id="deny-reason-${c.id}" onchange="toggleDenyOther('${c.id}')">
-                ${renderDenyReasonOptions()}
-              </select>
-              <input id="deny-reason-other-${c.id}" type="text" placeholder="Enter custom deny reason" style="display:none;" />
-              <button class="small" onclick="denyContractor('${c.id}')">Deny</button>
-              <button class="small" style="background: #c41e3a;" onclick="deleteContractor('${c.id}')">Delete Contractor</button>
-              <button class="small secondary" onclick="viewComplianceDocs('${c.id}', '${escapeHtml(c.company_name || 'Contractor')}')">View Compliance Docs</button>
-            </div>
-            <div class="compliance-panel" id="compliance-panel-${c.id}">
-              <div id="compliance-docs-${c.id}"><p class="meta">Loading...</p></div>
-            </div>
-          </details>
-        </article>
-      `).join('') + renderPager('contractors', pageInfo, 'contractors');
+        <div class="directory-table-wrap">
+          <table class="directory-table">
+            <thead>
+              <tr>
+                <th>Sel</th>
+                <th>Company</th>
+                <th>Status</th>
+                <th>Contact</th>
+                <th>Service</th>
+                <th>Deny Reason</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${pageInfo.pageRows.map((c) => `
+                <tr>
+                  <td><input class="contractor-select" type="checkbox" value="${c.id}" /></td>
+                  <td>
+                    <div><strong>${displayValue(c.company_name, 'Unnamed Contractor')}</strong></div>
+                    <div class="cell-wrap">ID: ${displayValue(c.id)}</div>
+                    <div class="cell-wrap">Specialties: ${displayValue((c.specialties || []).join(', '))}</div>
+                  </td>
+                  <td>${contractorStatusTag(c)}</td>
+                  <td>
+                    <div class="cell-wrap">${displayValue(c.email)}</div>
+                    <div class="cell-wrap">${displayValue(c.contact_phone || c.account_phone)}</div>
+                  </td>
+                  <td>
+                    <div class="cell-wrap">ZIP: ${displayValue((c.service_zip_codes || [])[0])}</div>
+                    <div class="cell-wrap">Radius: ${displayValue(kmToMiles(c.service_radius_km))} mi</div>
+                  </td>
+                  <td><div class="cell-wrap">${displayValue(c.denied_reason)}</div></td>
+                  <td>
+                    <details class="row-actions">
+                      <summary>...</summary>
+                      <div class="actions">
+                        <input id="contractor-company-${c.id}" type="text" placeholder="Company name" value="${escapeHtml(c.company_name || '')}" />
+                        <input id="contractor-email-${c.id}" type="text" placeholder="Login email" value="${escapeHtml(c.email || '')}" />
+                        <input id="contractor-phone-${c.id}" type="text" placeholder="Contact phone" value="${escapeHtml(c.contact_phone || c.account_phone || '')}" />
+                        <input id="contractor-specialties-${c.id}" type="text" placeholder="Specialties (comma separated)" value="${escapeHtml((c.specialties || []).join(', '))}" />
+                        <input id="contractor-service-zip-${c.id}" type="text" placeholder="Center ZIP" value="${escapeHtml((c.service_zip_codes || [])[0] || '')}" />
+                        <input id="contractor-service-radius-${c.id}" type="number" min="1" step="1" placeholder="Radius miles" value="${escapeHtml(kmToMiles(c.service_radius_km) || '')}" />
+                        <button class="small secondary" onclick="updateContractorProfile('${c.id}')">Save</button>
+                        <button class="small" onclick="resetContractorPassword('${c.id}')">Temp Pwd</button>
+                        <button class="small secondary" onclick="generateContractorRecovery('${c.id}')">Recovery</button>
+                        <button class="small" onclick="emailContractorRecovery('${c.id}')">Email</button>
+                        <select id="contractor-reinvite-template-${c.id}">
+                          <option value="standard" selected>Standard</option>
+                          <option value="founding">Founding</option>
+                        </select>
+                        <button class="small secondary" onclick="reinviteContractor('${c.id}')">Reinvite</button>
+                      </div>
+                      <div class="actions">
+                        <input id="contractor-recovery-link-${c.id}" type="text" placeholder="Recovery link will appear here" readonly />
+                      </div>
+                      <div class="actions">
+                        <button class="small" onclick="approveContractor('${c.id}', true)">Approve</button>
+                        <button class="small secondary" onclick="pauseContractor('${c.id}')">Pause</button>
+                        <select id="deny-reason-${c.id}" onchange="toggleDenyOther('${c.id}')">
+                          ${renderDenyReasonOptions()}
+                        </select>
+                        <input id="deny-reason-other-${c.id}" type="text" placeholder="Custom reason" style="display:none;" />
+                        <button class="small" onclick="denyContractor('${c.id}')">Deny</button>
+                        <button class="small" style="background: #c41e3a;" onclick="deleteContractor('${c.id}')">Delete</button>
+                        <button class="small secondary" onclick="viewComplianceDocs('${c.id}', 'Contractor')">Compliance</button>
+                      </div>
+                      <div class="compliance-panel" id="compliance-panel-${c.id}">
+                        <div id="compliance-docs-${c.id}"><p class="meta">Loading...</p></div>
+                      </div>
+                    </details>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` + renderPager('contractors', pageInfo, 'contractors');
     };
 
     const renderHomeowners = () => {
