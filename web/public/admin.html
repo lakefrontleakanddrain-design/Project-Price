@@ -3029,8 +3029,8 @@
       }
       const { lifetimeTotal = 0, byMonth = [], byCountry = [] } = data;
       if (!byMonth.length) {
-        appStoreStatsEl.innerHTML = '<p class="meta">No download data found.</p>';
-        if (appDownloadsWeeklyEl) appDownloadsWeeklyEl.innerHTML = '<p class="meta">No data yet.</p>';
+        appStoreStatsEl.innerHTML = '<p class="meta">No download data found. Apple may not have generated reports yet — this is normal in the first days of a new month or for a newly launched app.</p>';
+        if (appDownloadsWeeklyEl) appDownloadsWeeklyEl.innerHTML = '<p class="meta" style="color:#68778d;">No reports yet.<br><span style="font-size:10px;">Apple generates reports 1–2 days after activity.</span></p>';
         return;
       }
 

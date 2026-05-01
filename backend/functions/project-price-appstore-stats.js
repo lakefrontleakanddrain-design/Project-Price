@@ -66,17 +66,33 @@ const getMonthsSince = (startYYYYMM) => {
   return months;
 };
 
+/**
+ * Returns YYYY-MM-DD strings for the last `n` days (excluding today,
+ * since today's report isn't ready yet).
+ */
+const getLast30Days = () => {
+  const days = [];
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  for (let i = 1; i <= 30; i++) {
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() - i);
+    days.push(d.toISOString().slice(0, 10));
+  }
+  return days;
+};
+
 // ---------------------------------------------------------------------------
 // Report fetching
 // ---------------------------------------------------------------------------
 
-const fetchMonthlyReport = async (jwt, vendorNumber, reportMonth) => {
+const fetchReport = async (jwt, vendorNumber, frequency, reportDate) => {
   const url = new URL('https://api.appstoreconnect.apple.com/v1/salesReports');
-  url.searchParams.set('filter[frequency]', 'MONTHLY');
+  url.searchParams.set('filter[frequency]', frequency);
   url.searchParams.set('filter[reportType]', 'SALES');
   url.searchParams.set('filter[reportSubType]', 'SUMMARY');
   url.searchParams.set('filter[vendorNumber]', vendorNumber);
-  url.searchParams.set('filter[reportDate]', reportMonth);
+  url.searchParams.set('filter[reportDate]', reportDate);
 
   const res = await fetch(url.toString(), {
     headers: {
@@ -96,6 +112,9 @@ const fetchMonthlyReport = async (jwt, vendorNumber, reportMonth) => {
   return unzipped.toString('utf8');
 };
 
+const fetchMonthlyReport = (jwt, vendorNumber, month) => fetchReport(jwt, vendorNumber, 'MONTHLY', month);
+const fetchDailyReport = (jwt, vendorNumber, day) => fetchReport(jwt, vendorNumber, 'DAILY', day);
+
 // ---------------------------------------------------------------------------
 // TSV parser
 // ---------------------------------------------------------------------------
@@ -110,9 +129,11 @@ const parseTSV = (tsv) => {
   });
 };
 
-// Product Type Identifiers that count as free or paid app downloads (units)
-// Type 1 = paid, 7 = free download
-const DOWNLOAD_TYPES = new Set(['1', '1F', '1T', '7', 'F1']);
+// Count all product types EXCEPT known in-app purchase / subscription types.
+// Apple uses many download type codes (1, 7, 7T, F1, IA1, etc.); it's safer
+// to exclude the IAP family than to maintain an allow-list.
+const IAP_TYPES = new Set(['IA1', 'IA9', 'IAY', 'IAC', 'IATV', 'IAPD', 'IAPT']);
+const isDownload = (productType) => productType !== '' && !IAP_TYPES.has(productType);
 
 // ---------------------------------------------------------------------------
 // Handler
@@ -161,18 +182,30 @@ exports.handler = async (event) => {
 
   try {
     const jwt = createAppStoreJWT(keyId, issuerId, privateKeyPem);
-    // Fetch all complete months since launch in parallel (404 = before launch, silently skipped)
+    // --- Monthly reports (completed months, all fetched in parallel) ---
     const LAUNCH_MONTH = '2025-09';
     const months = getMonthsSince(LAUNCH_MONTH);
 
     const monthlyData = {}; // { 'YYYY-MM': { US: n, ... } }
     const errors = [];
 
-    const results = await Promise.allSettled(
+    const monthResults = await Promise.allSettled(
       months.map((month) => fetchMonthlyReport(jwt, vendorNumber, month).then((tsv) => ({ month, tsv })))
     );
 
-    for (const result of results) {
+    const parseUnits = (rows, bucket, key) => {
+      rows.forEach((row) => {
+        const productType = row.product_type_identifier || row.product_type || '';
+        if (!isDownload(productType)) return;
+        const units = parseInt(row.units || '0', 10);
+        if (!Number.isFinite(units) || units <= 0) return;
+        const country = row.country_code || 'XX';
+        if (!bucket[key]) bucket[key] = {};
+        bucket[key][country] = (bucket[key][country] || 0) + units;
+      });
+    };
+
+    for (const result of monthResults) {
       if (result.status === 'rejected') {
         errors.push({ error: result.reason?.message || 'Unknown error' });
         console.error('[appstore-stats] Month fetch failed:', result.reason?.message);
@@ -180,18 +213,36 @@ exports.handler = async (event) => {
       }
       const { month, tsv } = result.value;
       if (!tsv) continue;
-
-      const rows = parseTSV(tsv);
-      rows.forEach((row) => {
-        const productType = row.product_type_identifier || row.product_type || '';
-        if (!DOWNLOAD_TYPES.has(productType) && productType !== '1') return;
-        const units = parseInt(row.units || '0', 10);
-        if (!Number.isFinite(units) || units <= 0) return;
-        const country = row.country_code || 'XX';
-        if (!monthlyData[month]) monthlyData[month] = {};
-        monthlyData[month][country] = (monthlyData[month][country] || 0) + units;
-      });
+      parseUnits(parseTSV(tsv), monthlyData, month);
     }
+
+    // --- Daily reports for last 30 days (fills in months Apple hasn't published
+    //     monthly reports for yet, e.g. current and previous month) ---
+    const days = getLast30Days();
+    const dailyData = {}; // { 'YYYY-MM-DD': { US: n, ... } }
+
+    const dayResults = await Promise.allSettled(
+      days.map((day) => fetchDailyReport(jwt, vendorNumber, day).then((tsv) => ({ day, tsv })))
+    );
+
+    for (const result of dayResults) {
+      if (result.status === 'rejected') continue; // daily failures are non-fatal
+      const { day, tsv } = result.value;
+      if (!tsv) continue;
+      parseUnits(parseTSV(tsv), dailyData, day);
+    }
+
+    // Merge daily data into monthlyData for any month NOT already covered by a
+    // completed monthly report (avoids double-counting).
+    const coveredMonths = new Set(Object.keys(monthlyData));
+    Object.entries(dailyData).forEach(([day, countries]) => {
+      const month = day.slice(0, 7); // 'YYYY-MM'
+      if (coveredMonths.has(month)) return; // monthly report already covers this
+      if (!monthlyData[month]) monthlyData[month] = {};
+      Object.entries(countries).forEach(([country, n]) => {
+        monthlyData[month][country] = (monthlyData[month][country] || 0) + n;
+      });
+    });
 
     // Monthly totals in chronological order
     const byMonth = Object.entries(monthlyData)
