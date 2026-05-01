@@ -143,7 +143,7 @@
   <main class="card">
     <section id="loginPanel">
       <h1>Contractor Portal</h1>
-      <p class="sub">Sign in with the same email and password you created at signup (after approval) to view all accepted leads.</p>
+      <p class="sub">Sign in with the same email and password you created at signup (after approval) to view all accepted projects.</p>
       <form id="loginForm" novalidate>
         <div class="grid">
           <div>
@@ -162,7 +162,7 @@
 
     <section id="dashboard">
       <h1 id="companyName">Contractor Dashboard</h1>
-      <p class="sub">Accepted leads assigned to your account.</p>
+      <p class="sub">Accepted projects assigned to your account.</p>
       <div class="top-actions"><button id="signOutBtn" type="button">Sign Out</button></div>
 
       <section class="panel">
@@ -306,7 +306,7 @@
       }).length;
 
       summary.innerHTML = `
-        <div class="pill"><strong>${total}</strong>Total Accepted Leads</div>
+        <div class="pill"><strong>${total}</strong>Total Accepted Projects</div>
         <div class="pill"><strong>${recent}</strong>Accepted in Last 7 Days</div>
         <div class="pill"><strong>${(data.contractor.specialties || []).join(', ') || 'N/A'}</strong>Specialties</div>
         <div class="pill"><strong>${data.contractor.serviceZipCode || (data.contractor.serviceZipCodes || [])[0] || 'N/A'}</strong>Center ZIP</div>
@@ -314,12 +314,12 @@
       `;
 
       if (total === 0) {
-        leadsList.innerHTML = '<div class="lead"><h3>No accepted leads yet</h3><p class="desc">When you reply YES to a lead text, it will appear here.</p></div>';
+        leadsList.innerHTML = '<div class="lead"><h3>No accepted projects yet</h3><p class="desc">When you reply YES to a project text, it will appear here.</p></div>';
       } else {
         leadsList.innerHTML = data.leads.map((lead) => `
           <article class="lead">
             <h3>${lead.project?.type || lead.specialty || 'Project'} in ${lead.project?.zipCode || lead.zipCode || 'N/A'}</h3>
-            <p class="meta">Lead ID: ${lead.id} | Claimed: ${fmtDate(lead.claimedAt)} | Status: ${lead.status}</p>
+            <p class="meta">Project ID: ${lead.id} | Claimed: ${fmtDate(lead.claimedAt)} | Status: ${lead.status}</p>
             <p class="meta">Workflow: ${lead.workflowStatus || 'claimed'} | Updated: ${fmtDate(lead.workflowUpdatedAt)}</p>
             <p class="desc"><strong>Homeowner:</strong> ${lead.homeowner?.fullName || 'N/A'} (${lead.homeowner?.phone || 'N/A'})</p>
             <p class="desc"><strong>Homeowner Email:</strong> ${lead.homeowner?.email || 'N/A'}</p>
