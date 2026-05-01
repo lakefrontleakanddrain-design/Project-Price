@@ -3031,8 +3031,8 @@
       if (!byMonth.length) {
         const d = data._debug;
         const debugHtml = d ? `<details style="margin-top:8px;font-size:11px;color:#68778d;"><summary style="cursor:pointer;">Debug info</summary><pre style="background:#f4f8fe;padding:8px;border-radius:6px;overflow:auto;font-size:10px;margin-top:4px;">${escapeHtml(JSON.stringify(d, null, 2))}</pre></details>` : '';
-        appStoreStatsEl.innerHTML = `<p class="meta">No download data found. Apple may not have generated reports yet — this is normal in the first days of a new month or for a newly launched app.</p>${debugHtml}`;
-        if (appDownloadsWeeklyEl) appDownloadsWeeklyEl.innerHTML = '<p class="meta" style="color:#68778d;">No reports yet.<br><span style="font-size:10px;">Apple generates reports 1–2 days after activity.</span></p>';
+        appStoreStatsEl.innerHTML = `<p class="meta">No download data found.</p>${debugHtml}`;
+        if (appDownloadsWeeklyEl) appDownloadsWeeklyEl.innerHTML = `<p class="meta" style="color:#68778d;">No reports yet.</p>${debugHtml}`;
         return;
       }
 
