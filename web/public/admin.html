@@ -279,6 +279,34 @@
       background: #fff;
       overflow: auto;
     }
+    .state-revenue-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .segmented-controls {
+      display: inline-flex;
+      gap: 6px;
+      padding: 4px;
+      border: 1px solid #d5e3f8;
+      border-radius: 999px;
+      background: #f7fbff;
+    }
+    .segmented-controls button {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: .76rem;
+      background: transparent;
+      color: #315579;
+      border: 0;
+    }
+    .segmented-controls button.active {
+      background: #0e3a78;
+      color: #fff;
+    }
     .grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -752,6 +780,13 @@
 
     <section id="statsSection">
       <div class="stats" id="stats"></div>
+      <div class="state-revenue-toolbar">
+        <p class="meta" id="stateRevenueLabel">Revenue by state based on active memberships.</p>
+        <div class="segmented-controls" aria-label="State revenue mode">
+          <button id="stateRevenueActiveBtn" type="button" class="active">Active MRR</button>
+          <button id="stateRevenuePotentialBtn" type="button">Potential MRR</button>
+        </div>
+      </div>
       <div id="stateRevenueBreakout" class="state-revenue-wrap"></div>
     </section>
 
@@ -853,6 +888,9 @@
     const createContractorBtn = document.getElementById('createContractorBtn');
     const statsEl = document.getElementById('stats');
     const stateRevenueBreakoutEl = document.getElementById('stateRevenueBreakout');
+    const stateRevenueLabelEl = document.getElementById('stateRevenueLabel');
+    const stateRevenueActiveBtn = document.getElementById('stateRevenueActiveBtn');
+    const stateRevenuePotentialBtn = document.getElementById('stateRevenuePotentialBtn');
     const signupCityWeeklyEl = document.getElementById('signupCityWeekly');
     const homeownerSignupWeeklyEl = document.getElementById('homeownerSignupWeekly');
     const projectRequestWeeklyEl = document.getElementById('projectRequestWeekly');
@@ -892,6 +930,7 @@
     let state = { contractors: [], homeowners: [], leads: [], activityLogs: [], signupCityWeekly: [], homeownerSignupWeekly: [], projectRequestWeekly: [], counts: {} };
     let activeQueue = 'all';
     const MEMBERSHIP_MRR = 399;
+    let stateRevenueMode = 'active';
     const PAGE_SIZE = 8;
     const paginationState = { contractors: 1, homeowners: 1, leads: 1 };
     const sortState = {
@@ -1321,7 +1360,10 @@
 
       const byState = {};
       contractors.forEach((pro) => {
-        if (contractorState(pro) !== 'active') return;
+        const include = stateRevenueMode === 'active'
+          ? contractorState(pro) === 'active'
+          : true;
+        if (!include) return;
         const stateCode = detectStateCode(pro.state, pro.service_state) || 'Unknown';
         byState[stateCode] = (byState[stateCode] || 0) + 1;
       });
@@ -1329,6 +1371,16 @@
         .map(([stateCode, count]) => ({ stateCode, count, mrr: count * MEMBERSHIP_MRR }))
         .sort((a, b) => b.mrr - a.mrr)
         .slice(0, 12);
+
+      if (stateRevenueLabelEl) {
+        stateRevenueLabelEl.textContent = stateRevenueMode === 'active'
+          ? 'Revenue by state based on active memberships.'
+          : 'Revenue by state based on all signed memberships (potential MRR).';
+      }
+      if (stateRevenueActiveBtn && stateRevenuePotentialBtn) {
+        stateRevenueActiveBtn.classList.toggle('active', stateRevenueMode === 'active');
+        stateRevenuePotentialBtn.classList.toggle('active', stateRevenueMode === 'potential');
+      }
 
       if (!rows.length) {
         stateRevenueBreakoutEl.innerHTML = '<p class="meta" style="padding:10px;">No active memberships yet for state breakout.</p>';
@@ -1338,8 +1390,8 @@
             <thead>
               <tr>
                 <th>State</th>
-                <th>Active Memberships</th>
-                <th>Expected MRR</th>
+                <th>${stateRevenueMode === 'active' ? 'Active Memberships' : 'Signed Memberships'}</th>
+                <th>${stateRevenueMode === 'active' ? 'Expected MRR' : 'Potential MRR'}</th>
               </tr>
             </thead>
             <tbody>
@@ -2927,6 +2979,15 @@
     };
     queueTabs.forEach((tab) => {
       tab.addEventListener('click', () => activateQueueTab(tab.dataset.queueTab));
+    });
+
+    stateRevenueActiveBtn?.addEventListener('click', () => {
+      stateRevenueMode = 'active';
+      renderStats();
+    });
+    stateRevenuePotentialBtn?.addEventListener('click', () => {
+      stateRevenueMode = 'potential';
+      renderStats();
     });
 
     window.contractorsChangePage = (delta) => {
