@@ -1103,7 +1103,7 @@
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:18px;">
 
         <div>
-          <h3 style="font-size:13px;font-weight:700;color:#0E3A78;margin:0 0 8px 0;">📲 App Downloads (weekly)</h3>
+          <h3 style="font-size:13px;font-weight:700;color:#0E3A78;margin:0 0 8px 0;">📲 App Downloads (lifetime)</h3>
           <div id="appDownloadsWeekly"><p class="meta">Loading…</p></div>
         </div>
 
@@ -1126,7 +1126,7 @@
 
       <!-- App Store Downloads by Country -->
       <hr style="border:none;border-top:1px solid #dbe4ef;margin:0 0 16px 0;" />
-      <h3 style="font-size:13px;font-weight:700;color:#0E3A78;margin:0 0 8px 0;">App Store Downloads — Last 4 Weeks (by Country)</h3>
+      <h3 style="font-size:13px;font-weight:700;color:#0E3A78;margin:0 0 8px 0;">App Store Downloads — Lifetime (by Month &amp; Country)</h3>
       <div id="appStoreStats"><p class="meta">Loading App Store data…</p></div>
     </section>
 
@@ -2968,66 +2968,55 @@
 
     // App Store stats — separate async load so it never blocks the main dashboard
     const renderAppStoreStats = (data) => {
-      // Populate the weekly downloads column and funnel summary regardless of full data
-      const updateFunnelAndDownloadsColumn = (weeklyTotals, grandTotal) => {
-        // Weekly downloads column (same table format as other columns)
-        if (appDownloadsWeeklyEl) {
-          const THIRTY_AGO_ISO = THIRTY_AGO.toISOString().slice(0, 10);
-          const rows = Object.entries(weeklyTotals)
-            .filter(([w]) => w >= THIRTY_AGO_ISO)
-            .sort(([a], [b]) => b.localeCompare(a));
-          if (!rows.length) {
-            appDownloadsWeeklyEl.innerHTML = '<p class="meta">No download data in last 30 days.</p>';
-          } else {
-            const [w0total, w1total] = [weeklyTotals[THIS_WEEK] || 0, weeklyTotals[LAST_WEEK] || 0];
-            const delta = w0total - w1total;
-            const badge = delta > 0
-              ? `<span style="color:#22c55e;font-size:11px;font-weight:600;">▲ +${delta}</span>`
-              : delta < 0 ? `<span style="color:#ef4444;font-size:11px;font-weight:600;">▼ ${delta}</span>`
-              : '<span style="color:#94a3b8;font-size:11px;">— 0</span>';
-            appDownloadsWeeklyEl.innerHTML = `
-              <div class="table-wrap">
-                <table class="compact-table">
-                  <thead><tr><th>Week</th><th>Downloads</th><th>vs Last Wk</th></tr></thead>
-                  <tbody>
-                    ${rows.map(([w, n], i) => `
-                      <tr>
-                        <td>${escapeHtml(w)}</td>
-                        <td><strong>${n}</strong></td>
-                        <td>${i === 0 ? badge : '<span style="color:#94a3b8;font-size:11px;">—</span>'}</td>
-                      </tr>`).join('')}
-                  </tbody>
-                </table>
-              </div>`;
-          }
-        }
+      const updateDownloadsColumn = (lifetimeTotal, byMonth) => {
+        if (!appDownloadsWeeklyEl) return;
+        if (!byMonth.length) { appDownloadsWeeklyEl.innerHTML = '<p class="meta">No data yet.</p>'; return; }
+        const lastTwo = byMonth.slice(-2);
+        const thisMonth = lastTwo[lastTwo.length - 1]?.total || 0;
+        const prevMonth = lastTwo.length > 1 ? lastTwo[0].total : null;
+        const delta = prevMonth !== null ? thisMonth - prevMonth : null;
+        const badge = delta === null ? ''
+          : delta > 0 ? `<span style="color:#22c55e;font-size:11px;font-weight:600;">&#9650; +${delta} vs prev mo</span>`
+          : delta < 0 ? `<span style="color:#ef4444;font-size:11px;font-weight:600;">&#9660; ${delta} vs prev mo</span>`
+          : '<span style="color:#94a3b8;font-size:11px;">&#8212; same as prev mo</span>';
+        appDownloadsWeeklyEl.innerHTML = `
+          <div style="font-size:2rem;font-weight:800;color:#0E3A78;line-height:1;">${lifetimeTotal.toLocaleString()}</div>
+          <div style="font-size:11px;color:#68778d;margin:4px 0 10px 0;">lifetime downloads ${badge}</div>
+          <div class="table-wrap">
+            <table class="compact-table">
+              <thead><tr><th>Month</th><th>Downloads</th></tr></thead>
+              <tbody>
+                ${byMonth.slice().reverse().map((m) => `<tr><td>${escapeHtml(m.month)}</td><td><strong>${m.total}</strong></td></tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`;
+      };
 
-        // Funnel summary bar
-        if (funnelSummaryEl) {
-          const totalSignups = (state.homeownerSignupWeekly || []).reduce((s, r) => s + Number(r.signups || 0), 0);
-          const totalRequests = (state.projectRequestWeekly || []).reduce((s, r) => s + Number(r.signups || 0), 0);
-          const convRate = grandTotal > 0 ? Math.round((totalSignups / grandTotal) * 100) : null;
-          const reqRate = totalSignups > 0 ? Math.round((totalRequests / totalSignups) * 100) : null;
-          const pill = (label, value, color) =>
-            `<span style="background:#fff;border:1px solid #dbe4ef;border-radius:20px;padding:4px 12px;display:inline-flex;gap:6px;align-items:center;">
-              <span style="color:#68778d;font-size:11px;">${label}</span>
-              <strong style="color:${color};font-size:14px;">${value}</strong>
-            </span>`;
-          const arrow = `<span style="color:#94a3b8;font-size:16px;">→</span>`;
-          funnelSummaryEl.innerHTML = `
-            ${pill('📲 Downloads', grandTotal, '#0E3A78')}
-            ${arrow}
-            ${pill('👤 Signups', totalSignups, '#0E3A78')}
-            ${convRate !== null ? `<span style="font-size:11px;color:${convRate < 50 ? '#ef4444' : '#22c55e'};font-weight:600;">${convRate}% signup rate</span>` : ''}
-            ${arrow}
-            ${pill('🔨 Requests', totalRequests, '#0E3A78')}
-            ${reqRate !== null ? `<span style="font-size:11px;color:${reqRate < 50 ? '#ef4444' : '#22c55e'};font-weight:600;">${reqRate}% request rate</span>` : ''}
-          `;
-        }
+      const updateFunnelBar = (lifetimeTotal) => {
+        if (!funnelSummaryEl) return;
+        const totalSignups = (state.homeownerSignupWeekly || []).reduce((s, r) => s + Number(r.signups || 0), 0);
+        const totalRequests = (state.projectRequestWeekly || []).reduce((s, r) => s + Number(r.signups || 0), 0);
+        const pill = (label, value, color) =>
+          `<span style="background:#fff;border:1px solid #dbe4ef;border-radius:20px;padding:4px 12px;display:inline-flex;gap:6px;align-items:center;">
+            <span style="color:#68778d;font-size:11px;">${label}</span>
+            <strong style="color:${color};font-size:14px;">${value}</strong>
+          </span>`;
+        const arrow = `<span style="color:#94a3b8;font-size:16px;">&#8594;</span>`;
+        funnelSummaryEl.innerHTML = `
+          ${pill('&#128242; Lifetime Downloads', lifetimeTotal.toLocaleString(), '#0E3A78')}
+          ${arrow}
+          ${pill('&#128100; Signups (30d)', totalSignups, '#0E3A78')}
+          ${arrow}
+          ${pill('&#128296; Requests (30d)', totalRequests, '#0E3A78')}
+        `;
       };
 
       if (!appStoreStatsEl) return;
-      if (!data) { appStoreStatsEl.innerHTML = '<p class="meta">App Store data unavailable.</p>'; return; }
+      if (!data) {
+        appStoreStatsEl.innerHTML = '<p class="meta">App Store data unavailable.</p>';
+        if (appDownloadsWeeklyEl) appDownloadsWeeklyEl.innerHTML = '<p class="meta">Unavailable.</p>';
+        return;
+      }
       if (data.notConfigured) {
         appStoreStatsEl.innerHTML = `<p class="meta">Not configured. Add these Netlify env vars to enable: <strong>${(data.missingVars || []).join(', ')}</strong></p>`;
         if (appDownloadsWeeklyEl) appDownloadsWeeklyEl.innerHTML = '<p class="meta">Not configured.</p>';
@@ -3038,55 +3027,50 @@
         if (appDownloadsWeeklyEl) appDownloadsWeeklyEl.innerHTML = '<p class="meta" style="color:#ef4444;">Unavailable.</p>';
         return;
       }
-      const { territories = [], grandTotal = 0, weeksChecked = [] } = data;
-      if (!territories.length) {
-        appStoreStatsEl.innerHTML = '<p class="meta">No download data found for the last 4 weeks.</p>';
+      const { lifetimeTotal = 0, byMonth = [], byCountry = [] } = data;
+      if (!byMonth.length) {
+        appStoreStatsEl.innerHTML = '<p class="meta">No download data found.</p>';
         if (appDownloadsWeeklyEl) appDownloadsWeeklyEl.innerHTML = '<p class="meta">No data yet.</p>';
         return;
       }
 
-      // Build weekly totals (all countries summed)
-      const weeklyTotals = {};
-      territories.forEach((t) => {
-        Object.entries(t.weeks).forEach(([w, n]) => { weeklyTotals[w] = (weeklyTotals[w] || 0) + n; });
-      });
-      updateFunnelAndDownloadsColumn(weeklyTotals, grandTotal);
+      updateDownloadsColumn(lifetimeTotal, byMonth);
+      updateFunnelBar(lifetimeTotal);
 
-      // Heat: compare most-recent week vs prior week
-      const [w0, w1] = weeksChecked;
-      const appHeatBadge = (t) => {
-        if (!w0 || !w1) return '';
-        const delta = (t.weeks[w0] || 0) - (t.weeks[w1] || 0);
-        if (delta > 0) return `<span style="color:#22c55e;font-size:11px;font-weight:600;margin-left:4px;">▲ +${delta}</span>`;
-        if (delta < 0) return `<span style="color:#ef4444;font-size:11px;font-weight:600;margin-left:4px;">▼ ${delta}</span>`;
-        return '<span style="color:#94a3b8;font-size:11px;margin-left:4px;">— 0</span>';
-      };
       appStoreStatsEl.innerHTML = `
         <div style="margin-bottom:8px;display:flex;align-items:center;gap:12px;">
-          <span class="meta">Total downloads: <strong>${grandTotal}</strong> across ${weeksChecked.length} weeks</span>
+          <span class="meta">Lifetime total: <strong>${lifetimeTotal.toLocaleString()}</strong> downloads across ${byMonth.length} month${byMonth.length !== 1 ? 's' : ''}</span>
           <button id="exportAppStoreCsvBtn" type="button" class="secondary" style="font-size:11px;padding:3px 12px;">Export CSV</button>
         </div>
-        <div class="table-wrap">
-          <table class="compact-table">
-            <thead><tr><th>Country</th><th>Total</th><th>vs Prior Week</th>${weeksChecked.map((w) => `<th>${escapeHtml(w)}</th>`).join('')}</tr></thead>
-            <tbody>
-              ${territories.slice(0, 30).map((t) => `
-                <tr>
-                  <td>${escapeHtml(t.country)}</td>
-                  <td><strong>${t.total}</strong></td>
-                  <td>${appHeatBadge(t)}</td>
-                  ${weeksChecked.map((w) => `<td>${t.weeks[w] || 0}</td>`).join('')}
-                </tr>`).join('')}
-            </tbody>
-          </table>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+          <div>
+            <h4 style="font-size:12px;font-weight:700;color:#0E3A78;margin:0 0 6px 0;">By Month</h4>
+            <div class="table-wrap">
+              <table class="compact-table">
+                <thead><tr><th>Month</th><th>Downloads</th></tr></thead>
+                <tbody>
+                  ${byMonth.slice().reverse().map((m) => `<tr><td>${escapeHtml(m.month)}</td><td><strong>${m.total}</strong></td></tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <h4 style="font-size:12px;font-weight:700;color:#0E3A78;margin:0 0 6px 0;">By Country (Lifetime)</h4>
+            <div class="table-wrap">
+              <table class="compact-table">
+                <thead><tr><th>Country</th><th>Downloads</th></tr></thead>
+                <tbody>
+                  ${byCountry.slice(0, 20).map((c) => `<tr><td>${escapeHtml(c.country)}</td><td><strong>${c.total}</strong></td></tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>`;
       document.getElementById('exportAppStoreCsvBtn')?.addEventListener('click', () => {
-        const csv = [`Country,Total,${weeksChecked.join(',')}`,
-          ...territories.map((t) => `${t.country},${t.total},${weeksChecked.map((w) => t.weeks[w] || 0).join(',')}`)
-        ].join('\n');
+        const csv = ['Month,Downloads', ...byMonth.map((m) => `${m.month},${m.total}`)].join('\n');
         const a = Object.assign(document.createElement('a'), {
           href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })),
-          download: `appstore-downloads-${new Date().toISOString().slice(0,10)}.csv`,
+          download: `appstore-downloads-lifetime-${new Date().toISOString().slice(0,10)}.csv`,
         });
         a.click(); URL.revokeObjectURL(a.href);
       });

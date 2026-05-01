@@ -48,46 +48,35 @@ const createAppStoreJWT = (keyId, issuerId, privateKeyPem) => {
 // Date helpers
 // ---------------------------------------------------------------------------
 
-/** Returns the ISO Monday (YYYY-MM-DD, UTC) for the week containing `d`. */
-const toIsoMonday = (d) => {
-  const dt = new Date(d);
-  dt.setUTCHours(0, 0, 0, 0);
-  const day = dt.getUTCDay(); // 0=Sun
-  const offset = day === 0 ? -6 : 1 - day;
-  dt.setUTCDate(dt.getUTCDate() + offset);
-  return dt.toISOString().slice(0, 10);
-};
-
 /**
- * Returns the last `n` complete Mondays (most-recent-first).
- * "Complete" means the week has already ended (i.e., start from previous Monday).
+ * Returns YYYY-MM strings for every complete calendar month from
+ * startYYYYMM through last month inclusive. Months before the app
+ * launched will return 404 from Apple and are silently skipped.
  */
-const getLastNMondays = (n) => {
-  const mondays = [];
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  const todayMonday = toIsoMonday(today);
-  // Start one week before the current week so we only fetch complete weeks
-  const start = new Date(todayMonday);
-  start.setUTCDate(start.getUTCDate() - 7);
-  for (let i = 0; i < n; i++) {
-    mondays.push(start.toISOString().slice(0, 10));
-    start.setUTCDate(start.getUTCDate() - 7);
+const getMonthsSince = (startYYYYMM) => {
+  const months = [];
+  const [sy, sm] = startYYYYMM.split('-').map(Number);
+  const now = new Date();
+  const lastComplete = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  const cur = new Date(Date.UTC(sy, sm - 1, 1));
+  while (cur <= lastComplete) {
+    months.push(cur.toISOString().slice(0, 7)); // YYYY-MM
+    cur.setUTCMonth(cur.getUTCMonth() + 1);
   }
-  return mondays;
+  return months;
 };
 
 // ---------------------------------------------------------------------------
 // Report fetching
 // ---------------------------------------------------------------------------
 
-const fetchWeeklyReport = async (jwt, vendorNumber, reportDate) => {
+const fetchMonthlyReport = async (jwt, vendorNumber, reportMonth) => {
   const url = new URL('https://api.appstoreconnect.apple.com/v1/salesReports');
-  url.searchParams.set('filter[frequency]', 'WEEKLY');
+  url.searchParams.set('filter[frequency]', 'MONTHLY');
   url.searchParams.set('filter[reportType]', 'SALES');
   url.searchParams.set('filter[reportSubType]', 'SUMMARY');
   url.searchParams.set('filter[vendorNumber]', vendorNumber);
-  url.searchParams.set('filter[reportDate]', reportDate);
+  url.searchParams.set('filter[reportDate]', reportMonth);
 
   const res = await fetch(url.toString(), {
     headers: {
@@ -172,63 +161,61 @@ exports.handler = async (event) => {
 
   try {
     const jwt = createAppStoreJWT(keyId, issuerId, privateKeyPem);
-    const mondays = getLastNMondays(4); // last 4 complete weeks (~30 days)
+    // Fetch all complete months since launch in parallel (404 = before launch, silently skipped)
+    const LAUNCH_MONTH = '2025-09';
+    const months = getMonthsSince(LAUNCH_MONTH);
 
-    // { '2026-04-21': { US: 12, CA: 3, ... }, ... }
-    const weeklyData = {};
+    const monthlyData = {}; // { 'YYYY-MM': { US: n, ... } }
     const errors = [];
 
-    // Fetch all weeks in parallel to stay well within the 10-second function timeout
     const results = await Promise.allSettled(
-      mondays.map((monday) => fetchWeeklyReport(jwt, vendorNumber, monday).then((tsv) => ({ monday, tsv })))
+      months.map((month) => fetchMonthlyReport(jwt, vendorNumber, month).then((tsv) => ({ month, tsv })))
     );
 
     for (const result of results) {
       if (result.status === 'rejected') {
         errors.push({ error: result.reason?.message || 'Unknown error' });
-        console.error('[appstore-stats] Week fetch failed:', result.reason?.message);
+        console.error('[appstore-stats] Month fetch failed:', result.reason?.message);
         continue;
       }
-      const { monday, tsv } = result.value;
+      const { month, tsv } = result.value;
       if (!tsv) continue;
 
       const rows = parseTSV(tsv);
       rows.forEach((row) => {
         const productType = row.product_type_identifier || row.product_type || '';
         if (!DOWNLOAD_TYPES.has(productType) && productType !== '1') return;
-
         const units = parseInt(row.units || '0', 10);
         if (!Number.isFinite(units) || units <= 0) return;
-
         const country = row.country_code || 'XX';
-        if (!weeklyData[monday]) weeklyData[monday] = {};
-        weeklyData[monday][country] = (weeklyData[monday][country] || 0) + units;
+        if (!monthlyData[month]) monthlyData[month] = {};
+        monthlyData[month][country] = (monthlyData[month][country] || 0) + units;
       });
     }
 
-    // Aggregate totals by country across all weeks
-    const totals = {};
-    Object.values(weeklyData).forEach((weekCountries) => {
-      Object.entries(weekCountries).forEach(([country, units]) => {
-        totals[country] = (totals[country] || 0) + units;
-      });
-    });
-
-    // Build per-country weekly breakdown
-    const territories = Object.entries(totals)
-      .sort((a, b) => b[1] - a[1])
-      .map(([country, total]) => ({
-        country,
-        total,
-        weeks: Object.fromEntries(mondays.map((m) => [m, weeklyData[m]?.[country] || 0])),
+    // Monthly totals in chronological order
+    const byMonth = Object.entries(monthlyData)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, countries]) => ({
+        month,
+        total: Object.values(countries).reduce((s, n) => s + n, 0),
       }));
 
-    const grandTotal = territories.reduce((sum, t) => sum + t.total, 0);
+    // Lifetime country totals
+    const countryTotals = {};
+    Object.values(monthlyData).forEach((countries) => {
+      Object.entries(countries).forEach(([c, n]) => { countryTotals[c] = (countryTotals[c] || 0) + n; });
+    });
+    const byCountry = Object.entries(countryTotals)
+      .sort((a, b) => b[1] - a[1])
+      .map(([country, total]) => ({ country, total }));
+
+    const lifetimeTotal = byMonth.reduce((s, m) => s + m.total, 0);
 
     return {
       statusCode: 200,
       headers: responseHeaders,
-      body: JSON.stringify({ territories, grandTotal, weeksChecked: mondays, errors }),
+      body: JSON.stringify({ lifetimeTotal, byMonth, byCountry, errors }),
     };
   } catch (err) {
     console.error('[appstore-stats] Fatal error:', err.message);
