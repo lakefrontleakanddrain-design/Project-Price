@@ -27,7 +27,8 @@ const supabaseRequest = async (path, { method = 'GET', body, headers = {} } = {}
 };
 
 const normalizePhone = (phone) => {
-  const digits = phone.replace(/\D/g, '');
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (!digits) return null;
   if (digits.length === 10) return `+1${digits}`;
   if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
   return `+${digits}`;
@@ -158,32 +159,65 @@ const notifyOnContractorRegistration = async ({
     `Portal: ${portalUrl}`,
   ].join('\n');
 
-  const tasks = [];
-  for (const adminEmail of adminEmails) {
-    tasks.push(sendEmail({
-      to: adminEmail,
-      subject: `New contractor signup: ${companyName}`,
-      html: adminEmailHtml,
-    }).catch(() => null));
-  }
+  const result = {
+    adminEmailsTargeted: adminEmails.length,
+    adminEmailStatus: adminEmails.length ? [] : [{ status: 'skipped', reason: 'No admin/sales emails configured.' }],
+    contractorEmailStatus: { status: 'skipped', reason: 'Contractor email missing or invalid.' },
+    adminSmsStatus: { status: 'skipped', reason: 'ADMIN_PHONE_NUMBER missing or invalid.' },
+    contractorSmsStatus: { status: 'skipped', reason: 'Contractor phone missing or invalid.' },
+  };
+
+  const emailTasks = adminEmails.map(async (adminEmail) => {
+    try {
+      const sent = await sendEmail({
+        to: adminEmail,
+        subject: `New contractor signup: ${companyName}`,
+        html: adminEmailHtml,
+      });
+      return { to: adminEmail, status: sent.skipped ? 'skipped' : 'sent', reason: sent.reason || null };
+    } catch (error) {
+      return { to: adminEmail, status: 'error', reason: error instanceof Error ? error.message : 'Unknown email error.' };
+    }
+  });
+  result.adminEmailStatus = await Promise.all(emailTasks);
 
   if (isEmail(email)) {
-    tasks.push(sendEmail({
-      to: email,
-      subject: 'Project Price contractor registration received',
-      html: contractorEmailHtml,
-    }).catch(() => null));
+    try {
+      const sent = await sendEmail({
+        to: email,
+        subject: 'Project Price contractor registration received',
+        html: contractorEmailHtml,
+      });
+      result.contractorEmailStatus = { status: sent.skipped ? 'skipped' : 'sent', reason: sent.reason || null };
+    } catch (error) {
+      result.contractorEmailStatus = {
+        status: 'error',
+        reason: error instanceof Error ? error.message : 'Unknown contractor email error.',
+      };
+    }
   }
 
   const adminPhone = getAdminPhone();
   if (adminPhone) {
-    tasks.push(sendTwilioMessage(adminPhone, adminSms).catch(() => null));
-  }
-  if (normalizedPhone) {
-    tasks.push(sendTwilioMessage(normalizedPhone, contractorSms).catch(() => null));
+    try {
+      const sent = await sendTwilioMessage(adminPhone, adminSms);
+      result.adminSmsStatus = { status: sent.skipped ? 'skipped' : 'sent', reason: sent.reason || null, sid: sent.sid || null };
+    } catch (error) {
+      result.adminSmsStatus = { status: 'error', reason: error instanceof Error ? error.message : 'Unknown admin SMS error.' };
+    }
   }
 
-  await Promise.all(tasks);
+  if (normalizedPhone) {
+    try {
+      const sent = await sendTwilioMessage(normalizedPhone, contractorSms);
+      result.contractorSmsStatus = { status: sent.skipped ? 'skipped' : 'sent', reason: sent.reason || null, sid: sent.sid || null };
+    } catch (error) {
+      result.contractorSmsStatus = { status: 'error', reason: error instanceof Error ? error.message : 'Unknown contractor SMS error.' };
+    }
+  }
+
+  console.log('contractor-registration-notifications', JSON.stringify(result));
+  return result;
 };
 
 const getRequestIp = (event) => {
@@ -368,7 +402,7 @@ exports.handler = async (event) => {
       headers: { Prefer: 'return=minimal' },
     });
 
-    await notifyOnContractorRegistration({
+    const notificationStatus = await notifyOnContractorRegistration({
       fullName,
       companyName,
       email: String(email).trim().toLowerCase(),
@@ -380,6 +414,7 @@ exports.handler = async (event) => {
     return jsonResponse(201, {
       message: 'Registration submitted. Your account is pending verification. Once approved, sign in at https://projectpriceapp.com/contractor-portal.html to view accepted leads.',
       userId,
+      notifications: notificationStatus,
     });
   } catch (err) {
     return jsonResponse(500, { error: err instanceof Error ? err.message : 'Unexpected error.' });
