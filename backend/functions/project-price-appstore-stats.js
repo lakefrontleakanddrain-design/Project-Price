@@ -266,74 +266,18 @@ exports.handler = async (event) => {
 
     const lifetimeTotal = byMonth.reduce((s, m) => s + m.total, 0);
 
-    // Debug info — included always so admin can diagnose "no data" issues
-    // Also do a raw diagnostic probe on the most recent active day to capture
-    // exact HTTP status + body from Apple (helps diagnose auth/format issues)
-    let _rawProbe = null;
-    try {
-      const probeDate = '2026-04-28'; // first known day with downloads
-      const probeUrl = new URL('https://api.appstoreconnect.apple.com/v1/salesReports');
-      probeUrl.searchParams.set('filter[frequency]', 'DAILY');
-      probeUrl.searchParams.set('filter[reportType]', 'SALES');
-      probeUrl.searchParams.set('filter[reportSubType]', 'SUMMARY');
-      probeUrl.searchParams.set('filter[vendorNumber]', vendorNumber);
-      probeUrl.searchParams.set('filter[reportDate]', probeDate);
-      const probeRes = await fetch(probeUrl.toString(), {
-        headers: { Authorization: `Bearer ${jwt}`, Accept: 'application/a-gzip' },
-      });
-      const probeBody = await probeRes.text();
-      _rawProbe = {
-        date: probeDate,
-        status: probeRes.status,
-        contentType: probeRes.headers.get('content-type'),
-        bodySnippet: probeBody.slice(0, 500),
-      };
-    } catch (probeErr) {
-      _rawProbe = { error: probeErr.message };
-    }
+    const isForbidden = (msg) =>
+      String(msg || '').includes('403') ||
+      String(msg || '').includes('FORBIDDEN_ERROR') ||
+      String(msg || '').includes('does not allow this request');
 
-    const _debug = {
-      runtimeConfig: {
-        keyId: keyId || null,
-        issuerId: issuerId || null,
-        vendorNumber: vendorNumber || null,
-      },
-      monthsTried: months,
-      monthsWithTsv: monthResults
-        .filter((r) => r.status === 'fulfilled' && r.value.tsv)
-        .map((r) => r.value.month),
-      monthsWith404: monthResults
-        .filter((r) => r.status === 'fulfilled' && !r.value.tsv)
-        .map((r) => r.value.month),
-      monthErrors: monthResults
-        .filter((r) => r.status === 'rejected')
-        .map((r) => ({ error: r.reason?.message })),
-      daysTried: days.length,
-      daysWithTsv: dayResults
-        .filter((r) => r.status === 'fulfilled' && r.value.tsv)
-        .map((r) => r.value.day),
-      dayErrors: dayResults
-        .filter((r) => r.status === 'rejected')
-        .map((r) => ({ error: r.reason?.message })),
-      // First few raw rows from the earliest monthly TSV (if any) to verify parsing
-      sampleRows: (() => {
-        const first = monthResults.find((r) => r.status === 'fulfilled' && r.value.tsv);
-        if (!first) return null;
-        return parseTSV(first.value.tsv).slice(0, 3);
-      })(),
-      _rawProbe,
-    };
-
-    const permissionDenied = (
-      (_rawProbe && _rawProbe.status === 403)
-      || _debug.monthErrors.some((e) => String(e.error || '').includes('FORBIDDEN_ERROR') || String(e.error || '').includes('does not allow this request'))
-      || _debug.dayErrors.some((e) => String(e.error || '').includes('FORBIDDEN_ERROR') || String(e.error || '').includes('does not allow this request'))
-    );
+    const permissionDenied =
+      errors.some((e) => isForbidden(e.error));
 
     return {
       statusCode: 200,
       headers: responseHeaders,
-      body: JSON.stringify({ lifetimeTotal, byMonth, byCountry, errors, permissionDenied, _debug }),
+      body: JSON.stringify({ lifetimeTotal, byMonth, byCountry, permissionDenied }),
     };
   } catch (err) {
     console.error('[appstore-stats] Fatal error:', err.message);
