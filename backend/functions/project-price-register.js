@@ -48,7 +48,7 @@ const getGoogleMapsApiKey = () => String(process.env.GOOGLE_MAPS_API_KEY || '').
 const getResendApiKey = () => String(process.env.RESEND_API_KEY || '').trim();
 
 const LICENSE_REQUIRED_SERVICES = new Set([
-  'roofing', 'plumbing', 'hvac', 'electrical',
+  'general contractor', 'roofing', 'plumbing', 'hvac', 'electrical',
   'painting', 'flooring', 'windows and doors', 'siding', 'landscaping',
 ]);
 const getNotificationsFromEmail = () => String(process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectprice.app').trim();

@@ -10,7 +10,7 @@ const env = () => ({
 });
 
 const LICENSE_REQUIRED_SERVICES = new Set([
-  'roofing', 'plumbing', 'hvac', 'electrical',
+  'general contractor', 'roofing', 'plumbing', 'hvac', 'electrical',
   'painting', 'flooring', 'windows and doors', 'siding', 'landscaping',
 ]);
 
