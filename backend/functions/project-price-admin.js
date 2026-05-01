@@ -204,7 +204,7 @@ const kmToMiles = (km) => {
   return Math.round(value / 1.60934);
 };
 
-const DEFAULT_PUBLIC_BASE_URL = 'https://project-price-app.netlify.app';
+const DEFAULT_PUBLIC_BASE_URL = 'https://projectpriceapp.com';
 
 const resolvePublicBaseUrl = () => {
   const raw = String(env().siteUrl || '').trim().replace(/\/$/, '');
