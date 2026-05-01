@@ -121,6 +121,13 @@ const getInternalNotificationEmails = () => Array.from(new Set([
   getAdminNotificationEmail(),
   getSalesNotificationEmail(),
 ].filter((email) => /^\S+@\S+\.\S+$/.test(email))));
+const getRequestIp = (event) => String(
+  event?.headers?.['x-nf-client-connection-ip']
+  || event?.headers?.['client-ip']
+  || event?.headers?.['x-forwarded-for']
+  || ''
+).split(',')[0].trim() || null;
+const HOMEOWNER_SMS_CONSENT_TEXT = 'I agree to receive transactional SMS messages from Project Price about my request, estimate updates, contractor matching, and my My Estimates access link. Message and data rates may apply. Reply STOP to unsubscribe.';
 
 const toFloatOrNull = (value) => {
   const num = Number(value);
@@ -141,6 +148,7 @@ const geocodeUsZipCode = async (zipCode) => {
   const key = getGoogleMapsApiKey();
   const zip = String(zipCode || '').trim();
   if (!zip) return null;
+    smsConsentAccepted,
 
   if (key) {
     const params = new URLSearchParams({
@@ -533,8 +541,14 @@ exports.handler = async (event) => {
     return jsonResponse(400, { error: 'phone must be a valid US phone number.' });
   }
 
+  if (smsConsentAccepted !== true) {
+    return jsonResponse(400, { error: 'You must consent to homeowner SMS updates before submitting your request.' });
+  }
+
   try {
     const geocodedProjectPoint = await geocodeUsZipCode(zipCode.trim());
+    const acceptedAt = new Date().toISOString();
+    const acceptedIp = getRequestIp(event);
 
     // 1. Create or find auth user
     let userId = String(requestedUserId || '').trim();
@@ -640,22 +654,47 @@ exports.handler = async (event) => {
         specialty: projectType.toLowerCase(),
         zip_code: zipCode.trim(),
         status: 'pending',
+        homeowner_sms_opt_in_acknowledged: true,
+        homeowner_sms_opt_in_at: acceptedAt,
+        homeowner_sms_opt_in_ip: acceptedIp,
+        homeowner_sms_opt_in_text: HOMEOWNER_SMS_CONSENT_TEXT,
       },
       headers: { Prefer: 'return=representation' },
     }).catch(async (err) => {
+      const postLeadRequest = (body) => supabaseRequest('/rest/v1/lead_requests', {
+        method: 'POST',
+        body,
+        headers: { Prefer: 'return=representation' },
+      });
+
+      if (hasMissingColumnError(err, 'homeowner_sms_opt_in_acknowledged')) {
+        try {
+          return await postLeadRequest({
+            project_id: projectId,
+            homeowner_id: userId,
+            homeowner_email: normalizedEmail,
+            homeowner_phone: normalizedPhone,
+            specialty: projectType.toLowerCase(),
+            zip_code: zipCode.trim(),
+            status: 'pending',
+          });
+        } catch (innerErr) {
+          if (
+            !hasMissingColumnError(innerErr, 'homeowner_phone')
+            && !hasMissingColumnError(innerErr, 'homeowner_email')
+          ) throw innerErr;
+        }
+      }
+
       if (hasMissingColumnError(err, 'homeowner_phone')) {
         try {
-          return await supabaseRequest('/rest/v1/lead_requests', {
-            method: 'POST',
-            body: {
-              project_id: projectId,
-              homeowner_id: userId,
-              homeowner_email: normalizedEmail,
-              specialty: projectType.toLowerCase(),
-              zip_code: zipCode.trim(),
-              status: 'pending',
-            },
-            headers: { Prefer: 'return=representation' },
+          return await postLeadRequest({
+            project_id: projectId,
+            homeowner_id: userId,
+            homeowner_email: normalizedEmail,
+            specialty: projectType.toLowerCase(),
+            zip_code: zipCode.trim(),
+            status: 'pending',
           });
         } catch (innerErr) {
           if (!hasMissingColumnError(innerErr, 'homeowner_email')) throw innerErr;
@@ -663,16 +702,12 @@ exports.handler = async (event) => {
       }
 
       if (!hasMissingColumnError(err, 'homeowner_email') && !hasMissingColumnError(err, 'homeowner_phone')) throw err;
-      return supabaseRequest('/rest/v1/lead_requests', {
-        method: 'POST',
-        body: {
-          project_id: projectId,
-          homeowner_id: userId,
-          specialty: projectType.toLowerCase(),
-          zip_code: zipCode.trim(),
-          status: 'pending',
-        },
-        headers: { Prefer: 'return=representation' },
+      return postLeadRequest({
+        project_id: projectId,
+        homeowner_id: userId,
+        specialty: projectType.toLowerCase(),
+        zip_code: zipCode.trim(),
+        status: 'pending',
       });
     });
     const lead = leadRows?.[0];

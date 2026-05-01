@@ -227,6 +227,13 @@
             I agree to share my contact information and project details with one approved contractor in my area so they can contact me with an exact estimate.
           </span>
         </label>
+
+        <label class="consent" for="consentSms">
+          <input id="consentSms" type="checkbox" required />
+          <span>
+            I agree to receive transactional SMS messages from Project Price about my request, estimate updates, contractor matching, and my My Estimates access link. Message and data rates may apply. Reply STOP to unsubscribe.
+          </span>
+        </label>
       </div>
 
       <button type="submit" id="btn">Request My Exact Estimate →</button>
@@ -281,6 +288,7 @@
         streetAddress: document.getElementById('streetAddress').value.trim(),
         projectType,
         description: document.getElementById('description').value.trim(),
+        smsConsentAccepted: document.getElementById('consentSms').checked,
       };
 
       if (!payload.fullName || !payload.email || !payload.streetAddress) {
@@ -302,6 +310,13 @@
       if (!consentChecked) {
         result.className = 'result error';
         result.textContent = 'Please confirm consent to share your details with one approved contractor.';
+        result.style.display = 'block';
+        return;
+      }
+
+      if (!payload.smsConsentAccepted) {
+        result.className = 'result error';
+        result.textContent = 'Please confirm consent to receive homeowner SMS updates from Project Price.';
         result.style.display = 'block';
         return;
       }
