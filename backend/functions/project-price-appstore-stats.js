@@ -5,7 +5,7 @@
  * by country/territory.
  *
  * Required Netlify environment variables:
- *   APP_STORE_CONNECT_KEY_IDENTIFIER   — API key ID (e.g. 7M4252YLKU)
+ *   APP_STORE_CONNECT_KEY_IDENTIFIER   — API key ID (from App Store Connect → Users and Access → Keys)
  *   APP_STORE_CONNECT_ISSUER_ID        — Issuer ID (UUID from App Store Connect)
  *   APP_STORE_CONNECT_PRIVATE_KEY      — Full content of the .p8 file; replace
  *                                        physical newlines with \n when saving to Netlify.
