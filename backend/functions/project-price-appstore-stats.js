@@ -263,10 +263,37 @@ exports.handler = async (event) => {
 
     const lifetimeTotal = byMonth.reduce((s, m) => s + m.total, 0);
 
+    // Debug info — included always so admin can diagnose "no data" issues
+    const _debug = {
+      monthsTried: months,
+      monthsWithTsv: monthResults
+        .filter((r) => r.status === 'fulfilled' && r.value.tsv)
+        .map((r) => r.value.month),
+      monthsWith404: monthResults
+        .filter((r) => r.status === 'fulfilled' && !r.value.tsv)
+        .map((r) => r.value.month),
+      monthErrors: monthResults
+        .filter((r) => r.status === 'rejected')
+        .map((r) => ({ error: r.reason?.message })),
+      daysTried: days.length,
+      daysWithTsv: dayResults
+        .filter((r) => r.status === 'fulfilled' && r.value.tsv)
+        .map((r) => r.value.day),
+      dayErrors: dayResults
+        .filter((r) => r.status === 'rejected')
+        .map((r) => ({ error: r.reason?.message })),
+      // First few raw rows from the earliest monthly TSV (if any) to verify parsing
+      sampleRows: (() => {
+        const first = monthResults.find((r) => r.status === 'fulfilled' && r.value.tsv);
+        if (!first) return null;
+        return parseTSV(first.value.tsv).slice(0, 3);
+      })(),
+    };
+
     return {
       statusCode: 200,
       headers: responseHeaders,
-      body: JSON.stringify({ lifetimeTotal, byMonth, byCountry, errors }),
+      body: JSON.stringify({ lifetimeTotal, byMonth, byCountry, errors, _debug }),
     };
   } catch (err) {
     console.error('[appstore-stats] Fatal error:', err.message);
