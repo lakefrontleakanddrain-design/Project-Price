@@ -169,7 +169,7 @@ const handleCheckoutCompleted = async (session) => {
       subject: 'Welcome to Project Price — Your account is active!',
       html: `
         <p>Your subscription is confirmed and your Project Price contractor account is now active.</p>
-        <p>You can now sign in and start receiving leads:<br/>
+        <p>You can now sign in and start receiving jobs:<br/>
         <a href="https://projectpriceapp.com/contractor-portal.html">https://projectpriceapp.com/contractor-portal.html</a></p>
         <p>Subscription: $399/month, billed monthly. Manage your subscription at any time via your account portal.</p>
         <p>Thank you for joining Project Price!</p>
@@ -222,7 +222,7 @@ const handlePaymentFailed = async (invoice) => {
       subject: 'Action Required — Project Price payment failed',
       html: `
         <p>We were unable to process your Project Price subscription payment of $399.</p>
-        <p>Your account has been temporarily paused. Please update your payment method to reactivate your account and continue receiving leads.</p>
+        <p>Your account has been temporarily paused. Please update your payment method to reactivate your account and continue receiving jobs.</p>
         <p><a href="https://projectpriceapp.com/contractor-portal.html">Update payment method</a></p>
         <p>If you have questions, reply to this email or contact support@projectprice.app.</p>
       `,
