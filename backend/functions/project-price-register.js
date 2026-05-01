@@ -96,6 +96,7 @@ const getSalesNotificationEmail = () => String(process.env.SALES_NOTIFICATION_EM
 const getAppBaseUrl = () => String(process.env.APP_BASE_URL || process.env.SITE_URL || 'https://projectpriceapp.com').trim().replace(/\/$/, '');
 
 const CONTRACTOR_TERMS_VERSION = 'charter-member-professional-v1.0-2026-04-30';
+const CONTRACTOR_SMS_CONSENT_TEXT = 'I agree to receive transactional SMS messages from Project Price about matching projects, account activity, and claim responses at this number. Message and data rates may apply. Reply STOP to unsubscribe.';
 
 const isEmail = (value) => /^\S+@\S+\.\S+$/.test(String(value || '').trim());
 
@@ -424,6 +425,7 @@ exports.handler = async (event) => {
     serviceZipCodes,
     serviceRadiusMiles,
     serviceRadiusKm,
+    smsConsentAccepted,
     termsAccepted,
     accelerationClauseAccepted,
     twentyFourHourRuleAccepted,
@@ -442,6 +444,12 @@ exports.handler = async (event) => {
   if (termsAccepted !== true || accelerationClauseAccepted !== true || twentyFourHourRuleAccepted !== true) {
     return jsonResponse(400, {
       error: 'You must accept the contractor digital terms, acceleration clause, and 24-hour payment rule.',
+    });
+  }
+
+  if (smsConsentAccepted !== true) {
+    return jsonResponse(400, {
+      error: 'You must consent to contractor SMS notifications before creating an account.',
     });
   }
 
@@ -527,6 +535,10 @@ exports.handler = async (event) => {
         contractor_terms_accepted_ip: acceptedIp,
         contractor_terms_acceleration_acknowledged: true,
         contractor_terms_24h_rule_acknowledged: true,
+        contractor_sms_opt_in_acknowledged: true,
+        contractor_sms_opt_in_at: acceptedAt,
+        contractor_sms_opt_in_ip: acceptedIp,
+        contractor_sms_opt_in_text: CONTRACTOR_SMS_CONSENT_TEXT,
       },
       headers: { Prefer: 'return=minimal' },
     });

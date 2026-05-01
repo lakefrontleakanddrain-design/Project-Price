@@ -236,6 +236,11 @@
       <input id="phone" type="tel" placeholder="(440) 555-1234" required />
       <p class="hint">You'll receive project notifications at this number. Standard SMS rates apply.</p>
 
+      <label class="consent-row">
+        <input id="smsConsentAgree" type="checkbox" />
+        <span>I agree to receive transactional SMS messages from Project Price about matching projects, account activity, and claim responses at this number. Message and data rates may apply. Reply STOP to unsubscribe.</span>
+      </label>
+
       <hr class="divider" />
 
       <label>Specialties</label>
@@ -309,9 +314,11 @@
 
   <script>
     const termsVersion = 'charter-member-professional-v1.0-2026-04-30';
+    const smsConsentText = 'I agree to receive transactional SMS messages from Project Price about matching projects, account activity, and claim responses at this number. Message and data rates may apply. Reply STOP to unsubscribe.';
     const form = document.getElementById('form');
     const btn = document.getElementById('btn');
     const termsAgree = document.getElementById('termsAgree');
+    const smsConsentAgree = document.getElementById('smsConsentAgree');
 
     // Trades that require a license (General Contractor does NOT)
     const LICENSE_TRADES = new Set([
@@ -506,10 +513,11 @@
     };
 
     const refreshSubmitState = () => {
-      btn.disabled = !termsAgree.checked || !isComplianceComplete();
+      btn.disabled = !termsAgree.checked || !smsConsentAgree.checked || !isComplianceComplete();
     };
 
     termsAgree.addEventListener('change', refreshSubmitState);
+    smsConsentAgree.addEventListener('change', refreshSubmitState);
     refreshSubmitState();
 
     document.querySelectorAll('.specialties-grid input[type=checkbox]').forEach((cb) => {
@@ -524,6 +532,13 @@
       if (!termsAgree.checked) {
         result.className = 'result error';
         result.textContent = 'You must accept the Digital Sign-up Terms before creating an account.';
+        result.style.display = 'block';
+        return;
+      }
+
+      if (!smsConsentAgree.checked) {
+        result.className = 'result error';
+        result.textContent = 'You must agree to receive contractor SMS notifications before creating an account.';
         result.style.display = 'block';
         return;
       }
@@ -572,6 +587,8 @@
         specialties,
         serviceZipCode: document.getElementById('serviceZip').value.trim(),
         serviceRadiusMiles: document.getElementById('radius').value,
+        smsConsentAccepted: true,
+        smsConsentText,
         termsAccepted: true,
         accelerationClauseAccepted: true,
         twentyFourHourRuleAccepted: true,
