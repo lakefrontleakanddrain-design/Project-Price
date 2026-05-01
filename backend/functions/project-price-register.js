@@ -44,8 +44,147 @@ const normalizeServiceZip = (zipRaw) => {
 const milesToKm = (miles) => Number(miles) * 1.60934;
 
 const getGoogleMapsApiKey = () => String(process.env.GOOGLE_MAPS_API_KEY || '').trim();
+const getResendApiKey = () => String(process.env.RESEND_API_KEY || '').trim();
+const getNotificationsFromEmail = () => String(process.env.NOTIFICATIONS_FROM_EMAIL || 'notifications@projectprice.app').trim();
+const getNotificationsReplyToEmail = () => String(process.env.NOTIFICATIONS_REPLY_TO_EMAIL || 'support@projectprice.app').trim();
+const getAdminPhone = () => normalizePhone(String(process.env.ADMIN_PHONE_NUMBER || '').trim());
+const getAdminNotificationEmail = () => String(process.env.ADMIN_NOTIFICATION_EMAIL || '').trim().toLowerCase();
+const getSalesNotificationEmail = () => String(process.env.SALES_NOTIFICATION_EMAIL || '').trim().toLowerCase();
+const getAppBaseUrl = () => String(process.env.APP_BASE_URL || process.env.SITE_URL || 'https://projectpriceapp.com').trim().replace(/\/$/, '');
 
 const CONTRACTOR_TERMS_VERSION = 'charter-member-professional-v1.0-2026-04-30';
+
+const isEmail = (value) => /^\S+@\S+\.\S+$/.test(String(value || '').trim());
+
+const sendTwilioMessage = async (to, message) => {
+  const twilioSid = process.env.TWILIO_ACCOUNT_SID;
+  const twilioToken = process.env.TWILIO_AUTH_TOKEN;
+  const twilioFrom = process.env.TWILIO_FROM_NUMBER;
+  if (!twilioSid || !twilioToken || !twilioFrom || !to) {
+    return { skipped: true, reason: 'Missing Twilio config or recipient.' };
+  }
+
+  const form = new URLSearchParams({ To: to, From: twilioFrom, Body: message });
+  const auth = Buffer.from(`${twilioSid}:${twilioToken}`).toString('base64');
+  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: form.toString(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`Twilio error ${res.status}: ${JSON.stringify(data)}`);
+  return { skipped: false, sid: data.sid };
+};
+
+const sendEmail = async ({ to, subject, html }) => {
+  const resendApiKey = getResendApiKey();
+  if (!resendApiKey || !to) {
+    return { skipped: true, reason: 'Missing Resend config or recipient.' };
+  }
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: getNotificationsFromEmail(),
+      to: [to],
+      reply_to: getNotificationsReplyToEmail(),
+      subject,
+      html,
+    }),
+  });
+
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Resend error ${res.status}: ${text}`);
+  return { skipped: false };
+};
+
+const notifyOnContractorRegistration = async ({
+  fullName,
+  companyName,
+  email,
+  normalizedPhone,
+  centerZip,
+  specialtiesList,
+}) => {
+  const adminEmails = Array.from(new Set([
+    getAdminNotificationEmail(),
+    getSalesNotificationEmail(),
+  ].filter((v) => isEmail(v))));
+
+  const specialtyText = specialtiesList.join(', ');
+  const portalUrl = `${getAppBaseUrl()}/contractor-portal.html`;
+
+  const adminEmailHtml = `
+    <div style="font-family:Segoe UI,Arial,sans-serif;line-height:1.45;color:#1f2d3d;">
+      <h2 style="margin:0 0 12px;">New Contractor Registration</h2>
+      <p style="margin:0 0 10px;">A new contractor account was submitted and is pending verification.</p>
+      <ul>
+        <li><strong>Name:</strong> ${fullName}</li>
+        <li><strong>Company:</strong> ${companyName}</li>
+        <li><strong>Email:</strong> ${email}</li>
+        <li><strong>Phone:</strong> ${normalizedPhone}</li>
+        <li><strong>Service ZIP:</strong> ${centerZip}</li>
+        <li><strong>Specialties:</strong> ${specialtyText}</li>
+      </ul>
+      <p><a href="${portalUrl}">Open Contractor Portal</a></p>
+    </div>
+  `;
+
+  const contractorEmailHtml = `
+    <div style="font-family:Segoe UI,Arial,sans-serif;line-height:1.45;color:#1f2d3d;">
+      <h2 style="margin:0 0 12px;">Contractor Registration Received</h2>
+      <p style="margin:0 0 10px;">Thanks for registering with Project Price. Your account is currently pending verification.</p>
+      <p style="margin:0 0 10px;">Once approved, sign in here: <a href="${portalUrl}">${portalUrl}</a></p>
+      <p style="margin:0;">If you have questions, reply to this email.</p>
+    </div>
+  `;
+
+  const adminSms = [
+    'Project Price: New contractor registration pending verification.',
+    `${companyName} (${fullName})`,
+    `ZIP ${centerZip} | ${specialtyText}`,
+  ].join('\n');
+
+  const contractorSms = [
+    'Project Price: Your contractor registration was received.',
+    'Status: Pending verification.',
+    `Portal: ${portalUrl}`,
+  ].join('\n');
+
+  const tasks = [];
+  for (const adminEmail of adminEmails) {
+    tasks.push(sendEmail({
+      to: adminEmail,
+      subject: `New contractor signup: ${companyName}`,
+      html: adminEmailHtml,
+    }).catch(() => null));
+  }
+
+  if (isEmail(email)) {
+    tasks.push(sendEmail({
+      to: email,
+      subject: 'Project Price contractor registration received',
+      html: contractorEmailHtml,
+    }).catch(() => null));
+  }
+
+  const adminPhone = getAdminPhone();
+  if (adminPhone) {
+    tasks.push(sendTwilioMessage(adminPhone, adminSms).catch(() => null));
+  }
+  if (normalizedPhone) {
+    tasks.push(sendTwilioMessage(normalizedPhone, contractorSms).catch(() => null));
+  }
+
+  await Promise.all(tasks);
+};
 
 const getRequestIp = (event) => {
   const headers = event?.headers || {};
@@ -227,6 +366,15 @@ exports.handler = async (event) => {
         contractor_terms_24h_rule_acknowledged: true,
       },
       headers: { Prefer: 'return=minimal' },
+    });
+
+    await notifyOnContractorRegistration({
+      fullName,
+      companyName,
+      email: String(email).trim().toLowerCase(),
+      normalizedPhone,
+      centerZip,
+      specialtiesList,
     });
 
     return jsonResponse(201, {
