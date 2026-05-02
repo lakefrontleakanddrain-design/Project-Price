@@ -463,7 +463,7 @@ const buildFallbackEstimates = (
   const premium = mkRange(2.05, 1.6);
 
   return {
-    summary: `Estimated from project description, ${jobContext.label.toLowerCase()} scope, and ${marketContext.marketName} market context while AI image analysis is temporarily unavailable.`,
+    summary: `Estimated from project description, ${jobContext.label.toLowerCase()} scope, and local market context while AI image analysis is temporarily unavailable.`,
     tiers: [
       {
         name: 'Basic',
@@ -513,7 +513,6 @@ Required JSON shape:
 }
 
 Market profile:
-- Market name: ${marketContext.marketName}
 - Region: ${marketContext.region}
 - City: ${marketContext.city || 'regional default'}
 - State: ${marketContext.stateCode || 'N/A'}
