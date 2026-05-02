@@ -127,7 +127,7 @@ const getRequestIp = (event) => String(
   || event?.headers?.['x-forwarded-for']
   || ''
 ).split(',')[0].trim() || null;
-const HOMEOWNER_SMS_CONSENT_TEXT = 'I agree to receive transactional SMS messages from Project Price about my request, estimate updates, contractor matching, and my My Estimates access link. Message and data rates may apply. Reply STOP to unsubscribe.';
+const HOMEOWNER_SMS_CONSENT_TEXT = 'I agree to receive transactional SMS messages from Project Price about my request, estimate updates, contractor matching, and my My Estimates access link. Message frequency varies. Msg & data rates may apply. Reply STOP to unsubscribe. Reply HELP for help. Consent is not required as a condition of submitting your request.';
 
 const toFloatOrNull = (value) => {
   const num = Number(value);
@@ -541,10 +541,6 @@ exports.handler = async (event) => {
     return jsonResponse(400, { error: 'phone must be a valid US phone number.' });
   }
 
-  if (smsConsentAccepted !== true) {
-    return jsonResponse(400, { error: 'You must consent to homeowner SMS updates before submitting your request.' });
-  }
-
   try {
     const geocodedProjectPoint = await geocodeUsZipCode(zipCode.trim());
     const acceptedAt = new Date().toISOString();
@@ -654,10 +650,12 @@ exports.handler = async (event) => {
         specialty: projectType.toLowerCase(),
         zip_code: zipCode.trim(),
         status: 'pending',
-        homeowner_sms_opt_in_acknowledged: true,
-        homeowner_sms_opt_in_at: acceptedAt,
-        homeowner_sms_opt_in_ip: acceptedIp,
-        homeowner_sms_opt_in_text: HOMEOWNER_SMS_CONSENT_TEXT,
+        ...(smsConsentAccepted === true && {
+          homeowner_sms_opt_in_acknowledged: true,
+          homeowner_sms_opt_in_at: acceptedAt,
+          homeowner_sms_opt_in_ip: acceptedIp,
+          homeowner_sms_opt_in_text: HOMEOWNER_SMS_CONSENT_TEXT,
+        }),
       },
       headers: { Prefer: 'return=representation' },
     }).catch(async (err) => {
@@ -757,10 +755,19 @@ exports.handler = async (event) => {
     }
 
     let homeownerSms = { sid: null, skipped: true };
-    try {
-      homeownerSms = await sendTwilioMessage(normalizedPhone, homeownerSmsBody);
-    } catch {
-      homeownerSms = { sid: null, skipped: true };
+    if (smsConsentAccepted === true) {
+      try {
+        // Opt-in confirmation required for all recurring campaigns (CTIA)
+        const optInConfirmation = 'Project Price: You are now enrolled to receive SMS updates about your request, estimate updates, and contractor matching. Msg freq varies. Msg & data rates may apply. Reply STOP to unsubscribe. Reply HELP for help.';
+        await sendTwilioMessage(normalizedPhone, optInConfirmation);
+      } catch {
+        // Non-fatal
+      }
+      try {
+        homeownerSms = await sendTwilioMessage(normalizedPhone, homeownerSmsBody);
+      } catch {
+        homeownerSms = { sid: null, skipped: true };
+      }
     }
 
     let homeownerEmail = { skipped: true, reason: 'Homeowner email not available.' };

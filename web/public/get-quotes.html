@@ -229,9 +229,9 @@
         </label>
 
         <label class="consent" for="consentSms">
-          <input id="consentSms" type="checkbox" required />
+          <input id="consentSms" type="checkbox" />
           <span>
-            I agree to receive transactional SMS messages from Project Price about my request, estimate updates, contractor matching, and my My Estimates access link. Message and data rates may apply. Reply STOP to unsubscribe.
+            <strong>Optional:</strong> I agree to receive transactional SMS messages from Project Price about my request, estimate updates, contractor matching, and my My Estimates access link. Message frequency varies. Msg &amp; data rates may apply. Reply <strong>STOP</strong> to unsubscribe. Reply <strong>HELP</strong> for help. Consent is not required as a condition of submitting your request.
           </span>
         </label>
       </div>
@@ -310,13 +310,6 @@
       if (!consentChecked) {
         result.className = 'result error';
         result.textContent = 'Please confirm consent to share your details with one approved contractor.';
-        result.style.display = 'block';
-        return;
-      }
-
-      if (!payload.smsConsentAccepted) {
-        result.className = 'result error';
-        result.textContent = 'Please confirm consent to receive homeowner SMS updates from Project Price.';
         result.style.display = 'block';
         return;
       }

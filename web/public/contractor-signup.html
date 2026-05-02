@@ -234,11 +234,11 @@
 
       <label for="phone">Mobile Phone (for SMS projects)</label>
       <input id="phone" type="tel" placeholder="(440) 555-1234" required />
-      <p class="hint">You'll receive project notifications at this number. Standard SMS rates apply.</p>
+      <p class="hint">You'll receive project notifications at this number. Msg &amp; data rates may apply.</p>
 
       <label class="consent-row">
         <input id="smsConsentAgree" type="checkbox" />
-        <span>I agree to receive transactional SMS messages from Project Price about matching projects, account activity, and claim responses at this number. Message and data rates may apply. Reply STOP to unsubscribe.</span>
+        <span><strong>Optional:</strong> I agree to receive transactional SMS messages from Project Price about matching projects, account activity, and claim responses at this number. Message frequency varies. Msg &amp; data rates may apply. Reply <strong>STOP</strong> to unsubscribe. Reply <strong>HELP</strong> for help. Consent is not required as a condition of account creation.</span>
       </label>
 
       <hr class="divider" />
@@ -513,7 +513,7 @@
     };
 
     const refreshSubmitState = () => {
-      btn.disabled = !termsAgree.checked || !smsConsentAgree.checked || !isComplianceComplete();
+      btn.disabled = !termsAgree.checked || !isComplianceComplete();
     };
 
     termsAgree.addEventListener('change', refreshSubmitState);
@@ -532,13 +532,6 @@
       if (!termsAgree.checked) {
         result.className = 'result error';
         result.textContent = 'You must accept the Digital Sign-up Terms before creating an account.';
-        result.style.display = 'block';
-        return;
-      }
-
-      if (!smsConsentAgree.checked) {
-        result.className = 'result error';
-        result.textContent = 'You must agree to receive contractor SMS notifications before creating an account.';
         result.style.display = 'block';
         return;
       }
@@ -587,7 +580,7 @@
         specialties,
         serviceZipCode: document.getElementById('serviceZip').value.trim(),
         serviceRadiusMiles: document.getElementById('radius').value,
-        smsConsentAccepted: true,
+        smsConsentAccepted: smsConsentAgree.checked,
         smsConsentText,
         termsAccepted: true,
         accelerationClauseAccepted: true,
