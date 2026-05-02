@@ -6,3 +6,30 @@
 
 [functions."project-price-generate-estimates"]
   timeout = 30
+
+[[headers]]
+  for = "/live-video-feed.xml"
+  [headers.values]
+    Content-Type = "application/rss+xml; charset=UTF-8"
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, OPTIONS"
+    Access-Control-Allow-Headers = "*"
+    X-Content-Type-Options = "nosniff"
+
+[[headers]]
+  for = "/metricool-live-video.xml"
+  [headers.values]
+    Content-Type = "application/rss+xml; charset=UTF-8"
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, OPTIONS"
+    Access-Control-Allow-Headers = "*"
+    X-Content-Type-Options = "nosniff"
+
+[[headers]]
+  for = "/metricool-live-video-test.xml"
+  [headers.values]
+    Content-Type = "application/rss+xml; charset=UTF-8"
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, OPTIONS"
+    Access-Control-Allow-Headers = "*"
+    X-Content-Type-Options = "nosniff"

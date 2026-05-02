@@ -18,6 +18,7 @@ const liveVideoDir = path.join(publicDir, 'live-video');
 const generatedDir = path.join(liveVideoDir, 'generated');
 const indexPath = path.join(liveVideoDir, 'index.html');
 const rssPath = path.join(publicDir, 'live-video-feed.xml');
+const fullRssPath = path.join(publicDir, 'live-video-feed-full.xml');
 const metricoolPath = path.join(publicDir, 'metricool-live-video-test.xml');
 const metricoolLegacyPath = path.join(publicDir, 'metricool-live-video.xml');
 const coreHashtags = [
@@ -494,40 +495,34 @@ ${itemXml}
 
 const buildMetricoolRss = (items) => {
   const now = new Date();
-  const pubDate = now.toUTCString();
+  const lastBuildDate = now.toUTCString();
 
   const itemXml = items.map((item) => {
-    const link = `${siteBaseUrl}${item.pagePath}`;
+    const videoUrl = `${siteBaseUrl}${item.videoPath}`;
+    const cacheBust = createTimestampToken(new Date(item.publishedAt));
+    const feedVideoUrl = `${videoUrl}?v=${cacheBust}`;
+    const videoSize = getVideoByteLength(item.videoPath);
     const itemPubDate = new Date(item.publishedAt).toUTCString();
-    const imageUrl = `${siteBaseUrl}/logo.jpg`;
-    const safeGuid = item.guid || `projectprice-live-video-${item.slug || createTimestampToken(now)}`;
-    const contentHtml = `<p><a href="${escapeXml(link)}">Watch on Project Price</a></p><p><img src="${escapeXml(imageUrl)}" alt="Project Price" /></p>`;
     
     return `    <item>
     <title>${escapeXml(item.title)}</title>
-    <link>${escapeXml(link)}</link>
-    <guid isPermaLink="false">${escapeXml(safeGuid)}</guid>
+    <link>${escapeXml(feedVideoUrl)}</link>
+    <guid isPermaLink="true">${escapeXml(feedVideoUrl)}</guid>
     <pubDate>${itemPubDate}</pubDate>
     <description>${escapeXml(item.description)}</description>
-    <enclosure url="${escapeXml(link)}" length="0" type="text/html" />
-    <media:thumbnail url="${escapeXml(imageUrl)}" />
-    <content:encoded><![CDATA[${contentHtml}]]></content:encoded>
+    <enclosure url="${escapeXml(feedVideoUrl)}" length="${videoSize}" type="video/mp4" />
     </item>`;
   }).join('\n\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0"
-    xmlns:content="http://purl.org/rss/1.0/modules/content/"
-    xmlns:media="http://search.yahoo.com/mrss/"
->
+<rss version="2.0">
 
 <channel>
     <title>PROJECT PRICE LIVE VIDEO</title>
     <link>${escapeXml(siteBaseUrl)}</link>
     <description>Realtor and Homebuyer Property Estimate Strategy Videos</description>
-    <pubDate>${pubDate}</pubDate>
-    <language>en</language>
-    <generator>http://wordpress.com/</generator>
+    <language>en-us</language>
+    <lastBuildDate>${lastBuildDate}</lastBuildDate>
 
 ${itemXml}
 
@@ -613,9 +608,10 @@ const rebuildOutputs = (manifest) => {
   writeText(indexPath, buildIndexPage(manifest.items));
 
   const fullRss = buildRss(manifest.items, 'ProjectPrice Live Video Feed', '/live-video/');
-  writeText(rssPath, fullRss);
+  writeText(fullRssPath, fullRss);
 
   const metricoolRss = buildMetricoolRss(manifest.items.slice(0, 20));
+  writeText(rssPath, metricoolRss);
   writeText(metricoolPath, metricoolRss);
   writeText(metricoolLegacyPath, metricoolRss);
 };
@@ -634,6 +630,7 @@ console.log(JSON.stringify({
   totalItems: manifest.items.length,
   indexPath,
   rssPath,
+  fullRssPath,
   metricoolPath,
   metricoolLegacyPath,
   siteBaseUrl,
