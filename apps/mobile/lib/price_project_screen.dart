@@ -19,6 +19,8 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
   final ImagePicker _picker = ImagePicker();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _zipCodeController = TextEditingController();
+  final TextEditingController _roomLengthController = TextEditingController();
+  final TextEditingController _roomWidthController = TextEditingController();
   XFile? _selectedImage;
   Uint8List? _selectedImageBytes;
   bool _isLoading = false;
@@ -41,6 +43,8 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
   void dispose() {
     _descriptionController.dispose();
     _zipCodeController.dispose();
+    _roomLengthController.dispose();
+    _roomWidthController.dispose();
     super.dispose();
   }
 
@@ -207,11 +211,15 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
 
     try {
       final endpoint = _functionEndpoint('project-price-generate-estimates');
+      final roomLength = double.tryParse(_roomLengthController.text.trim());
+      final roomWidth = double.tryParse(_roomWidthController.text.trim());
       final payload = {
         'description': _descriptionController.text.trim(),
         'zipCode': _zipCodeController.text.trim(),
         'imageBase64': base64Encode(_selectedImageBytes!),
         'mimeType': _guessMimeType(_selectedImage!.path),
+        if (roomLength != null && roomLength > 0) 'roomLength': roomLength,
+        if (roomWidth != null && roomWidth > 0) 'roomWidth': roomWidth,
       };
 
       final response = await http
@@ -667,6 +675,45 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _roomLengthController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        labelText: 'Length (ft)',
+                        hintText: '12',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _roomWidthController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        labelText: 'Width (ft)',
+                        hintText: '14',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Enter Room/Project dimensions if known for a more accurate quote.',
+                style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 12),
               TextField(

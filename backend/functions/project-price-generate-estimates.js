@@ -488,7 +488,12 @@ const buildFallbackEstimates = (
   };
 };
 
-const estimationPrompt = (description, zipCode, marketContext, jobContext) => `You are a renovation and home-services estimator.
+const estimationPrompt = (description, zipCode, marketContext, jobContext, roomLength, roomWidth) => {
+  const roomDimensions = roomLength && roomWidth && roomLength > 0 && roomWidth > 0
+    ? `Room dimensions: ${roomLength} ft × ${roomWidth} ft (${Math.round(roomLength * roomWidth)} sq ft)\n`
+    : '';
+  
+  return `You are a renovation and home-services estimator.
 
 Use the user description and the image (if provided) to produce three homeowner-facing cost tiers in USD.
 Use the structured market profile below as the pricing anchor and the zip code as geographic context.
@@ -536,7 +541,7 @@ Job-type classification:
 Zip code:
 ${zipCode}
 
-Project description:
+${roomDimensions}Project description:
 ${description}`;
 
 const extractJsonFromText = (text) => {
@@ -806,8 +811,10 @@ const generateWithGemini = async ({
   mimeType,
   marketContext,
   jobContext,
+  roomLength,
+  roomWidth,
 }) => {
-  const parts = [{ text: estimationPrompt(description, zipCode, marketContext, jobContext) }];
+  const parts = [{ text: estimationPrompt(description, zipCode, marketContext, jobContext, roomLength, roomWidth) }];
 
   if (imageBase64) {
     parts.push({
@@ -924,6 +931,8 @@ exports.handler = async (event) => {
   const zipCode = String(body?.zipCode || '').trim();
   const imageBase64 = String(body?.imageBase64 || '').trim();
   const mimeType = String(body?.mimeType || '').trim() || 'image/jpeg';
+  const roomLength = body?.roomLength ? parseFloat(body.roomLength) : undefined;
+  const roomWidth = body?.roomWidth ? parseFloat(body.roomWidth) : undefined;
   const debugPreviews =
     body?.debugPreviews === true ||
     body?.debugPreviews === 1 ||
@@ -969,6 +978,8 @@ exports.handler = async (event) => {
           mimeType,
           marketContext,
           jobContext,
+          roomLength,
+          roomWidth,
         })
       : buildFallbackEstimates(description, zipCode, marketContext, jobContext);
   } catch (error) {
