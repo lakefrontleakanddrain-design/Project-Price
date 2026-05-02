@@ -261,10 +261,16 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
         final text = error.toString();
         final isHostLookupFailure =
             text.contains('SocketException') || text.contains('SocketFailed host lookup');
+        final isRetryableGenerationError =
+            text.contains('504') ||
+            text.toLowerCase().contains('timed out') ||
+            text.toLowerCase().contains('timeout');
         setState(() {
           _errorMessage = isHostLookupFailure
               ? 'Network host lookup failed. Please switch network (Wi-Fi/mobile data) and try again.'
-              : error.toString().replaceFirst('Exception: ', '');
+              : isRetryableGenerationError
+                  ? 'Please click Generate again to complete your request.'
+                  : 'We could not complete your request right now. Please click Generate again.';
         });
       }
     } finally {
