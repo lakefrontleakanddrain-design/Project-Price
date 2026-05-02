@@ -543,6 +543,7 @@ ${zipCode}
 
 ${roomDimensions}Project description:
 ${description}`;
+};
 
 const extractJsonFromText = (text) => {
   const raw = String(text || '').trim();
