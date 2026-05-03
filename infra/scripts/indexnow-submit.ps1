@@ -1,12 +1,23 @@
 param(
   [string]$HostName = "projectpriceapp.com",
-  [string]$KeyFilePath = "secrets/indexnow.key",
+  [string]$KeyFilePath = "J:\My Drive\OLD FILES\Secrets\indexnow.key",
   [string]$SitemapPath = "web/public/sitemap.xml",
   [string]$KeyLocation,
   [string[]]$UrlList
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($KeyFilePath) -or -not (Test-Path -LiteralPath $KeyFilePath)) {
+  $candidatePaths = @(
+    $KeyFilePath,
+    $env:INDEXNOW_KEY_FILE,
+    "J:\My Drive\OLD FILES\Secrets\indexnow.key",
+    "secrets/indexnow.key"
+  ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+
+  $KeyFilePath = $candidatePaths | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+}
 
 if (-not (Test-Path -LiteralPath $KeyFilePath)) {
   throw "IndexNow key file not found at '$KeyFilePath'."
