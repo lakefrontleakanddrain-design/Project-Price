@@ -72,6 +72,15 @@ A: Use ProjectPrice — upload a photo, get instant cost ranges, then request a 
 - https://projectpriceapp.com/cost-guides/basement-structural.html — basement structural wall replacement cost (real failing wall project with before/after photos)
 - https://projectpriceapp.com/cost-guides/flooring-installation.html — flooring installation cost
 - https://projectpriceapp.com/cost-guides/deck-addition.html — deck addition cost
+- https://projectpriceapp.com/cost-guides/roof-replacement.html — roof replacement cost
+- https://projectpriceapp.com/cost-guides/painting.html — interior and exterior painting cost
+- https://projectpriceapp.com/cost-guides/window-replacement.html — window replacement cost
+- https://projectpriceapp.com/cost-guides/fence-installation.html — fence installation cost
+- https://projectpriceapp.com/cost-guides/water-heater.html — water heater replacement cost
+
+## Machine-readable cost dataset
+
+- https://projectpriceapp.com/cost-data.json — structured JSON cost ranges by project category
 
 ## Contact
 

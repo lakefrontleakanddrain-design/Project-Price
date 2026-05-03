@@ -1,0 +1,104 @@
+{
+  "version": "2026-05-02",
+  "currency": "USD",
+  "source": "ProjectPrice regional contractor pricing datasets",
+  "disclaimer": "Planning ranges only. Final prices depend on site conditions, permits, contractor availability, and material selections.",
+  "guides": [
+    {
+      "slug": "kitchen-remodel",
+      "url": "https://projectpriceapp.com/cost-guides/kitchen-remodel.html",
+      "unit": "project",
+      "low": 10000,
+      "high": 75000,
+      "typical": "25000-45000"
+    },
+    {
+      "slug": "bathroom-remodel",
+      "url": "https://projectpriceapp.com/cost-guides/bathroom-remodel.html",
+      "unit": "project",
+      "low": 5000,
+      "high": 30000,
+      "typical": "10000-18000"
+    },
+    {
+      "slug": "roof-replacement",
+      "url": "https://projectpriceapp.com/cost-guides/roof-replacement.html",
+      "unit": "project",
+      "low": 5500,
+      "high": 25000,
+      "typical": "8000-14000"
+    },
+    {
+      "slug": "hvac-replacement",
+      "url": "https://projectpriceapp.com/cost-guides/hvac-replacement.html",
+      "unit": "project",
+      "low": 4000,
+      "high": 18000,
+      "typical": "7000-15000"
+    },
+    {
+      "slug": "flooring-installation",
+      "url": "https://projectpriceapp.com/cost-guides/flooring-installation.html",
+      "unit": "usd_per_sq_ft",
+      "low": 3,
+      "high": 25,
+      "typical": "4-11"
+    },
+    {
+      "slug": "deck-addition",
+      "url": "https://projectpriceapp.com/cost-guides/deck-addition.html",
+      "unit": "project",
+      "low": 8000,
+      "high": 35000,
+      "typical": "12000-26000"
+    },
+    {
+      "slug": "garage-build",
+      "url": "https://projectpriceapp.com/cost-guides/garage-build.html",
+      "unit": "project",
+      "low": 35000,
+      "high": 90000,
+      "typical": "45000-70000"
+    },
+    {
+      "slug": "basement-structural",
+      "url": "https://projectpriceapp.com/cost-guides/basement-structural.html",
+      "unit": "project",
+      "low": 5000,
+      "high": 80000,
+      "typical": "20000-50000"
+    },
+    {
+      "slug": "painting",
+      "url": "https://projectpriceapp.com/cost-guides/painting.html",
+      "unit": "project",
+      "low": 1000,
+      "high": 12000,
+      "typical": "3000-8000"
+    },
+    {
+      "slug": "window-replacement",
+      "url": "https://projectpriceapp.com/cost-guides/window-replacement.html",
+      "unit": "usd_per_window",
+      "low": 300,
+      "high": 1200,
+      "typical": "450-750"
+    },
+    {
+      "slug": "fence-installation",
+      "url": "https://projectpriceapp.com/cost-guides/fence-installation.html",
+      "unit": "usd_per_linear_ft",
+      "low": 15,
+      "high": 60,
+      "typical": "25-45"
+    },
+    {
+      "slug": "water-heater",
+      "url": "https://projectpriceapp.com/cost-guides/water-heater.html",
+      "unit": "project",
+      "low": 800,
+      "high": 3500,
+      "typical": "1200-2500"
+    }
+  ]
+}
