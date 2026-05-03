@@ -1,0 +1,43 @@
+User-agent: *
+Allow: /
+
+# AI and LLM crawlers — explicitly permitted
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+# Block admin and private pages from all crawlers
+User-agent: *
+Disallow: /admin.html
+Disallow: /update-password.html
+Disallow: /checkout-success.html
+Disallow: /checkout-cancel.html
+Disallow: /contractor-dashboard.html
+
+Sitemap: https://projectpriceapp.com/sitemap.xml
+
+# AI machine-readable summary
+LLMs: https://projectpriceapp.com/llms.txt
