@@ -87,12 +87,14 @@ workflows:
           PP_SUPABASE_URL="${PROJECTPRICE_SUPABASE_URL:-${SUPABASE_URL:-${projectprice_supabase_url:-https://api.projectpriceapp.com}}}"
           PP_SUPABASE_ANON_KEY="${PROJECTPRICE_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY:-${projectprice_supabase_anon_key:-}}}"
           PP_APP_API_SECRET="${APP_API_SECRET:-${PROJECTPRICE_APP_API_SECRET:-${app_api_secret:-}}}"
+          PP_API_BASE_URL="${PROJECTPRICE_API_BASE_URL:-${projectprice_api_base_url:-https://projectpriceapp.com}}"
           flutter build appbundle --release \
             --build-number=$APP_BUILD_NUMBER \
             --dart-define=PROJECTPRICE_SUPABASE_URL=$PP_SUPABASE_URL \
             --dart-define=PROJECTPRICE_SUPABASE_ANON_KEY=$PP_SUPABASE_ANON_KEY \
             --dart-define=PROJECTPRICE_SUPABASE_URL_FALLBACK=${PROJECTPRICE_SUPABASE_URL_FALLBACK:-} \
-            --dart-define=APP_API_SECRET=$PP_APP_API_SECRET
+            --dart-define=APP_API_SECRET=$PP_APP_API_SECRET \
+            --dart-define=PROJECTPRICE_API_BASE_URL=$PP_API_BASE_URL
       - name: Build Android APK
         script: |
           cd "$FLUTTER_APP_DIR"
@@ -100,12 +102,14 @@ workflows:
           PP_SUPABASE_URL="${PROJECTPRICE_SUPABASE_URL:-${SUPABASE_URL:-${projectprice_supabase_url:-https://api.projectpriceapp.com}}}"
           PP_SUPABASE_ANON_KEY="${PROJECTPRICE_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY:-${projectprice_supabase_anon_key:-}}}"
           PP_APP_API_SECRET="${APP_API_SECRET:-${PROJECTPRICE_APP_API_SECRET:-${app_api_secret:-}}}"
+          PP_API_BASE_URL="${PROJECTPRICE_API_BASE_URL:-${projectprice_api_base_url:-https://projectpriceapp.com}}"
           flutter build apk --release \
             --build-number=$APP_BUILD_NUMBER \
             --dart-define=PROJECTPRICE_SUPABASE_URL=$PP_SUPABASE_URL \
             --dart-define=PROJECTPRICE_SUPABASE_ANON_KEY=$PP_SUPABASE_ANON_KEY \
             --dart-define=PROJECTPRICE_SUPABASE_URL_FALLBACK=${PROJECTPRICE_SUPABASE_URL_FALLBACK:-} \
-            --dart-define=APP_API_SECRET=$PP_APP_API_SECRET
+            --dart-define=APP_API_SECRET=$PP_APP_API_SECRET \
+            --dart-define=PROJECTPRICE_API_BASE_URL=$PP_API_BASE_URL
       - name: Create versioned Android artifacts
         script: |
           cd "$FLUTTER_APP_DIR"
@@ -153,6 +157,7 @@ workflows:
           PP_SUPABASE_URL="${PROJECTPRICE_SUPABASE_URL:-${SUPABASE_URL:-${projectprice_supabase_url:-https://api.projectpriceapp.com}}}"
           PP_SUPABASE_ANON_KEY="${PROJECTPRICE_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY:-${projectprice_supabase_anon_key:-}}}"
           PP_APP_API_SECRET="${APP_API_SECRET:-${PROJECTPRICE_APP_API_SECRET:-${app_api_secret:-}}}"
+          PP_API_BASE_URL="${PROJECTPRICE_API_BASE_URL:-${projectprice_api_base_url:-https://projectpriceapp.com}}"
 
           if [ -z "$PP_SUPABASE_URL" ] || [ -z "$PP_SUPABASE_ANON_KEY" ] || [ -z "$PP_APP_API_SECRET" ]; then
             echo "Missing required env vars for ProjectPrice iOS build."
@@ -168,6 +173,7 @@ workflows:
             --dart-define=PROJECTPRICE_SUPABASE_ANON_KEY=$PP_SUPABASE_ANON_KEY \
             --dart-define=PROJECTPRICE_SUPABASE_URL_FALLBACK=${PROJECTPRICE_SUPABASE_URL_FALLBACK:-} \
             --dart-define=APP_API_SECRET=$PP_APP_API_SECRET \
+            --dart-define=PROJECTPRICE_API_BASE_URL=$PP_API_BASE_URL \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - apps/mobile/build/ios/ipa/*.ipa
