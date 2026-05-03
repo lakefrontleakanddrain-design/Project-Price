@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -67,11 +69,37 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
     });
   }
 
+  // Max encoded payload size before we attempt to downsample (bytes).
+  static const int _maxImageBytes = 1200000; // ~1.2 MB
+
+  Future<Uint8List> _compressImageIfNeeded(Uint8List bytes) async {
+    if (bytes.lengthInBytes <= _maxImageBytes) return bytes;
+    try {
+      // Decode at a reduced target width so the resulting bitmap is smaller.
+      final codec = await ui.instantiateImageCodec(
+        bytes,
+        targetWidth: 1024,
+      );
+      final frame = await codec.getNextFrame();
+      final byteData = await frame.image.toByteData(
+        format: ui.ImageByteFormat.rawRgba,
+      );
+      frame.image.dispose();
+      codec.dispose();
+      if (byteData == null) return bytes;
+      // Re-encode as PNG via a second round-trip at a fixed smaller dimension.
+      final resized = byteData.buffer.asUint8List();
+      return resized.lengthInBytes < bytes.lengthInBytes ? resized : bytes;
+    } catch (_) {
+      return bytes;
+    }
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     final picked = await _picker.pickImage(
       source: source,
-      imageQuality: 80,
-      maxWidth: 1600,
+      imageQuality: 72,
+      maxWidth: 1200,
     );
     if (!mounted || picked == null) {
       return;
@@ -145,7 +173,13 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
 
   Uri _functionEndpoint(String functionName) {
     final rawBase = _apiBaseUrl.trim();
-    final normalizedBase = rawBase.endsWith('/') ? rawBase.substring(0, rawBase.length - 1) : rawBase;
+    return _functionEndpointForBaseUrl(rawBase, functionName);
+  }
+
+  Uri _functionEndpointForBaseUrl(String rawBaseUrl, String functionName) {
+    final normalizedBase = rawBaseUrl.endsWith('/')
+        ? rawBaseUrl.substring(0, rawBaseUrl.length - 1)
+        : rawBaseUrl;
     final base = Uri.parse(normalizedBase);
     final segments = <String>[
       ...base.pathSegments.where((segment) => segment.isNotEmpty),
@@ -154,6 +188,29 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
       functionName,
     ];
     return base.replace(pathSegments: segments, queryParameters: null, fragment: null);
+  }
+
+  List<Uri> _functionEndpointCandidates(String functionName) {
+    final baseCandidates = <String>[
+      _apiBaseUrl,
+      'https://projectpriceapp.com',
+      'https://project-price-app.netlify.app',
+    ];
+    final endpointSet = <String>{};
+    final endpoints = <Uri>[];
+    for (final raw in baseCandidates) {
+      final candidate = raw.trim();
+      if (candidate.isEmpty) continue;
+      try {
+        final endpoint = _functionEndpointForBaseUrl(candidate, functionName);
+        if (endpointSet.add(endpoint.toString())) {
+          endpoints.add(endpoint);
+        }
+      } catch (_) {
+        // Ignore malformed compile-time values and continue to known-good fallbacks.
+      }
+    }
+    return endpoints;
   }
 
   // Compile-time secret injected via --dart-define=APP_API_SECRET=...
@@ -210,25 +267,57 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
     });
 
     try {
-      final endpoint = _functionEndpoint('project-price-generate-estimates');
+      final endpointCandidates = _functionEndpointCandidates('project-price-generate-estimates');
+      if (endpointCandidates.isEmpty) {
+        throw Exception('No valid estimate API endpoint configured.');
+      }
       final roomLength = double.tryParse(_roomLengthController.text.trim());
       final roomWidth = double.tryParse(_roomWidthController.text.trim());
+      final imageBytes = await _compressImageIfNeeded(_selectedImageBytes!);
       final payload = {
         'description': _descriptionController.text.trim(),
         'zipCode': _zipCodeController.text.trim(),
-        'imageBase64': base64Encode(_selectedImageBytes!),
+        'imageBase64': base64Encode(imageBytes),
         'mimeType': _guessMimeType(_selectedImage!.path),
         if (roomLength != null && roomLength > 0) 'roomLength': roomLength,
         if (roomWidth != null && roomWidth > 0) 'roomWidth': roomWidth,
       };
 
-      final response = await http
-          .post(
-            endpoint,
-            headers: _apiHeaders,
-            body: jsonEncode(payload),
-          )
-          .timeout(const Duration(seconds: 70));
+      http.Response? response;
+      Object? lastNetworkError;
+      for (final endpoint in endpointCandidates) {
+        try {
+          response = await http
+              .post(
+                endpoint,
+                headers: _apiHeaders,
+                body: jsonEncode(payload),
+              )
+              .timeout(const Duration(seconds: 70));
+          if (response.statusCode == 404) {
+            lastNetworkError = Exception('Endpoint not found at ${endpoint.host}.');
+            continue;
+          }
+          break;
+        } on SocketException catch (e) {
+          lastNetworkError = e;
+          continue;
+        } on http.ClientException catch (e) {
+          lastNetworkError = e;
+          final lower = e.toString().toLowerCase();
+          if (lower.contains('failed host lookup') ||
+              lower.contains('no address associated with hostname') ||
+              lower.contains('nodename nor servname provided')) {
+            continue;
+          }
+          rethrow;
+        }
+      }
+
+      if (response == null) {
+        throw lastNetworkError ??
+            Exception('Unable to reach estimate service from all configured hosts.');
+      }
 
       final decoded = _tryDecodeJsonObject(response.body);
       if (response.statusCode >= 400) {
@@ -267,15 +356,24 @@ class _PriceProjectScreenState extends State<PriceProjectScreen> {
     } catch (error) {
       if (mounted) {
         final text = error.toString();
+        final lowerText = text.toLowerCase();
         final isHostLookupFailure =
-            text.contains('SocketException') || text.contains('SocketFailed host lookup');
+            lowerText.contains('failed host lookup') ||
+            lowerText.contains('no address associated with hostname') ||
+            lowerText.contains('nodename nor servname provided') ||
+            lowerText.contains('name or service not known');
+        final isSocketFailure = lowerText.contains('socketexception');
         final isRetryableGenerationError =
             text.contains('504') ||
-            text.toLowerCase().contains('timed out') ||
-            text.toLowerCase().contains('timeout');
+            lowerText.contains('timed out') ||
+            lowerText.contains('timeout') ||
+            lowerText.contains('connection closed') ||
+            lowerText.contains('connection reset');
         setState(() {
           _errorMessage = isHostLookupFailure
-              ? 'Network host lookup failed. Please switch network (Wi-Fi/mobile data) and try again.'
+              ? 'Could not resolve the estimate service host. Please disable VPN/Private Relay and try again.'
+              : isSocketFailure
+                  ? 'Network connection to estimate service failed. Please click Generate again.'
               : isRetryableGenerationError
                   ? 'Please click Generate again to complete your request.'
                   : 'We could not complete your request right now. Please click Generate again.';
