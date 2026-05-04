@@ -7,6 +7,9 @@
 [functions."project-price-generate-estimates"]
   timeout = 30
 
+[functions."project-price-stripe-webhook"]
+  timeout = 26
+
 [[headers]]
   for = "/live-video-feed.xml"
   [headers.values]

@@ -28,20 +28,62 @@ const jsonResponse = (statusCode, body) => ({
   body: JSON.stringify(body),
 });
 
+const getHeaderIgnoreCase = (headers, key) => {
+  if (!headers || typeof headers !== 'object') return '';
+  const wanted = String(key || '').toLowerCase();
+  for (const [headerKey, value] of Object.entries(headers)) {
+    if (String(headerKey).toLowerCase() === wanted) return String(value || '');
+  }
+  return '';
+};
+
+const getRawBody = (event) => {
+  const body = event?.body;
+  if (typeof body !== 'string') return '';
+  if (event?.isBase64Encoded) {
+    return Buffer.from(body, 'base64').toString('utf8');
+  }
+  return body;
+};
+
+const parseWebhookSecrets = () => {
+  const secrets = [];
+  const primary = String(process.env.STRIPE_WEBHOOK_SECRET || '').trim();
+  const previous = String(process.env.STRIPE_WEBHOOK_SECRET_PREVIOUS || '').trim();
+  const csv = String(process.env.STRIPE_WEBHOOK_SECRETS || '').trim();
+
+  if (primary) secrets.push(primary);
+  if (previous) secrets.push(previous);
+  if (csv) {
+    for (const value of csv.split(',')) {
+      const secret = value.trim();
+      if (secret) secrets.push(secret);
+    }
+  }
+
+  return [...new Set(secrets)];
+};
+
 // ─── Stripe signature verification ─────────────────────────────────────────
 
 const verifyStripeSignature = (rawBody, sigHeader, secret) => {
-  const parts = String(sigHeader || '').split(',').reduce((acc, part) => {
-    const [k, v] = part.split('=');
-    acc[k] = v;
-    return acc;
-  }, {});
+  const segments = String(sigHeader || '').split(',').map((part) => String(part).trim()).filter(Boolean);
+  let timestamp = '';
+  const signatures = [];
+  for (const segment of segments) {
+    const sep = segment.indexOf('=');
+    if (sep < 0) continue;
+    const key = segment.slice(0, sep);
+    const value = segment.slice(sep + 1);
+    if (key === 't') timestamp = value;
+    if (key === 'v1' && value) signatures.push(value);
+  }
 
-  const timestamp = parts['t'];
-  const signature = parts['v1'];
-  if (!timestamp || !signature) throw new Error('Missing Stripe signature components.');
+  if (!timestamp || signatures.length === 0) {
+    throw new Error('Missing Stripe signature components.');
+  }
 
-  const tolerance = 300; // 5 minutes
+  const tolerance = 600; // 10 minutes
   const now = Math.floor(Date.now() / 1000);
   if (Math.abs(now - parseInt(timestamp, 10)) > tolerance) {
     throw new Error('Stripe webhook timestamp out of tolerance.');
@@ -50,9 +92,17 @@ const verifyStripeSignature = (rawBody, sigHeader, secret) => {
   const payload = `${timestamp}.${rawBody}`;
   const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex');
 
-  const sigBuffer = Buffer.from(signature, 'hex');
-  const expBuffer = Buffer.from(expected, 'hex');
-  if (sigBuffer.length !== expBuffer.length || !crypto.timingSafeEqual(sigBuffer, expBuffer)) {
+  let matched = false;
+  for (const signature of signatures) {
+    const sigBuffer = Buffer.from(signature, 'hex');
+    const expBuffer = Buffer.from(expected, 'hex');
+    if (sigBuffer.length === expBuffer.length && crypto.timingSafeEqual(sigBuffer, expBuffer)) {
+      matched = true;
+      break;
+    }
+  }
+
+  if (!matched) {
     throw new Error('Stripe signature verification failed.');
   }
 };
@@ -350,17 +400,27 @@ exports.handler = async (event) => {
     return jsonResponse(405, { error: 'Method not allowed.' });
   }
 
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!webhookSecret) {
-    console.error('STRIPE_WEBHOOK_SECRET not set');
+  const webhookSecrets = parseWebhookSecrets();
+  if (webhookSecrets.length === 0) {
+    console.error('No Stripe webhook secret configured');
     return jsonResponse(500, { error: 'Webhook secret not configured.' });
   }
 
-  const sigHeader = event.headers['stripe-signature'] || event.headers['Stripe-Signature'];
-  const rawBody = event.body;
+  const sigHeader = getHeaderIgnoreCase(event.headers, 'stripe-signature');
+  const rawBody = getRawBody(event);
 
   try {
-    verifyStripeSignature(rawBody, sigHeader, webhookSecret);
+    let verified = false;
+    for (const secret of webhookSecrets) {
+      try {
+        verifyStripeSignature(rawBody, sigHeader, secret);
+        verified = true;
+        break;
+      } catch {
+        // Try next configured secret to support webhook secret rotation.
+      }
+    }
+    if (!verified) throw new Error('Stripe signature verification failed.');
   } catch (err) {
     console.error('Stripe signature error:', err.message);
     return jsonResponse(400, { error: err.message });
