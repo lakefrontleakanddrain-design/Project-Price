@@ -46,17 +46,28 @@ const getRawBody = (event) => {
   return body;
 };
 
+const normalizeWebhookSecret = (value) => {
+  const trimmed = String(value || '').trim().replace(/^['"]+|['"]+$/g, '');
+  if (!trimmed) return '';
+  const match = trimmed.match(/whsec_[A-Za-z0-9]+/);
+  return match ? match[0] : trimmed;
+};
+
 const parseWebhookSecrets = () => {
   const secrets = [];
-  const primary = String(process.env.STRIPE_WEBHOOK_SECRET || '').trim();
-  const previous = String(process.env.STRIPE_WEBHOOK_SECRET_PREVIOUS || '').trim();
-  const csv = String(process.env.STRIPE_WEBHOOK_SECRETS || '').trim();
+  const values = [
+    process.env.STRIPE_WEBHOOK_SECRET,
+    process.env.STRIPE_WEBHOOK_SECRET_PREVIOUS,
+    process.env.STRIPE_WEBHOOK_SECRETS,
+    process.env.STRIPE_SIGNING_SECRET,
+    process.env.STRIPE_ENDPOINT_SECRET,
+  ];
 
-  if (primary) secrets.push(primary);
-  if (previous) secrets.push(previous);
-  if (csv) {
-    for (const value of csv.split(',')) {
-      const secret = value.trim();
+  for (const value of values) {
+    const source = String(value || '').trim();
+    if (!source) continue;
+    for (const part of source.split(',')) {
+      const secret = normalizeWebhookSecret(part);
       if (secret) secrets.push(secret);
     }
   }
