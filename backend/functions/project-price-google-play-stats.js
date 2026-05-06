@@ -1,49 +1,54 @@
 /**
  * project-price-google-play-stats
  *
- * Returns Google Play install data aggregated by month and country,
- * using the Google Play Developer Reporting API.
+ * Returns Google Play install data from a BigQuery view with schema:
+ *   month   STRING  -- YYYY-MM
+ *   country STRING  -- ISO2 country code
+ *   total   INT64   -- installs for the month+country slice
  *
  * Required Netlify environment variables:
- *   GOOGLE_PLAY_CLIENT_EMAIL          — client_email field from the service account JSON.
- *   GOOGLE_PLAY_PACKAGE_NAME          — e.g. com.projectpriceapp.mobile
- *   ADMIN_DASHBOARD_KEY               — Same key used by the admin panel.
- *   SUPABASE_URL                      — Already present site-wide.
- *   SUPABASE_SERVICE_ROLE_KEY         — Already present site-wide.
+ *   GOOGLE_PLAY_CLIENT_EMAIL          - service account client email
+ *   GOOGLE_PLAY_PACKAGE_NAME          - app id (for diagnostics)
+ *   GOOGLE_PLAY_BQ_PROJECT_ID         - BigQuery project id
+ *   GOOGLE_PLAY_BQ_DATASET            - BigQuery dataset containing the view
+ *   GOOGLE_PLAY_BQ_VIEW               - view name (default: google_play_installs_monthly_country)
+ *   ADMIN_DASHBOARD_KEY               - same key used by admin panel
+ *   SUPABASE_URL                      - used to fetch private key from app_secrets
+ *   SUPABASE_SERVICE_ROLE_KEY         - used to fetch private key from app_secrets
  *
- * GOOGLE_PLAY_PRIVATE_KEY is intentionally NOT stored as a Netlify env var
- * (the RSA key is ~1.7 KB and pushes the total over AWS Lambda's 4 KB limit).
- * Instead it is stored in the Supabase `app_secrets` table under key
- * 'GOOGLE_PLAY_PRIVATE_KEY' and fetched at runtime via the service-role key.
+ * Notes:
+ * - GOOGLE_PLAY_PRIVATE_KEY should stay out of Netlify env vars (Lambda 4KB env limit).
+ * - Private key is fetched from Supabase app_secrets where key='GOOGLE_PLAY_PRIVATE_KEY'.
  */
 
 'use strict';
 
 const crypto = require('crypto');
 
-// ---------------------------------------------------------------------------
-// Google OAuth2 — service account JWT → access token
-// ---------------------------------------------------------------------------
+const LAUNCH_MONTH = '2025-09';
 
-const createGoogleJWT = (serviceAccount) => {
+const createGoogleJWT = ({ client_email, private_key, scope }) => {
   const now = Math.floor(Date.now() / 1000);
   const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
-  const payload = Buffer.from(JSON.stringify({
-    iss: serviceAccount.client_email,
-    scope: 'https://www.googleapis.com/auth/playdeveloperreporting',
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now,
-    exp: now + 3600,
-  })).toString('base64url');
+  const payload = Buffer.from(
+    JSON.stringify({
+      iss: client_email,
+      scope,
+      aud: 'https://oauth2.googleapis.com/token',
+      iat: now,
+      exp: now + 3600,
+    })
+  ).toString('base64url');
+
   const signingInput = `${header}.${payload}`;
   const sign = crypto.createSign('SHA256');
   sign.update(signingInput);
-  const signature = sign.sign(serviceAccount.private_key).toString('base64url');
+  const signature = sign.sign(private_key).toString('base64url');
   return `${signingInput}.${signature}`;
 };
 
-const getAccessToken = async (serviceAccount) => {
-  const jwt = createGoogleJWT(serviceAccount);
+const getAccessToken = async ({ client_email, private_key, scope }) => {
+  const jwt = createGoogleJWT({ client_email, private_key, scope });
   const res = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -60,129 +65,94 @@ const getAccessToken = async (serviceAccount) => {
   return data.access_token;
 };
 
-// ---------------------------------------------------------------------------
-// Date helpers
-// ---------------------------------------------------------------------------
-
-const LAUNCH_MONTH = '2025-09'; // first month the app was on Google Play
-
-const getMonthsSince = (startYYYYMM) => {
-  const months = [];
-  const [sy, sm] = startYYYYMM.split('-').map(Number);
-  const now = new Date();
-  // last complete calendar month
-  const lastComplete = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
-  const cur = new Date(Date.UTC(sy, sm - 1, 1));
-  while (cur <= lastComplete) {
-    months.push({
-      year: cur.getUTCFullYear(),
-      month: cur.getUTCMonth() + 1,
-      label: cur.toISOString().slice(0, 7),
-    });
-    cur.setUTCMonth(cur.getUTCMonth() + 1);
+const fetchPrivateKeyFromSupabase = async () => {
+  const supabaseUrl = process.env.SUPABASE_URL || '';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.');
   }
-  return months;
+
+  const res = await fetch(
+    `${supabaseUrl}/rest/v1/app_secrets?key=eq.GOOGLE_PLAY_PRIVATE_KEY&select=value&limit=1`,
+    { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+  );
+  if (!res.ok) {
+    throw new Error(`Supabase app_secrets fetch failed: ${res.status}`);
+  }
+  const rows = await res.json();
+  if (!rows.length || !rows[0].value) {
+    throw new Error('GOOGLE_PLAY_PRIVATE_KEY row not found in app_secrets.');
+  }
+  return rows[0].value;
 };
 
-// ---------------------------------------------------------------------------
-// Reporting API fetch — storePerformanceSummaryMetricSet
-// ---------------------------------------------------------------------------
+const runBigQuery = async ({ accessToken, projectId, sql, params }) => {
+  const queryParameters = Object.entries(params).map(([name, value]) => ({
+    name,
+    parameterType: { type: 'STRING' },
+    parameterValue: { value: String(value) },
+  }));
 
-const fetchPlayStats = async (accessToken, packageName) => {
-  const months = getMonthsSince(LAUNCH_MONTH);
-  if (!months.length) return { byMonth: [], byCountry: [], lifetimeTotal: 0 };
-
-  const startM = months[0];
-  const endM = months[months.length - 1];
-
-  // End time = last day of the last complete month
-  const lastDay = new Date(Date.UTC(endM.year, endM.month, 0)); // day 0 = last day of prev month trick
-
-  const body = {
-    dimensions: ['countryId'],
-    metrics: ['installerCount'],
-    pageSize: 25000,
-    timelineSpec: {
-      aggregationPeriod: 'MONTHLY',
-      startTime: { year: startM.year, month: startM.month, day: 1 },
-      endTime: { year: endM.year, month: endM.month, day: lastDay.getUTCDate() },
-    },
-  };
-
-  const url = `https://playdeveloperreporting.googleapis.com/v1beta1/apps/${encodeURIComponent(packageName)}/storePerformanceSummaryMetricSet:search`;
-
-  const res = await fetch(url, {
+  const res = await fetch(`https://bigquery.googleapis.com/bigquery/v2/projects/${encodeURIComponent(projectId)}/queries`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      query: sql,
+      useLegacySql: false,
+      parameterMode: 'NAMED',
+      queryParameters,
+    }),
   });
 
-  if (res.status === 403) {
-    const text = await res.text();
-    throw new Error(`PERMISSION_DENIED: ${text.slice(0, 200)}`);
-  }
-  if (res.status === 404) {
-    throw new Error(
-      'Play Reporting endpoint not found. Install/acquisition metrics are not available from this API endpoint; use a supported export source (for example Play Console bulk reports / BigQuery) for month+country installs.'
-    );
-  }
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Play Reporting API error ${res.status}: ${text.slice(0, 300)}`);
+    throw new Error(`BigQuery query error ${res.status}: ${text.slice(0, 500)}`);
   }
 
   const data = await res.json();
-  return data;
-};
+  const fields = (data.schema && data.schema.fields) || [];
+  const rows = data.rows || [];
 
-// ---------------------------------------------------------------------------
-// Parse Reporting API rows into byMonth / byCountry
-// ---------------------------------------------------------------------------
-
-const parseRows = (rows = []) => {
-  // monthlyData: { 'YYYY-MM': { countryCode: count } }
-  const monthlyData = {};
-  const countryTotals = {};
-
-  for (const row of rows) {
-    const { startTime, dimensionValues = [], metricValues = [] } = row;
-    if (!startTime) continue;
-
-    const month = `${String(startTime.year).padStart(4, '0')}-${String(startTime.month).padStart(2, '0')}`;
-    const country = dimensionValues.find((d) => d.dimension === 'countryId')?.stringValue || 'XX';
-    const count = parseInt(
-      metricValues.find((m) => m.metric === 'installerCount')?.int64Value || '0',
-      10
-    );
-
-    if (!Number.isFinite(count) || count <= 0) continue;
-    if (!monthlyData[month]) monthlyData[month] = {};
-    monthlyData[month][country] = (monthlyData[month][country] || 0) + count;
-    countryTotals[country] = (countryTotals[country] || 0) + count;
+  const idx = {
+    month: fields.findIndex((f) => f.name === 'month'),
+    country: fields.findIndex((f) => f.name === 'country'),
+    total: fields.findIndex((f) => f.name === 'total'),
+  };
+  if (idx.month < 0 || idx.country < 0 || idx.total < 0) {
+    throw new Error('BigQuery view must return columns: month, country, total.');
   }
 
-  const byMonth = Object.entries(monthlyData)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([month, countries]) => ({
-      month,
-      total: Object.values(countries).reduce((s, n) => s + n, 0),
-    }));
+  return rows.map((r) => ({
+    month: r.f[idx.month]?.v || '',
+    country: r.f[idx.country]?.v || 'XX',
+    total: parseInt(r.f[idx.total]?.v || '0', 10) || 0,
+  }));
+};
 
-  const byCountry = Object.entries(countryTotals)
+const summarize = (rows) => {
+  const byMonthMap = new Map();
+  const byCountryMap = new Map();
+
+  for (const row of rows) {
+    if (!row.month || !row.country || !Number.isFinite(row.total) || row.total <= 0) continue;
+    byMonthMap.set(row.month, (byMonthMap.get(row.month) || 0) + row.total);
+    byCountryMap.set(row.country, (byCountryMap.get(row.country) || 0) + row.total);
+  }
+
+  const byMonth = Array.from(byMonthMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, total]) => ({ month, total }));
+
+  const byCountry = Array.from(byCountryMap.entries())
     .sort((a, b) => b[1] - a[1])
     .map(([country, total]) => ({ country, total }));
 
-  const lifetimeTotal = byMonth.reduce((s, m) => s + m.total, 0);
-
+  const lifetimeTotal = byMonth.reduce((sum, m) => sum + m.total, 0);
   return { byMonth, byCountry, lifetimeTotal };
 };
-
-// ---------------------------------------------------------------------------
-// Handler
-// ---------------------------------------------------------------------------
 
 exports.handler = async (event) => {
   const responseHeaders = {
@@ -195,7 +165,6 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers: responseHeaders, body: '' };
   }
 
-  // Auth check
   const requiredKey = process.env.ADMIN_DASHBOARD_KEY || '';
   const providedKey = (event.headers || {})['x-admin-key'] || '';
   if (requiredKey && providedKey !== requiredKey) {
@@ -204,10 +173,15 @@ exports.handler = async (event) => {
 
   const clientEmail = process.env.GOOGLE_PLAY_CLIENT_EMAIL || '';
   const packageName = process.env.GOOGLE_PLAY_PACKAGE_NAME || '';
+  const bqProjectId = process.env.GOOGLE_PLAY_BQ_PROJECT_ID || '';
+  const bqDataset = process.env.GOOGLE_PLAY_BQ_DATASET || '';
+  const bqView = process.env.GOOGLE_PLAY_BQ_VIEW || 'google_play_installs_monthly_country';
 
   const missingVars = [
     !clientEmail && 'GOOGLE_PLAY_CLIENT_EMAIL',
     !packageName && 'GOOGLE_PLAY_PACKAGE_NAME',
+    !bqProjectId && 'GOOGLE_PLAY_BQ_PROJECT_ID',
+    !bqDataset && 'GOOGLE_PLAY_BQ_DATASET',
   ].filter(Boolean);
 
   if (missingVars.length > 0) {
@@ -219,45 +193,45 @@ exports.handler = async (event) => {
   }
 
   try {
-    // Private key is stored in Supabase app_secrets (too large for Lambda env vars).
-    // Fall back to env var if present (local dev convenience).
-    let privateKeyRaw = process.env.GOOGLE_PLAY_PRIVATE_KEY || '';
-    if (!privateKeyRaw) {
-      const supabaseUrl = process.env.SUPABASE_URL || '';
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('GOOGLE_PLAY_PRIVATE_KEY not set and Supabase credentials missing.');
-      }
-      const secRes = await fetch(
-        `${supabaseUrl}/rest/v1/app_secrets?key=eq.GOOGLE_PLAY_PRIVATE_KEY&select=value&limit=1`,
-        { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
-      );
-      if (!secRes.ok) throw new Error(`Supabase app_secrets fetch failed: ${secRes.status}`);
-      const rows = await secRes.json();
-      if (!rows.length) throw new Error('GOOGLE_PLAY_PRIVATE_KEY row not found in app_secrets.');
-      privateKeyRaw = rows[0].value;
-    }
+    const privateKeyRaw = process.env.GOOGLE_PLAY_PRIVATE_KEY || (await fetchPrivateKeyFromSupabase());
+    const privateKey = privateKeyRaw.replace(/\\n/g, '\n');
 
-    const serviceAccount = {
+    const accessToken = await getAccessToken({
       client_email: clientEmail,
-      private_key: privateKeyRaw.replace(/\\n/g, '\n'),
-    };
-    const accessToken = await getAccessToken(serviceAccount);
-    const raw = await fetchPlayStats(accessToken, packageName);
-    const { byMonth, byCountry, lifetimeTotal } = parseRows(raw.rows || []);
+      private_key: privateKey,
+      scope: 'https://www.googleapis.com/auth/bigquery.readonly',
+    });
 
+    const sql = `
+      SELECT month, country, CAST(total AS INT64) AS total
+      FROM \`${bqProjectId}.${bqDataset}.${bqView}\`
+      WHERE month >= @launchMonth
+      ORDER BY month ASC, country ASC
+    `;
+
+    const rows = await runBigQuery({
+      accessToken,
+      projectId: bqProjectId,
+      sql,
+      params: { launchMonth: LAUNCH_MONTH },
+    });
+
+    const { byMonth, byCountry, lifetimeTotal } = summarize(rows);
     return {
       statusCode: 200,
       headers: responseHeaders,
       body: JSON.stringify({ lifetimeTotal, byMonth, byCountry }),
     };
   } catch (err) {
-    const permissionDenied = String(err.message || '').includes('PERMISSION_DENIED');
     console.error('[google-play-stats]', err.message);
     return {
       statusCode: 200,
       headers: responseHeaders,
-      body: JSON.stringify({ error: err.message, permissionDenied }),
+      body: JSON.stringify({
+        error: err.message,
+        setupHint:
+          'Create BigQuery view with columns month,country,total and set GOOGLE_PLAY_BQ_PROJECT_ID, GOOGLE_PLAY_BQ_DATASET, GOOGLE_PLAY_BQ_VIEW.',
+      }),
     };
   }
 };
