@@ -6,10 +6,15 @@
  *
  * Required Netlify environment variables:
  *   GOOGLE_PLAY_CLIENT_EMAIL          — client_email field from the service account JSON.
- *   GOOGLE_PLAY_PRIVATE_KEY           — private_key field from the service account JSON
- *                                       (replace physical newlines with \n when saving to Netlify).
  *   GOOGLE_PLAY_PACKAGE_NAME          — e.g. com.projectpriceapp.mobile
  *   ADMIN_DASHBOARD_KEY               — Same key used by the admin panel.
+ *   SUPABASE_URL                      — Already present site-wide.
+ *   SUPABASE_SERVICE_ROLE_KEY         — Already present site-wide.
+ *
+ * GOOGLE_PLAY_PRIVATE_KEY is intentionally NOT stored as a Netlify env var
+ * (the RSA key is ~1.7 KB and pushes the total over AWS Lambda's 4 KB limit).
+ * Instead it is stored in the Supabase `app_secrets` table under key
+ * 'GOOGLE_PLAY_PRIVATE_KEY' and fetched at runtime via the service-role key.
  */
 
 'use strict';
@@ -192,14 +197,11 @@ exports.handler = async (event) => {
     return { statusCode: 401, headers: responseHeaders, body: JSON.stringify({ error: 'Unauthorized' }) };
   }
 
-  const serviceAccountRaw = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON || '';
   const clientEmail = process.env.GOOGLE_PLAY_CLIENT_EMAIL || '';
-  const privateKeyRaw = process.env.GOOGLE_PLAY_PRIVATE_KEY || '';
   const packageName = process.env.GOOGLE_PLAY_PACKAGE_NAME || '';
 
   const missingVars = [
     !clientEmail && 'GOOGLE_PLAY_CLIENT_EMAIL',
-    !privateKeyRaw && 'GOOGLE_PLAY_PRIVATE_KEY',
     !packageName && 'GOOGLE_PLAY_PACKAGE_NAME',
   ].filter(Boolean);
 
@@ -212,16 +214,29 @@ exports.handler = async (event) => {
   }
 
   try {
-    // Support both the old full-JSON var and the new split vars
-    let serviceAccount;
-    if (serviceAccountRaw) {
-      serviceAccount = JSON.parse(serviceAccountRaw);
-    } else {
-      serviceAccount = {
-        client_email: clientEmail,
-        private_key: privateKeyRaw.replace(/\\n/g, '\n'),
-      };
+    // Private key is stored in Supabase app_secrets (too large for Lambda env vars).
+    // Fall back to env var if present (local dev convenience).
+    let privateKeyRaw = process.env.GOOGLE_PLAY_PRIVATE_KEY || '';
+    if (!privateKeyRaw) {
+      const supabaseUrl = process.env.SUPABASE_URL || '';
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error('GOOGLE_PLAY_PRIVATE_KEY not set and Supabase credentials missing.');
+      }
+      const secRes = await fetch(
+        `${supabaseUrl}/rest/v1/app_secrets?key=eq.GOOGLE_PLAY_PRIVATE_KEY&select=value&limit=1`,
+        { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+      );
+      if (!secRes.ok) throw new Error(`Supabase app_secrets fetch failed: ${secRes.status}`);
+      const rows = await secRes.json();
+      if (!rows.length) throw new Error('GOOGLE_PLAY_PRIVATE_KEY row not found in app_secrets.');
+      privateKeyRaw = rows[0].value;
     }
+
+    const serviceAccount = {
+      client_email: clientEmail,
+      private_key: privateKeyRaw.replace(/\\n/g, '\n'),
+    };
     const accessToken = await getAccessToken(serviceAccount);
     const raw = await fetchPlayStats(accessToken, packageName);
     const { byMonth, byCountry, lifetimeTotal } = parseRows(raw.rows || []);
