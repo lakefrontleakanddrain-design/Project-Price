@@ -2259,6 +2259,44 @@
       const toCsvLine = (cells) => cells.map(csvEscape).join(',');
       const lines = [];
 
+      const exportNow = new Date();
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      lines.push(toCsvLine(['Export Metadata']));
+      lines.push(toCsvLine(['Field', 'Value']));
+      lines.push(toCsvLine(['Exported At ISO', exportNow.toISOString()]));
+      lines.push(toCsvLine(['Exported At Local', exportNow.toLocaleString()]));
+      lines.push(toCsvLine(['Timezone', timezone]));
+      lines.push('');
+
+      const activeRoleLabel = (() => {
+        const selected = adminRoleInput?.selectedOptions?.[0];
+        return selected?.textContent || adminRoleInput?.value || 'all';
+      })();
+      const activeRegionLabel = (() => {
+        const selected = regionFilterInput?.selectedOptions?.[0];
+        return selected?.textContent || regionFilterInput?.value || 'all';
+      })();
+      const activeStateLabel = (() => {
+        const selected = stateFilterInput?.selectedOptions?.[0];
+        return selected?.textContent || stateFilterInput?.value || 'all';
+      })();
+      const activeContractorStatusLabel = (() => {
+        const selected = contractorFilterInput?.selectedOptions?.[0];
+        return selected?.textContent || contractorFilterInput?.value || 'all';
+      })();
+      lines.push(toCsvLine(['Filters Used']));
+      lines.push(toCsvLine(['Filter', 'Value']));
+      lines.push(toCsvLine(['Admin Role', activeRoleLabel]));
+      lines.push(toCsvLine(['Region', activeRegionLabel]));
+      lines.push(toCsvLine(['State', activeStateLabel]));
+      lines.push(toCsvLine(['Contractor Status', activeContractorStatusLabel]));
+      lines.push(toCsvLine(['Global Search', accountSearchInput?.value || '']));
+      lines.push(toCsvLine(['Contractor Search', contractorSearchInput?.value || '']));
+      lines.push(toCsvLine(['Homeowner Search', homeownerSearchInput?.value || '']));
+      lines.push(toCsvLine(['Lead Search', leadSearchInput?.value || '']));
+      lines.push(toCsvLine(['Activity Search', activitySearchInput?.value || '']));
+      lines.push('');
+
       const appendSection = (title, headers, rows) => {
         lines.push(toCsvLine([title]));
         lines.push(toCsvLine(headers));
