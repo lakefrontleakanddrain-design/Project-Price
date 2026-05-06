@@ -2056,6 +2056,8 @@
         ['New Pros (7d)', contractorCurr, trendBadge(contractorCurr, contractorPrev), contractorSeries],
         ['Expected Active MRR', `$${activeMrr.toLocaleString()}`, renderTrend(`${activeMemberships} active memberships`, 'neutral'), activeMrrSeries],
         ['Potential Signed MRR', `$${potentialMrr.toLocaleString()}`, renderTrend(`${signedMemberships} signed memberships`, 'neutral'), potentialMrrSeries],
+        ['Web Visits (30d)', c.totalWebVisits30d ?? 0, renderTrend('First-party tracked visits', 'neutral'), []],
+        ['Unique Visitors (30d)', c.uniqueWebVisitors30d ?? 0, renderTrend('Session-based unique visitors', 'neutral'), []],
         ['Total Projects Generated', c.totalProjectsGenerated ?? 0, renderTrend('All-time DB count', 'neutral'), []],
         ['Anonymous Projects', c.anonymousProjectSessions ?? 0, renderTrend('Projects without attached user', 'neutral'), []],
         ['Active Contractors', c.activeContractors || 0, '', contractorSeries],
@@ -2350,6 +2352,8 @@
         ['Active Contractors', counts.activeContractors || 0],
         ['Pending Leads', counts.pendingLeads || 0],
         ['Claimed Leads', counts.claimedLeads || 0],
+        ['Web Visits (30d)', counts.totalWebVisits30d || 0],
+        ['Unique Visitors (30d)', counts.uniqueWebVisitors30d || 0],
         ['Total Projects Generated', counts.totalProjectsGenerated || 0],
         ['Anonymous Projects', counts.anonymousProjectSessions || 0],
       ]);
@@ -2361,9 +2365,19 @@
         ['App Downloads (Lifetime)', appLifetime],
         ['Customer Signups (30d)', signups30],
         ['Project Requests (30d)', requests30],
+        ['Web Visits (30d)', counts.totalWebVisits30d || 0],
+        ['Unique Visitors (30d)', counts.uniqueWebVisitors30d || 0],
         ['Total Projects', counts.totalProjectsGenerated || 0],
         ['Anonymous Projects', counts.anonymousProjectSessions || 0],
       ]);
+
+      const topReferrers = Array.isArray(counts.topReferrers30d) ? counts.topReferrers30d : [];
+      appendSection('Top Referrers (Last 30 Days)', ['Referrer Host', 'Visits'],
+        topReferrers.length ? topReferrers.map((r) => [r.label || '(direct)', Number(r.count || 0)]) : [['(direct)', 0]]);
+
+      const topPages = Array.isArray(counts.topPages30d) ? counts.topPages30d : [];
+      appendSection('Top Pages Visited (Last 30 Days)', ['Page Path', 'Visits'],
+        topPages.length ? topPages.map((p) => [p.label || '(unknown)', Number(p.count || 0)]) : [['(unknown)', 0]]);
 
       const buildThirtyDayRows = (rows) => (Array.isArray(rows) ? rows : []).filter((r) => new Date(r.weekStart) >= THIRTY_AGO);
       const buildDeltaMaps = (allRows) => {

@@ -169,6 +169,19 @@ const hasMissingRelationError = (err, relationName) => {
   );
 };
 
+const aggregateTopEntries = (rows, key, topN = 5, fallback = '(direct)') => {
+  const map = {};
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const raw = String(row?.[key] || '').trim();
+    const label = raw || fallback;
+    map[label] = (map[label] || 0) + 1;
+  });
+  return Object.entries(map)
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, topN);
+};
+
 const getAuthUserContact = async (userId) => {
   const { supabaseUrl, serviceKey } = env();
   if (!supabaseUrl || !serviceKey || !userId) return null;
@@ -722,6 +735,28 @@ const fetchOverview = async () => {
     },
   );
 
+  let webEvents30d = [];
+  try {
+    const sinceIso = new Date(Date.now() - (30 * 24 * 60 * 60 * 1000)).toISOString();
+    const q = new URLSearchParams({
+      select: 'session_id,page_path,referrer_host,created_at',
+      created_at: `gte.${sinceIso}`,
+      order: 'created_at.desc',
+      limit: '5000',
+    });
+    webEvents30d = (await supabaseRequest(`/rest/v1/web_page_events?${q.toString()}`)) || [];
+  } catch (err) {
+    if (!hasMissingRelationError(err, 'web_page_events')) {
+      console.error('Failed to fetch web_page_events metrics:', err);
+    }
+    webEvents30d = [];
+  }
+
+  const totalWebVisits30d = webEvents30d.length;
+  const uniqueWebVisitors30d = new Set(webEvents30d.map((e) => String(e?.session_id || '').trim()).filter(Boolean)).size;
+  const topReferrers30d = aggregateTopEntries(webEvents30d, 'referrer_host', 5, '(direct)');
+  const topPages30d = aggregateTopEntries(webEvents30d, 'page_path', 5, '(unknown)');
+
   let totalProjectsGenerated = 0;
   try {
     totalProjectsGenerated = await fetchTableExactCount('projects');
@@ -768,6 +803,10 @@ const fetchOverview = async () => {
       expiredLeads: enrichedLeads.filter((l) => l.status === 'expired').length,
       totalProjectsGenerated,
       anonymousProjectSessions,
+      totalWebVisits30d,
+      uniqueWebVisitors30d,
+      topReferrers30d,
+      topPages30d,
     },
   };
 };
