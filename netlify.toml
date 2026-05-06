@@ -1,6 +1,9 @@
 [build]
   publish = "web/public"
 
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "GOOGLE_PLAY_PACKAGE_NAME"
+
 [functions]
   directory = "backend/functions"
 
