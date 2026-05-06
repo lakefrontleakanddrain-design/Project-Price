@@ -75,6 +75,41 @@ const supabaseRequest = async (path, { method = 'GET', body, headers = {} } = {}
   try { return JSON.parse(text); } catch { return text; }
 };
 
+const fetchTableExactCount = async (table, filterQuery = '') => {
+  const { supabaseUrl, serviceKey } = env();
+  if (!supabaseUrl || !serviceKey) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.');
+
+  const encodedTable = encodeURIComponent(String(table || '').trim());
+  if (!encodedTable) throw new Error('table is required for fetchTableExactCount.');
+
+  const basePath = `/rest/v1/${encodedTable}?select=id`;
+  const fullPath = filterQuery ? `${basePath}&${filterQuery}` : basePath;
+  const res = await fetch(`${supabaseUrl}${fullPath}`, {
+    method: 'GET',
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      Prefer: 'count=exact',
+      Range: '0-0',
+    },
+  });
+
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Supabase error ${res.status}: ${text}`);
+
+  const contentRange = res.headers.get('content-range') || '';
+  const match = contentRange.match(/\/(\d+)$/);
+  if (match) return Number(match[1]);
+
+  if (!text) return 0;
+  try {
+    const payload = JSON.parse(text);
+    return Array.isArray(payload) ? payload.length : 0;
+  } catch {
+    return 0;
+  }
+};
+
 const requireAdminKey = (event) => {
   const required = env().adminKey;
   if (!required) return null;
@@ -687,6 +722,31 @@ const fetchOverview = async () => {
     },
   );
 
+  let totalProjectsGenerated = 0;
+  try {
+    totalProjectsGenerated = await fetchTableExactCount('projects');
+  } catch (err) {
+    console.error('Failed to fetch total projects count:', err);
+    totalProjectsGenerated = directoryProjects.length;
+  }
+
+  let anonymousProjectSessions = 0;
+  try {
+    anonymousProjectSessions = await fetchTableExactCount('projects', 'owner_id=is.null');
+  } catch (err) {
+    if (hasMissingColumnError(err, 'owner_id')) {
+      try {
+        anonymousProjectSessions = await fetchTableExactCount('projects', 'user_id=is.null');
+      } catch (legacyErr) {
+        if (!hasMissingColumnError(legacyErr, 'user_id')) {
+          console.error('Failed to fetch anonymous project sessions:', legacyErr);
+        }
+      }
+    } else {
+      console.error('Failed to fetch anonymous project sessions:', err);
+    }
+  }
+
   return {
     contractors: enrichedContractors,
     homeowners: enrichedHomeowners,
@@ -706,6 +766,8 @@ const fetchOverview = async () => {
       claimedLeads: enrichedLeads.filter((l) => l.status === 'claimed').length,
       pendingLeads: enrichedLeads.filter((l) => l.status === 'pending').length,
       expiredLeads: enrichedLeads.filter((l) => l.status === 'expired').length,
+      totalProjectsGenerated,
+      anonymousProjectSessions,
     },
   };
 };

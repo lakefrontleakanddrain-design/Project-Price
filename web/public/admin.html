@@ -2050,6 +2050,8 @@
         ['New Pros (7d)', contractorCurr, trendBadge(contractorCurr, contractorPrev), contractorSeries],
         ['Expected Active MRR', `$${activeMrr.toLocaleString()}`, renderTrend(`${activeMemberships} active memberships`, 'neutral'), activeMrrSeries],
         ['Potential Signed MRR', `$${potentialMrr.toLocaleString()}`, renderTrend(`${signedMemberships} signed memberships`, 'neutral'), potentialMrrSeries],
+        ['Total Projects Generated', c.totalProjectsGenerated ?? 0, renderTrend('All-time DB count', 'neutral'), []],
+        ['Anonymous Projects', c.anonymousProjectSessions ?? 0, renderTrend('Projects without attached user', 'neutral'), []],
         ['Active Contractors', c.activeContractors || 0, '', contractorSeries],
         ['Pending Leads', c.pendingLeads || 0, '', pendingLeadSeries],
         ['Claimed Leads', c.claimedLeads || 0, '', claimedLeadSeries],
