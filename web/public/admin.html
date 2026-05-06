@@ -1092,6 +1092,9 @@
     <section class="panel" style="min-height:0;margin-bottom:14px;" id="marketPulseSection">
       <h2>Market Pulse — Last 30 Days</h2>
       <p class="meta" style="margin-bottom:12px;">Auto-loads on refresh. Weekly breakout by location. "vs Last Week" compares the current ISO week to the prior. Use this to balance marketing spend across customer acquisition and contractor recruitment.</p>
+      <div style="margin-bottom:12px;">
+        <button id="exportKpiMarketPulseCsvBtn" type="button" class="secondary">Export KPI + Market Pulse CSV</button>
+      </div>
 
       <!-- Funnel summary bar -->
       <div id="funnelSummary" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;padding:12px 14px;background:#f0f4fb;border-radius:8px;align-items:center;font-size:13px;"></div>
@@ -1226,6 +1229,7 @@
     const appDownloadsWeeklyEl = document.getElementById('appDownloadsWeekly');
     const googlePlayStatsEl = document.getElementById('googlePlayStats');
     const funnelSummaryEl = document.getElementById('funnelSummary');
+    const exportKpiMarketPulseCsvBtn = document.getElementById('exportKpiMarketPulseCsvBtn');
     const queueCardsEl = document.getElementById('queueCards');
     const adminRoleInput = document.getElementById('adminRole');
     const regionFilterInput = document.getElementById('regionFilter');
@@ -1264,6 +1268,8 @@
     const closeDetailDrawerBtn = document.getElementById('closeDetailDrawerBtn');
 
     let state = { contractors: [], homeowners: [], leads: [], activityLogs: [], signupCityWeekly: [], homeownerSignupWeekly: [], projectRequestWeekly: [], counts: {} };
+    let appStoreStatsData = null;
+    let googlePlayStatsData = null;
     let activeQueue = 'all';
     let activeQueueTab = 'lead';
     let openDrawerRecord = null;
@@ -2248,6 +2254,132 @@
         'ZIP', 'No project requests in the last 30 days.', 'project-requests-by-zip',
       );
     };
+
+    const exportKpiAndMarketPulseCsv = () => {
+      const toCsvLine = (cells) => cells.map(csvEscape).join(',');
+      const lines = [];
+
+      const appendSection = (title, headers, rows) => {
+        lines.push(toCsvLine([title]));
+        lines.push(toCsvLine(headers));
+        rows.forEach((row) => lines.push(toCsvLine(row)));
+        lines.push('');
+      };
+
+      const now = Date.now();
+      const dayMs = 24 * 60 * 60 * 1000;
+      const startCurr = now - (7 * dayMs);
+      const startPrev = now - (14 * dayMs);
+      const tsOf = (item) => {
+        const value = item?.createdAt || item?.created_at || item?.latestProjectAt || item?.latestLeadAt || null;
+        const ts = new Date(value || 0).getTime();
+        return Number.isFinite(ts) ? ts : 0;
+      };
+      const inCurr7 = (item) => {
+        const ts = tsOf(item);
+        return ts >= startCurr && ts <= now;
+      };
+      const inPrev7 = (item) => {
+        const ts = tsOf(item);
+        return ts >= startPrev && ts < startCurr;
+      };
+
+      const leads = Array.isArray(state.leads) ? state.leads : [];
+      const homeowners = Array.isArray(state.homeowners) ? state.homeowners : [];
+      const contractors = Array.isArray(state.contractors) ? state.contractors : [];
+      const counts = state.counts || {};
+
+      const leadCurr = leads.filter(inCurr7).length;
+      const leadPrev = leads.filter(inPrev7).length;
+      const homeownerCurr = homeowners.filter(inCurr7).length;
+      const homeownerPrev = homeowners.filter(inPrev7).length;
+      const contractorCurr = contractors.filter(inCurr7).length;
+      const contractorPrev = contractors.filter(inPrev7).length;
+      const activeMemberships = contractors.filter((pro) => contractorState(pro) === 'active').length;
+      const signedMemberships = contractors.length;
+      const activeMrr = activeMemberships * MEMBERSHIP_MRR;
+      const potentialMrr = signedMemberships * MEMBERSHIP_MRR;
+
+      appendSection('KPI Summary', ['Metric', 'Value'], [
+        ['New Leads (7d)', leadCurr],
+        ['New Leads Delta vs Prev 7d', leadCurr - leadPrev],
+        ['New Customers (7d)', homeownerCurr],
+        ['New Customers Delta vs Prev 7d', homeownerCurr - homeownerPrev],
+        ['New Pros (7d)', contractorCurr],
+        ['New Pros Delta vs Prev 7d', contractorCurr - contractorPrev],
+        ['Expected Active MRR', activeMrr],
+        ['Potential Signed MRR', potentialMrr],
+        ['Active Contractors', counts.activeContractors || 0],
+        ['Pending Leads', counts.pendingLeads || 0],
+        ['Claimed Leads', counts.claimedLeads || 0],
+        ['Total Projects Generated', counts.totalProjectsGenerated || 0],
+        ['Anonymous Projects', counts.anonymousProjectSessions || 0],
+      ]);
+
+      const signups30 = (state.homeownerSignupWeekly || []).reduce((sum, row) => sum + Number(row.signups || 0), 0);
+      const requests30 = (state.projectRequestWeekly || []).reduce((sum, row) => sum + Number(row.signups || 0), 0);
+      const appLifetime = Number(appStoreStatsData?.lifetimeTotal || 0);
+      appendSection('Market Pulse Funnel', ['Metric', 'Value'], [
+        ['App Downloads (Lifetime)', appLifetime],
+        ['Customer Signups (30d)', signups30],
+        ['Project Requests (30d)', requests30],
+        ['Total Projects', counts.totalProjectsGenerated || 0],
+        ['Anonymous Projects', counts.anonymousProjectSessions || 0],
+      ]);
+
+      const buildThirtyDayRows = (rows) => (Array.isArray(rows) ? rows : []).filter((r) => new Date(r.weekStart) >= THIRTY_AGO);
+      const buildDeltaMaps = (allRows) => {
+        const thisMap = {};
+        const lastMap = {};
+        (Array.isArray(allRows) ? allRows : []).forEach((r) => {
+          if (r.weekStart === THIS_WEEK) thisMap[r.city] = Number(r.signups || 0);
+          if (r.weekStart === LAST_WEEK) lastMap[r.city] = Number(r.signups || 0);
+        });
+        return { thisMap, lastMap };
+      };
+
+      const appendWeeklySection = (title, allRows) => {
+        const rows30 = buildThirtyDayRows(allRows);
+        const { thisMap, lastMap } = buildDeltaMaps(allRows);
+        appendSection(title, ['Week', 'Location', 'Count', 'Vs Last Week'], rows30.length
+          ? rows30.map((r) => {
+              const delta = r.weekStart === THIS_WEEK
+                ? (thisMap[r.city] || 0) - (lastMap[r.city] || 0)
+                : '';
+              return [r.weekStart || '', r.city || 'Unknown', Number(r.signups || 0), delta];
+            })
+          : [['', 'No data in last 30 days', '', '']]);
+      };
+
+      appendWeeklySection('Customer Signups by ZIP (Last 30 Days)', state.homeownerSignupWeekly);
+      appendWeeklySection('Project Requests by ZIP (Last 30 Days)', state.projectRequestWeekly);
+      appendWeeklySection('Pro Signups by City (Last 30 Days)', state.signupCityWeekly);
+
+      const appByMonth = Array.isArray(appStoreStatsData?.byMonth) ? appStoreStatsData.byMonth : [];
+      const appByCountry = Array.isArray(appStoreStatsData?.byCountry) ? appStoreStatsData.byCountry : [];
+      appendSection('App Store Downloads by Month (Lifetime)', ['Month', 'Downloads'],
+        appByMonth.length ? appByMonth.map((m) => [m.month || '', Number(m.total || 0)]) : [['', 'No data']]);
+      appendSection('App Store Downloads by Country (Lifetime)', ['Country', 'Downloads'],
+        appByCountry.length ? appByCountry.map((c) => [c.country || 'Unknown', Number(c.total || 0)]) : [['', 'No data']]);
+
+      const gpByMonth = Array.isArray(googlePlayStatsData?.byMonth) ? googlePlayStatsData.byMonth : [];
+      const gpByCountry = Array.isArray(googlePlayStatsData?.byCountry) ? googlePlayStatsData.byCountry : [];
+      appendSection('Google Play Installs by Month (Lifetime)', ['Month', 'Installs'],
+        gpByMonth.length ? gpByMonth.map((m) => [m.month || '', Number(m.total || 0)]) : [['', 'No data']]);
+      appendSection('Google Play Installs by Country (Lifetime)', ['Country', 'Installs'],
+        gpByCountry.length ? gpByCountry.map((c) => [c.country || 'Unknown', Number(c.total || 0)]) : [['', 'No data']]);
+
+      const csv = lines.join('\n');
+      const link = Object.assign(document.createElement('a'), {
+        href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })),
+        download: `kpi-market-pulse-combined-${new Date().toISOString().slice(0, 10)}.csv`,
+      });
+      link.click();
+      URL.revokeObjectURL(link.href);
+      showMessage('Combined KPI + Market Pulse CSV downloaded.', 'success');
+    };
+
+    exportKpiMarketPulseCsvBtn?.addEventListener('click', exportKpiAndMarketPulseCsv);
     // ------------------------------------------------------------------------------------
 
     const contractorState = (contractor) => {
@@ -2973,6 +3105,7 @@
 
     // App Store stats — separate async load so it never blocks the main dashboard
     const renderAppStoreStats = (data) => {
+      appStoreStatsData = data || null;
       const updateDownloadsColumn = (lifetimeTotal, byMonth) => {
         if (!appDownloadsWeeklyEl) return;
         if (!byMonth.length) { appDownloadsWeeklyEl.innerHTML = '<p class="meta">No data yet.</p>'; return; }
@@ -3114,6 +3247,7 @@
 
     // Google Play stats — separate async load, same pattern as App Store
     const renderGooglePlayStats = (data) => {
+      googlePlayStatsData = data || null;
       if (!googlePlayStatsEl) return;
       if (!data) { googlePlayStatsEl.innerHTML = '<p class="meta">Google Play data unavailable.</p>'; return; }
       if (data.notConfigured) {
