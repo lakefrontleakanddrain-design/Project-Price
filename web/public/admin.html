@@ -1125,6 +1125,11 @@
       <hr style="border:none;border-top:1px solid #dbe4ef;margin:0 0 16px 0;" />
       <h3 style="font-size:13px;font-weight:700;color:#0E3A78;margin:0 0 8px 0;">App Store Downloads — Lifetime (by Month &amp; Country)</h3>
       <div id="appStoreStats"><p class="meta">Loading App Store data…</p></div>
+
+      <!-- Google Play Downloads by Country -->
+      <hr style="border:none;border-top:1px solid #dbe4ef;margin:16px 0 16px 0;" />
+      <h3 style="font-size:13px;font-weight:700;color:#0E3A78;margin:0 0 8px 0;">Google Play Downloads — Lifetime (by Month &amp; Country)</h3>
+      <div id="googlePlayStats"><p class="meta">Loading Google Play data…</p></div>
     </section>
 
     <section class="panel" style="min-height:0;margin-bottom:14px;" id="complianceSection">
@@ -1219,6 +1224,7 @@
     const projectRequestWeeklyEl = document.getElementById('projectRequestWeekly');
     const appStoreStatsEl = document.getElementById('appStoreStats');
     const appDownloadsWeeklyEl = document.getElementById('appDownloadsWeekly');
+    const googlePlayStatsEl = document.getElementById('googlePlayStats');
     const funnelSummaryEl = document.getElementById('funnelSummary');
     const queueCardsEl = document.getElementById('queueCards');
     const adminRoleInput = document.getElementById('adminRole');
@@ -3098,6 +3104,78 @@
       }
     };
 
+    // Google Play stats — separate async load, same pattern as App Store
+    const renderGooglePlayStats = (data) => {
+      if (!googlePlayStatsEl) return;
+      if (!data) { googlePlayStatsEl.innerHTML = '<p class="meta">Google Play data unavailable.</p>'; return; }
+      if (data.notConfigured) {
+        googlePlayStatsEl.innerHTML = `<p class="meta">Not configured. Add these Netlify env vars to enable: <strong>${escapeHtml((data.missingVars || []).join(', '))}</strong></p>`;
+        return;
+      }
+      if (data.error) {
+        const permMsg = `<p class="meta" style="color:#ef4444;">Google Play API permission denied.</p>
+          <p class="meta">Ensure the service account has <strong>View app information and download bulk reports</strong> access in Play Console.</p>`;
+        googlePlayStatsEl.innerHTML = data.permissionDenied
+          ? permMsg
+          : `<p class="meta" style="color:#ef4444;">Error: ${escapeHtml(data.error)}</p>`;
+        return;
+      }
+      const { lifetimeTotal = 0, byMonth = [], byCountry = [] } = data;
+      if (!byMonth.length) { googlePlayStatsEl.innerHTML = '<p class="meta">No download data found yet.</p>'; return; }
+      googlePlayStatsEl.innerHTML = `
+        <div style="margin-bottom:8px;display:flex;align-items:center;gap:12px;">
+          <span class="meta">Lifetime total: <strong>${lifetimeTotal.toLocaleString()}</strong> installs across ${byMonth.length} month${byMonth.length !== 1 ? 's' : ''}</span>
+          <button id="exportGooglePlayCsvBtn" type="button" class="secondary" style="font-size:11px;padding:3px 12px;">Export CSV</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+          <div>
+            <h4 style="font-size:12px;font-weight:700;color:#0E3A78;margin:0 0 6px 0;">By Month</h4>
+            <div class="table-wrap">
+              <table class="compact-table">
+                <thead><tr><th>Month</th><th>Installs</th></tr></thead>
+                <tbody>
+                  ${byMonth.slice().reverse().map((m) => `<tr><td>${escapeHtml(m.month)}</td><td><strong>${m.total}</strong></td></tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <h4 style="font-size:12px;font-weight:700;color:#0E3A78;margin:0 0 6px 0;">By Country (Lifetime)</h4>
+            <div class="table-wrap">
+              <table class="compact-table">
+                <thead><tr><th>Country</th><th>Installs</th></tr></thead>
+                <tbody>
+                  ${byCountry.slice(0, 20).map((c) => `<tr><td>${escapeHtml(c.country)}</td><td><strong>${c.total}</strong></td></tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>`;
+      document.getElementById('exportGooglePlayCsvBtn')?.addEventListener('click', () => {
+        const csv = ['Month,Installs', ...byMonth.map((m) => `${m.month},${m.total}`)].join('\n');
+        const a = Object.assign(document.createElement('a'), {
+          href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })),
+          download: `google-play-installs-lifetime-${new Date().toISOString().slice(0,10)}.csv`,
+        });
+        a.click(); URL.revokeObjectURL(a.href);
+      });
+    };
+
+    const loadGooglePlayStats = async () => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 18000);
+      try {
+        const res = await fetch('/.netlify/functions/project-price-google-play-stats', { headers: getHeaders(), signal: controller.signal });
+        clearTimeout(timeout);
+        const data = await res.json();
+        renderGooglePlayStats(data);
+      } catch (err) {
+        clearTimeout(timeout);
+        const msg = err.name === 'AbortError' ? 'Timed out.' : escapeHtml(err.message);
+        if (googlePlayStatsEl) googlePlayStatsEl.innerHTML = `<p class="meta" style="color:#ef4444;">Failed to load Google Play data: ${msg}</p>`;
+      }
+    };
+
     window.assignLeadFromQueue = async (leadRequestId) => {
       const select = document.getElementById(`queue-assign-${leadRequestId}`);
       const professionalId = select?.value || '';
@@ -3147,6 +3225,7 @@
         populateSavedViews(savedViewSelectInput.value);
         renderAll();
         loadAppStoreStats(); // fires async, renders independently
+        loadGooglePlayStats(); // fires async, renders independently
       } catch (err) {
         showMessage(err.message || 'Failed to load admin data.', 'error');
       } finally {
