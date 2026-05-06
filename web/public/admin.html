@@ -3109,7 +3109,7 @@
       if (!googlePlayStatsEl) return;
       if (!data) { googlePlayStatsEl.innerHTML = '<p class="meta">Google Play data unavailable.</p>'; return; }
       if (data.notConfigured) {
-        googlePlayStatsEl.innerHTML = `<p class="meta">Not configured. Add these Netlify env vars to enable: <strong>${escapeHtml((data.missingVars || []).join(', '))}</strong></p>`;
+        googlePlayStatsEl.innerHTML = `<p class="meta" style="color:#6b7280;">⏳ Google Play stats pending — BigQuery export not yet connected. Data will appear here once the app has installs and the export is configured.</p>`;
         return;
       }
       if (data.error) {
