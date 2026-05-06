@@ -3001,6 +3001,8 @@
         if (!funnelSummaryEl) return;
         const totalSignups = (state.homeownerSignupWeekly || []).reduce((s, r) => s + Number(r.signups || 0), 0);
         const totalRequests = (state.projectRequestWeekly || []).reduce((s, r) => s + Number(r.signups || 0), 0);
+        const totalProjectsGenerated = Number(state.counts?.totalProjectsGenerated || 0);
+        const anonymousProjects = Number(state.counts?.anonymousProjectSessions || 0);
         const pill = (label, value, color) =>
           `<span style="background:#fff;border:1px solid #dbe4ef;border-radius:20px;padding:4px 12px;display:inline-flex;gap:6px;align-items:center;">
             <span style="color:#68778d;font-size:11px;">${label}</span>
@@ -3013,6 +3015,10 @@
           ${pill('&#128100; Signups (30d)', totalSignups, '#0E3A78')}
           ${arrow}
           ${pill('&#128296; Requests (30d)', totalRequests, '#0E3A78')}
+          ${arrow}
+          ${pill('&#128736;&#65039; Total Projects', totalProjectsGenerated.toLocaleString(), '#0E3A78')}
+          ${arrow}
+          ${pill('&#128101; Anonymous Projects', anonymousProjects.toLocaleString(), '#0E3A78')}
         `;
       };
 
