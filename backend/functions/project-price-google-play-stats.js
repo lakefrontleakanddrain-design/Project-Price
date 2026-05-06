@@ -124,6 +124,11 @@ const fetchPlayStats = async (accessToken, packageName) => {
     const text = await res.text();
     throw new Error(`PERMISSION_DENIED: ${text.slice(0, 200)}`);
   }
+  if (res.status === 404) {
+    throw new Error(
+      'Play Reporting endpoint not found. Install/acquisition metrics are not available from this API endpoint; use a supported export source (for example Play Console bulk reports / BigQuery) for month+country installs.'
+    );
+  }
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Play Reporting API error ${res.status}: ${text.slice(0, 300)}`);
