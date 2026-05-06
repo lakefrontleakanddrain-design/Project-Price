@@ -5,8 +5,9 @@
  * using the Google Play Developer Reporting API.
  *
  * Required Netlify environment variables:
- *   GOOGLE_PLAY_SERVICE_ACCOUNT_JSON  — Full contents of the service account
- *                                       JSON key file downloaded from Google Cloud.
+ *   GOOGLE_PLAY_CLIENT_EMAIL          — client_email field from the service account JSON.
+ *   GOOGLE_PLAY_PRIVATE_KEY           — private_key field from the service account JSON
+ *                                       (replace physical newlines with \n when saving to Netlify).
  *   GOOGLE_PLAY_PACKAGE_NAME          — e.g. com.projectpriceapp.mobile
  *   ADMIN_DASHBOARD_KEY               — Same key used by the admin panel.
  */
@@ -192,10 +193,13 @@ exports.handler = async (event) => {
   }
 
   const serviceAccountRaw = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON || '';
+  const clientEmail = process.env.GOOGLE_PLAY_CLIENT_EMAIL || '';
+  const privateKeyRaw = process.env.GOOGLE_PLAY_PRIVATE_KEY || '';
   const packageName = process.env.GOOGLE_PLAY_PACKAGE_NAME || '';
 
   const missingVars = [
-    !serviceAccountRaw && 'GOOGLE_PLAY_SERVICE_ACCOUNT_JSON',
+    !clientEmail && 'GOOGLE_PLAY_CLIENT_EMAIL',
+    !privateKeyRaw && 'GOOGLE_PLAY_PRIVATE_KEY',
     !packageName && 'GOOGLE_PLAY_PACKAGE_NAME',
   ].filter(Boolean);
 
@@ -208,7 +212,16 @@ exports.handler = async (event) => {
   }
 
   try {
-    const serviceAccount = JSON.parse(serviceAccountRaw);
+    // Support both the old full-JSON var and the new split vars
+    let serviceAccount;
+    if (serviceAccountRaw) {
+      serviceAccount = JSON.parse(serviceAccountRaw);
+    } else {
+      serviceAccount = {
+        client_email: clientEmail,
+        private_key: privateKeyRaw.replace(/\\n/g, '\n'),
+      };
+    }
     const accessToken = await getAccessToken(serviceAccount);
     const raw = await fetchPlayStats(accessToken, packageName);
     const { byMonth, byCountry, lifetimeTotal } = parseRows(raw.rows || []);
