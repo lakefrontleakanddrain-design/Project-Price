@@ -27,3 +27,22 @@ create index if not exists idx_web_page_events_referrer
 
 create index if not exists idx_web_page_events_page
   on public.web_page_events(page_path);
+
+-- Supabase Data API access and RLS (added 2026-05-13)
+grant select on public.web_page_events to anon;
+grant select, insert, update, delete on public.web_page_events to authenticated;
+grant select, insert, update, delete on public.web_page_events to service_role;
+
+alter table public.web_page_events enable row level security;
+
+-- Example policy: allow all authenticated users to insert
+create policy "Authenticated can insert web events"
+  on public.web_page_events
+  for insert to authenticated
+  with check (true);
+
+-- Example policy: allow service_role to do anything
+create policy "Service role full access"
+  on public.web_page_events
+  for all to service_role
+  using (true) with check (true);
