@@ -4055,7 +4055,12 @@
         const projectsHtml = projects
           .map((p) => `
             <div style="border:1px solid #dce9fa;border-radius:8px;padding:10px;margin-bottom:10px;background:#fafbff;">
-              ${p.photo_url ? `<img src="${p.photo_url}" alt="Project photo" style="width:100%;max-height:200px;object-fit:cover;border-radius:6px;margin-bottom:10px;display:block;">` : ''}
+              ${p.photo_url || p.rendered_photo_url ? `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                  ${p.photo_url ? `<div><div style="font-size:10px;font-weight:600;color:#446684;margin-bottom:4px;">Before</div><img src="${p.photo_url}" alt="Before" style="width:100%;max-height:150px;object-fit:cover;border-radius:6px;border:1px solid #d5e3f8;"></div>` : ''}
+                  ${p.rendered_photo_url ? `<div><div style="font-size:10px;font-weight:600;color:#446684;margin-bottom:4px;">AI Rendered</div><img src="${p.rendered_photo_url}" alt="AI Rendered" style="width:100%;max-height:150px;object-fit:cover;border-radius:6px;border:1px solid #d5e3f8;"></div>` : ''}
+                </div>
+              ` : ''}
               <div style="font-weight:700;color:#0e3a78;margin-bottom:4px;">${p.name || '(Unnamed)'}</div>
               <div style="font-size:12px;color:#446684;margin-bottom:6px;">${p.description || '(No description)'}</div>
               <div style="font-size:11px;color:#7a8fa0;">

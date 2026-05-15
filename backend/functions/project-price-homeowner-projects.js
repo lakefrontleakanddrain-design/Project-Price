@@ -44,7 +44,7 @@ exports.handler = async (event) => {
     if (!homeownerId) return jsonResponse(400, { error: 'homeownerId required.' });
 
     const q = new URLSearchParams({
-      select: 'id,name,description,currency,created_at,updated_at,photo_url',
+      select: 'id,name,description,currency,created_at,updated_at,photo_url,rendered_photo_url',
       owner_id: `eq.${homeownerId}`,
       order: 'created_at.desc',
       limit: '500',
