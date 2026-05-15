@@ -4055,6 +4055,7 @@
         const projectsHtml = projects
           .map((p) => `
             <div style="border:1px solid #dce9fa;border-radius:8px;padding:10px;margin-bottom:10px;background:#fafbff;">
+              ${p.photo_url ? `<img src="${p.photo_url}" alt="Project photo" style="width:100%;max-height:200px;object-fit:cover;border-radius:6px;margin-bottom:10px;display:block;">` : ''}
               <div style="font-weight:700;color:#0e3a78;margin-bottom:4px;">${p.name || '(Unnamed)'}</div>
               <div style="font-size:12px;color:#446684;margin-bottom:6px;">${p.description || '(No description)'}</div>
               <div style="font-size:11px;color:#7a8fa0;">
