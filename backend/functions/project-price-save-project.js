@@ -114,6 +114,114 @@ const uploadProjectPhoto = async ({ projectId, imageBase64, mimeType, variant = 
   }
 };
 
+const uniqueValues = (items) => {
+  const seen = new Set();
+  const output = [];
+  for (const item of items || []) {
+    const value = String(item || '').trim();
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    output.push(value);
+  }
+  return output;
+};
+
+const renderedImagePrompt = ({ description, zipCode, tierName }) => {
+  return `You are a high-end home renovation visualizer.
+Create a realistic, post-renovation version of the uploaded room photo.
+
+Project context:
+- Zip code: ${zipCode}
+- Homeowner request: ${description}
+- Preferred tier: ${tierName}
+
+Output requirements:
+- Return one edited photorealistic image only.
+- Do not include text, labels, split panels, or watermarks.
+- Preserve the camera angle and room geometry from the source photo.`;
+};
+
+const generateRenderedFallbackImage = async ({ description, zipCode, tierName, imageBase64, mimeType }) => {
+  const apiKey = String(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '').trim();
+  if (!apiKey || !imageBase64) return null;
+
+  const configuredImageModel = String(process.env.GEMINI_IMAGE_MODEL || '').trim();
+  const modelCandidates = uniqueValues([
+    configuredImageModel,
+    'gemini-2.5-flash-image',
+    'gemini-3.1-flash-image-preview',
+    'gemini-3-pro-image-preview',
+  ]);
+
+  const body = {
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { text: renderedImagePrompt({ description, zipCode, tierName }) },
+          {
+            inlineData: {
+              mimeType: mimeType || 'image/jpeg',
+              data: imageBase64,
+            },
+          },
+        ],
+      },
+    ],
+    generationConfig: {
+      temperature: 0.2,
+      responseModalities: ['TEXT', 'IMAGE'],
+    },
+  };
+
+  for (const model of modelCandidates) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+      );
+
+      const raw = await res.text();
+      if (!res.ok) {
+        console.log('[project-price-save-project] rendered fallback model failed', JSON.stringify({ model, status: res.status }));
+        if (res.status === 404) continue;
+        return null;
+      }
+
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        return null;
+      }
+
+      const parts = data?.candidates?.[0]?.content?.parts;
+      const imagePart = Array.isArray(parts)
+        ? [...parts].reverse().find((p) => p?.inlineData?.data && p?.thought !== true)
+        : null;
+
+      if (imagePart?.inlineData?.data) {
+        return {
+          imageBase64: String(imagePart.inlineData.data),
+          mimeType: String(imagePart.inlineData.mimeType || 'image/png'),
+          model,
+        };
+      }
+    } catch (error) {
+      console.log(
+        '[project-price-save-project] rendered fallback exception',
+        JSON.stringify({ model, message: error instanceof Error ? error.message : String(error) }),
+      );
+    }
+  }
+
+  return null;
+};
+
 const buildProjectDescription = ({ description, selectedTier, summary, allTiers }) => {
   const formattedTiers = Array.isArray(allTiers)
     ? allTiers
@@ -235,17 +343,38 @@ exports.handler = async (event) => {
 
     // Upload photos to Storage and store public URLs (non-fatal if uploads fail)
     if (imageBase64 && project.id) {
+      let renderedToPersistBase64 = renderedImageBase64 ? String(renderedImageBase64) : '';
+      let renderedToPersistMimeType = renderedMimeType ? String(renderedMimeType) : '';
+
+      if (!renderedToPersistBase64) {
+        const fallbackRendered = await generateRenderedFallbackImage({
+          description: String(description || ''),
+          zipCode: normalizedZip,
+          tierName,
+          imageBase64: String(imageBase64),
+          mimeType: String(mimeType || ''),
+        });
+        if (fallbackRendered?.imageBase64) {
+          renderedToPersistBase64 = fallbackRendered.imageBase64;
+          renderedToPersistMimeType = fallbackRendered.mimeType;
+          console.log(
+            '[project-price-save-project] rendered image generated during save',
+            JSON.stringify({ projectId: project.id, model: fallbackRendered.model }),
+          );
+        }
+      }
+
       const originalPhotoUrl = await uploadProjectPhoto({
         projectId: project.id,
         imageBase64: String(imageBase64),
         mimeType: String(mimeType || ''),
         variant: 'original',
       });
-      const renderedPhotoUrl = renderedImageBase64
+      const renderedPhotoUrl = renderedToPersistBase64
         ? await uploadProjectPhoto({
           projectId: project.id,
-          imageBase64: String(renderedImageBase64),
-          mimeType: String(renderedMimeType || ''),
+          imageBase64: String(renderedToPersistBase64),
+          mimeType: String(renderedToPersistMimeType || ''),
           variant: 'rendered',
         })
         : null;
